@@ -1,4 +1,4 @@
-import { ScrollView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
+import { ScrollView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit, Palette } from "std-widgets.slint";
 
 export struct TicketStr {
     id: string,
@@ -19,8 +19,8 @@ component TicketView inherits Rectangle {
     in property <TicketStr> ticket;
     callback close();
     callback edit();
-
-    background: #00000040; // Semi-transparent backdrop
+ 
+    background: #00000080; // Semi-transparent backdrop for focus
     
     // BACKDROP: Catch clicks outside the card to cancel
     TouchArea {
@@ -31,7 +31,7 @@ component TicketView inherits Rectangle {
         // Full window (fill parent)
         width: 100%;
         height: 100%;
-        background: #070606ee; // Opaque white background to avoid seeing the board behind
+        background: Palette.background;
         
         TouchArea { } // Block clicks
 
@@ -91,8 +91,8 @@ component TicketEdit inherits Rectangle {
     
     callback save(string, string, string); // id, title, desc
     callback cancel();
-
-    background: #000000a0; // Dark overlay
+ 
+    background: #00000080; // Semi-transparent backdrop for focus
     
     // BACKDROP: Catch clicks outside the card to cancel
     TouchArea {
@@ -103,7 +103,7 @@ component TicketEdit inherits Rectangle {
         // Full window (fill parent)
         width: 100%;
         height: 100%;
-        background: #070606ee; // Match TicketView background
+        background: Palette.background;
         
         TouchArea { } // Block clicks
 
@@ -175,10 +175,8 @@ component TicketCard inherits Rectangle {
     callback delete_clicked(string);
     callback edit_clicked(TicketStr);
 
-    background: touch-area.has-hover ? #ffffff : #ffffff;
     border-radius: 8px;
     border-width: 1px;
-    border-color: touch-area.has-hover ? #0079bf : #dfe1e6;
     height: 140px;
     drop-shadow-blur: touch-area.has-hover ? 8px : 2px;
     drop-shadow-offset-y: touch-area.has-hover ? 4px : 1px;
@@ -218,7 +216,6 @@ component TicketCard inherits Rectangle {
                 text: ticket.title;
                 font-weight: 700;
                 font-size: 15px;
-                color: #172b4d;
                 overflow: elide;
             }
             
@@ -231,7 +228,6 @@ component TicketCard inherits Rectangle {
                 
                 Text {
                     text: "×";
-                    color: #5e6c84;
                     font-size: 18px;
                     horizontal-alignment: center;
                     vertical-alignment: center;
@@ -246,7 +242,6 @@ component TicketCard inherits Rectangle {
         Text {
             text: ticket.snippet;
             font-size: 13px;
-            color: #5e6c84;
             wrap: no-wrap;
             overflow: elide;
         }
@@ -266,12 +261,10 @@ component TicketCard inherits Rectangle {
                 Text {
                     text: "C: " + ticket.created_at;
                     font-size: 9px;
-                    color: #5e6c84;
                 }
                 Text {
                     text: "U: " + ticket.updated_at;
                     font-size: 9px;
-                    color: #5e6c84;
                 }
             }
         }
@@ -291,7 +284,6 @@ component KanbanColumn inherits Rectangle {
 
     width: 280px;
     horizontal-stretch: 0; // Prevent shrinking in layouts
-    background: #ebecf0; // Premium Trello Gray
     border-radius: 12px;
     
     VerticalBox {
@@ -305,19 +297,16 @@ component KanbanColumn inherits Rectangle {
                  text: queue.name;
                  font-weight: 800;
                  font-size: 16px;
-                 color: #172b4d;
              }
              
              // Styled New Ticket Button
              Rectangle {
                  width: 32px;
                  height: 32px;
-                 background: touch-add.pressed ? #005a8e : (touch-add.has-hover ? #0067a3 : #0079bf);
                  border-radius: 16px;
                  
                  Text {
                      text: "+";
-                     color: white;
                      font-size: 20px;
                      font-weight: 800;
                      horizontal-alignment: center;
@@ -378,7 +367,6 @@ export component App inherits Window {
     min-height: 300px;
     
     title: "Slint Kanban";
-    background: #0052cc; // Premium Vibrant Blue
 
     ScrollView {
         HorizontalLayout {
@@ -434,14 +422,11 @@ export component App inherits Window {
         y: mouse_y - 30px;
         width: 200px;
         height: 60px;
-        background: #ffffffc0;
         border-radius: 4px;
         border-width: 2px;
-        border-color: #0079bf;
         
         Text {
              text: "Moving #" + dragging_ticket_id;
-             color: black;
              font-weight: 700;
              horizontal-alignment: center;
              vertical-alignment: center;
