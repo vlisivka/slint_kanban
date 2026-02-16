@@ -36,8 +36,9 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 ## Phase 5: Creating & Editing Tickets
 - [x] Add "New Ticket" button to columns.
 - [x] Implement `create_ticket` function (create directory + basic `README.md`).
-- [x] Add a click handler to `TicketCard` to open details.
-- [x] Create a `TicketDetail` view (overlay or separate window).
+- [x] Add a click handler to `TicketCard` to open read-only full-window details view.
+- [/] Implement Markdown rendering in the read-only details view.
+- [ ] Add an "Edit" button to the details view or `TicketCard` to trigger editing.
 - [x] Implement text editing for `README.md` content.
 - [x] Save changes to disk on button press or auto-save.
 - [x] Fix: Save description when creating a new ticket.

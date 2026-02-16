@@ -33,10 +33,12 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 2.  **Drag-and-Drop**: Move tickets between queues (directories) using drag-and-drop.
 3.  **CRUD Operations**:
     -   Create new tickets.
-    -   Read ticket content (render Markdown).
-    -   Update ticket content (edit raw text/YAML).
+    -   Read ticket content: Clicking on a ticket opens a full-window read-only view with Markdown rendering.
+    -   Update ticket content: Editing is triggered by a dedicated "Edit" button. Allows editing raw text/YAML.
     -   Delete tickets (move them from `~/Kanban/Ticket` to `~/Kanban/Deleted` directory).
-4.  **Ticket Editing**: Allow editing of the raw `README.md` content (YAML + Markdown).
+4.  **Ticket Interaction**:
+    -   **Click**: Opens read-only details view with Markdown support.
+    -   **Edit Button**: Opens the editor for raw `README.md` content.
 5.  **Cross-Referencing**:
     -   Generate short IDs based on ticket title and creation date.
     -   Support linking between tickets using these IDs ad #tick12.

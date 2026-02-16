@@ -23,11 +23,12 @@ fn reload_board(ui: &App, root_path: &Path) -> anyhow::Result<()> {
     for queue in board.queues {
         let mut slint_tickets: Vec<TicketStr> = vec![];
         for ticket in queue.tickets {
-            let first_line = ticket.description.lines().next().unwrap_or("").to_string();
+            let snippet = ticket.description.lines().next().unwrap_or("").to_string();
             slint_tickets.push(TicketStr {
                 id: SharedString::from(ticket.id),
                 title: SharedString::from(ticket.title),
-                description: SharedString::from(first_line),
+                description: SharedString::from(ticket.description),
+                snippet: SharedString::from(snippet),
                 created_at: SharedString::from(ticket.created_at),
                 updated_at: SharedString::from(ticket.updated_at),
             });

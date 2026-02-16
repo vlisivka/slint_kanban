@@ -4,6 +4,7 @@ export struct TicketStr {
     id: string,
     title: string,
     description: string,
+    snippet: string,
     created_at: string,
     updated_at: string,
 }
@@ -14,7 +15,76 @@ export struct QueueStr {
     tickets: [TicketStr],
 }
 
-component TicketDetail inherits Rectangle {
+component TicketView inherits Rectangle {
+    in property <TicketStr> ticket;
+    callback close();
+    callback edit();
+
+    background: #00000040; // Semi-transparent backdrop
+    
+    // BACKDROP: Catch clicks outside the card to cancel
+    TouchArea {
+        clicked => { close(); }
+    }
+    
+    Rectangle {
+        // Full window (fill parent)
+        width: 100%;
+        height: 100%;
+        background: #070606ee; // Opaque white background to avoid seeing the board behind
+        
+        TouchArea { } // Block clicks
+
+        VerticalBox {
+            padding: 40px;
+            spacing: 24px;
+            
+            HorizontalLayout {
+                padding: 0px;
+                alignment: space-between;
+                
+                Button {
+                    text: "Edit";
+                    width: 100px;
+                    height: 40px;
+                    clicked => { edit(); }
+                }
+
+                // Title as header (centered)
+                Text {
+                    text: ticket.title;
+                    font-size: 32px;
+                    font-weight: 800;
+                    wrap: word-wrap;
+                    horizontal-alignment: center;
+                    // Centering logic: this text fills the space between buttons
+                }
+                
+                Button {
+                    text: "Close";
+                    width: 100px;
+                    height: 40px;
+                    clicked => { close(); }
+                }
+            }
+            
+            
+            ScrollView {
+                VerticalBox {
+                    padding: 20px;
+                    Text {
+                        text: ticket.description;
+                        font-size: 18px;
+                        wrap: word-wrap;
+                        horizontal-alignment: left;
+                    }
+                }
+            }
+        }
+    }
+}
+
+component TicketEdit inherits Rectangle {
     in-out property <string> title_text;
     in-out property <string> description_text;
     in property <string> ticket_id;
@@ -32,13 +102,11 @@ component TicketDetail inherits Rectangle {
     Rectangle {
         width: 600px;
         height: 520px;
-        background: #434141ee; // Pure white for maximum contrast
+        background: #434141ee; 
         border-radius: 8px;
         drop-shadow-blur: 32px;
         drop-shadow-color: #00000040;
         
-        // This empty TouchArea prevents clicks on the dialog from closing it.
-        // It is placed first so it's behind the content but covers the dialog area.
         TouchArea { }
 
         VerticalBox {
@@ -49,7 +117,6 @@ component TicketDetail inherits Rectangle {
                 text: ticket_id == "" ? "Create New Ticket" : "Edit Ticket #" + ticket_id;
                 font-size: 24px;
                 font-weight: 800;
-                // color: #0e0e0fff; // Charcoal Blue
             }
             
             VerticalLayout {
@@ -175,7 +242,7 @@ component TicketCard inherits Rectangle {
         }
         
         Text {
-            text: ticket.description;
+            text: ticket.snippet;
             font-size: 13px;
             color: #5e6c84;
             wrap: no-wrap;
@@ -292,6 +359,10 @@ export component App inherits Window {
     property <length> mouse_x: 0px;
     property <length> mouse_y: 0px;
 
+    // State
+    property <bool> is_viewing_ticket: false;
+    property <TicketStr> active_ticket;
+
     // Editing state
     property <bool> is_editing: false;
     property <string> editing_id: "";
@@ -341,10 +412,8 @@ export component App inherits Window {
                     delete_ticket(tid);
                 }
                 edit_ticket(t) => {
-                    editing_id = t.id;
-                    editing_title = t.title;
-                    editing_desc = t.description;
-                    is_editing = true;
+                    active_ticket = t;
+                    is_viewing_ticket = true;
                 }
                 create_ticket(qid) => {
                     editing_id = "";
@@ -377,8 +446,21 @@ export component App inherits Window {
         }
     }
 
-    // Detail Overlay
-    if (is_editing) : TicketDetail {
+    // Ticket View Overlay
+    if (is_viewing_ticket) : TicketView {
+        ticket: active_ticket;
+        close => { is_viewing_ticket = false; }
+        edit => {
+            is_viewing_ticket = false;
+            editing_id = active_ticket.id;
+            editing_title = active_ticket.title;
+            editing_desc = active_ticket.description;
+            is_editing = true;
+        }
+    }
+
+    // Edit Overlay
+    if (is_editing) : TicketEdit {
         ticket_id: editing_id;
         title_text: editing_title;
         description_text: editing_desc;
