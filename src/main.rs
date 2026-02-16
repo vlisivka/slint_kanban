@@ -72,8 +72,7 @@ fn main() -> anyhow::Result<()> {
             }
         };
 
-        let resolved_target_id = if target_id.starts_with("index:") {
-            let idx_str = &target_id[6..];
+        let resolved_target_id = if let Some(idx_str) = target_id.strip_prefix("index:") {
             // Slint might send a float string like "1.36...". Parse as f64 and floor it.
             if let Ok(idx_f) = idx_str.parse::<f64>() {
                 let idx = idx_f.floor() as usize;
@@ -141,11 +140,10 @@ fn main() -> anyhow::Result<()> {
                     // Only reload on significant changes. Ignore Access, Metadata, etc.
                     let should_reload = match event.kind {
                         EventKind::Create(_) | EventKind::Remove(_) => true,
-                        EventKind::Modify(m) => match m {
-                            notify::event::ModifyKind::Data(_) => true,
-                            notify::event::ModifyKind::Name(_) => true,
-                            _ => false,
-                        },
+                        EventKind::Modify(m) => matches!(
+                            m,
+                            notify::event::ModifyKind::Data(_) | notify::event::ModifyKind::Name(_)
+                        ),
                         _ => false,
                     };
 
@@ -155,7 +153,7 @@ fn main() -> anyhow::Result<()> {
 
                     // Consume any other events that occur within a small time window (debounce)
                     let debounce_duration = Duration::from_millis(200);
-                    while let Ok(_) = rx.recv_timeout(debounce_duration) {
+                    while rx.recv_timeout(debounce_duration).is_ok() {
                         // Drainage loop
                     }
 

@@ -63,7 +63,7 @@ component TicketDetail inherits Rectangle {
             
             VerticalLayout {
                 spacing: 8px;
-                Text { text: "Description (Markdown)"; font-size: 11px; font-weight: 800; }
+                Text { text: "Description"; font-size: 11px; font-weight: 800; }
                 TextEdit {
                     text <=> description_text;
                     placeholder-text: "What needs to be done?";
@@ -203,6 +203,7 @@ component KanbanColumn inherits Rectangle {
     callback create_ticket(string); // queue_id
 
     width: 280px;
+    horizontal-stretch: 0; // Prevent shrinking in layouts
     background: #ebecf0; // Premium Trello Gray
     border-radius: 12px;
     

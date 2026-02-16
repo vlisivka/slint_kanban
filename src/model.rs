@@ -13,7 +13,6 @@ pub struct Ticket {
     pub title: String,
     pub created_at: String,
     pub description: String,
-    pub path: PathBuf,
 }
 
 #[derive(Debug, Clone)]
@@ -21,7 +20,6 @@ pub struct Queue {
     pub id: String,
     pub name: String,
     pub tickets: Vec<Ticket>,
-    pub max_tickets: Option<u32>,
 }
 
 #[derive(Debug, Clone)]
@@ -32,18 +30,12 @@ pub struct Board {
 }
 
 impl Ticket {
-    pub fn from_metadata(
-        id: String,
-        path: PathBuf,
-        metadata: TicketMetadata,
-        description: String,
-    ) -> Self {
+    pub fn from_metadata(id: String, metadata: TicketMetadata, description: String) -> Self {
         Self {
             id,
             title: metadata.title,
             created_at: metadata.created_at,
             description,
-            path,
         }
     }
 }
@@ -59,12 +51,10 @@ impl Board {
         // Check if any queues already exist
         let mut has_queues = false;
         if let Ok(entries) = std::fs::read_dir(&queues_path) {
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    if entry.path().is_dir() {
-                        has_queues = true;
-                        break;
-                    }
+            for entry in entries.flatten() {
+                if entry.path().is_dir() {
+                    has_queues = true;
+                    break;
                 }
             }
         }
@@ -98,8 +88,7 @@ impl Board {
         }
 
         let mut queues = vec![];
-        for entry in std::fs::read_dir(&queues_path)? {
-            let entry = entry?;
+        for entry in std::fs::read_dir(&queues_path)?.flatten() {
             let path = entry.path();
             if path.is_dir() {
                 let queue_id = path
@@ -109,8 +98,7 @@ impl Board {
                     .to_string();
                 let mut tickets = vec![];
 
-                for ticket_entry in std::fs::read_dir(&path)? {
-                    let ticket_entry = ticket_entry?;
+                for ticket_entry in std::fs::read_dir(&path)?.flatten() {
                     let ticket_path = ticket_entry.path();
 
                     // In the architecture, tickets in queues are symlinks to ../../Tickets/<id>
@@ -152,12 +140,7 @@ impl Board {
                                     .and_then(|n| n.to_str())
                                     .unwrap_or_default()
                                     .to_string();
-                                tickets.push(Ticket::from_metadata(
-                                    ticket_id,
-                                    resolved_path,
-                                    metadata,
-                                    body,
-                                ));
+                                tickets.push(Ticket::from_metadata(ticket_id, metadata, body));
                             }
                         }
                     }
@@ -166,7 +149,6 @@ impl Board {
                     id: queue_id.clone(),
                     name: queue_id, // Use ID as name for now
                     tickets,
-                    max_tickets: None,
                 });
             }
         }
@@ -197,8 +179,7 @@ impl Board {
 
         // Find the symlink in source_queue that points to target_ticket_path
         let mut entry_to_move = None;
-        for entry in std::fs::read_dir(&source_queue_path)? {
-            let entry = entry?;
+        for entry in std::fs::read_dir(&source_queue_path)?.flatten() {
             let path = entry.path();
 
             let real_path = if path.is_symlink() {
@@ -253,12 +234,10 @@ impl Board {
         std::fs::rename(&ticket_path, &dest_path)?;
 
         // 2. Cleanup symlinks in all queues
-        for entry in std::fs::read_dir(&self.queues_path)? {
-            let entry = entry?;
+        for entry in std::fs::read_dir(&self.queues_path)?.flatten() {
             let queue_dir = entry.path();
             if queue_dir.is_dir() {
-                for ticket_entry in std::fs::read_dir(&queue_dir)? {
-                    let ticket_entry = ticket_entry?;
+                for ticket_entry in std::fs::read_dir(&queue_dir)?.flatten() {
                     let symlink_path = ticket_entry.path();
 
                     let is_target = if symlink_path.is_symlink() {
