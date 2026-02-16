@@ -41,3 +41,8 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 - [x] Save changes to disk on button press or auto-save.
 - [x] Fix: Save description when creating a new ticket.
 - [x] Premium UI Polish (Colors & Contrast).
+
+## Phase 6: Initialization & Bootstrapping
+- [x] Implement automatic creation of `~/Kanban` root and sub-directories (`Ticket`, `Queue`).
+- [x] Refine: Create default queues with numbered prefixes (e.g., `1. Incoming`) for easy sorting.
+- [x] Implement queue sorting by name in `Board::load`.

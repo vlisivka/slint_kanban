@@ -12,7 +12,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 -   **Data Storage**: File-system based.
     -   **Root Directory**: `~/Kanban`
     -   **Tickets directory**: `~/Kanban/Ticket`
-    -   **Queues**: Sub-directories within `~/Kanban/Queue` (e.g., `~/Kanban/Queue/Incoming`, `~/Kanban/Queue/ToDo`, `~/Kanban/Queue/Doing`, `~/Kanban/Queue/Done`, `~/Kanban/Queue/Archived`).
+    - **Queues**: Sub-directories within `~/Kanban/Queue`. Sorted alphabetically by directory name. Names should start with a number and a dot (e.g., `1. Incoming`, `2. ToDo`) to ensure predictable ordering.
     -   **Tickets**: Symlinks from a queue directory to `~/Kanban/Tickets`.
     -   **Ticket Content**: `README.md` file inside the ticket directory.
 -   **Ticket Format**:
@@ -42,5 +42,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 ## Non-Functional Requirements
 -   **Performance**: Efficient file system monitoring to reflect external changes.
 -   **Compatibility**: Optimized for Alma Linux 10.
+
+- **Initialization**: Automatically create the root directory and sub-directories (`Ticket`, `Queue`). Create default queues (`Incoming`, `ToDo`, `Doing`, `Done`, `Archive`) **only if no queues already exist** in the `Queue` directory.
 
 

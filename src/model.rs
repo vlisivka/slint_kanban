@@ -49,6 +49,36 @@ impl Ticket {
 }
 
 impl Board {
+    pub fn ensure_initialized(root_path: &std::path::Path) -> anyhow::Result<()> {
+        let queues_path = root_path.join("Queue");
+        let tickets_path = root_path.join("Tickets");
+
+        std::fs::create_dir_all(&queues_path)?;
+        std::fs::create_dir_all(&tickets_path)?;
+
+        // Check if any queues already exist
+        let mut has_queues = false;
+        if let Ok(entries) = std::fs::read_dir(&queues_path) {
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    if entry.path().is_dir() {
+                        has_queues = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if !has_queues {
+            let default_queues = vec!["1. Incoming", "2. ToDo", "3. Doing", "4. Done", "5. Archive"];
+            for q in default_queues {
+                std::fs::create_dir_all(queues_path.join(q))?;
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn load(root_path: PathBuf) -> anyhow::Result<Self> {
         let queues_path = root_path.join("Queue");
         let tickets_path = root_path.join("Tickets");
@@ -134,6 +164,9 @@ impl Board {
                 });
             }
         }
+        
+        // Sort queues alphabetically by name
+        queues.sort_by(|a, b| a.id.cmp(&b.id));
 
         Ok(Board {
             queues,
@@ -549,6 +582,33 @@ created_at: 2023-10-27
         assert_eq!(t.title, "Updated Title");
         assert_eq!(t.description, "Updated Description");
         
+        Ok(())
+    }
+    #[test]
+    fn test_initialization() -> anyhow::Result<()> {
+        let root = tempdir()?;
+        let root_path = root.path();
+
+        // 1. Initial run: should create default queues with numbers
+        Board::ensure_initialized(root_path)?;
+        
+        let board = Board::load(root_path.to_path_buf())?;
+        assert_eq!(board.queues.len(), 5);
+        assert_eq!(board.queues[0].id, "1. Incoming");
+        assert_eq!(board.queues[1].id, "2. ToDo");
+        assert_eq!(board.queues[2].id, "3. Doing");
+        assert_eq!(board.queues[3].id, "4. Done");
+        assert_eq!(board.queues[4].id, "5. Archive");
+
+        // 2. Existing queue run: should NOT create defaults if something exists
+        let root2 = tempdir()?;
+        let root_path2 = root2.path();
+        std::fs::create_dir_all(root_path2.join("Queue").join("CustomQueue"))?;
+        
+        Board::ensure_initialized(root_path2)?;
+        assert!(root_path2.join("Queue/CustomQueue").exists());
+        assert!(!root_path2.join("Queue/1. Incoming").exists());
+
         Ok(())
     }
 }

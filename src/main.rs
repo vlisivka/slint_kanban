@@ -52,11 +52,8 @@ fn main() -> anyhow::Result<()> {
     let home_dir = std::env::var("HOME").expect("HOME directory not set");
     let root_path = PathBuf::from(home_dir).join("Kanban");
 
-    // Ensure directory exists for initial run
-    if !root_path.exists() {
-        std::fs::create_dir_all(root_path.join("Queue"))?;
-        std::fs::create_dir_all(root_path.join("Tickets"))?;
-    }
+    // Ensure directory exists and default queues are created for initial run
+    Board::ensure_initialized(&root_path)?;
 
     // Initial load
     reload_board(&ui, &root_path)?;
