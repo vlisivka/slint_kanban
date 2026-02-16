@@ -4,7 +4,10 @@ use std::path::PathBuf;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TicketMetadata {
     pub title: String,
+    #[serde(default)]
     pub created_at: String, // ISO 8601 or similar
+    #[serde(default)]
+    pub updated_at: String,
 }
 
 #[derive(Debug, Clone)]
@@ -12,6 +15,7 @@ pub struct Ticket {
     pub id: String,
     pub title: String,
     pub created_at: String,
+    pub updated_at: String,
     pub description: String,
 }
 
@@ -35,6 +39,7 @@ impl Ticket {
             id,
             title: metadata.title,
             created_at: metadata.created_at,
+            updated_at: metadata.updated_at,
             description,
         }
     }
@@ -129,11 +134,17 @@ impl Board {
                             if parts.len() >= 3 {
                                 let frontmatter = parts[1];
                                 let body = parts[2].trim().to_string();
-                                let metadata: TicketMetadata = serde_yaml::from_str(frontmatter)
-                                    .unwrap_or(TicketMetadata {
+                                let mut metadata: TicketMetadata =
+                                    serde_yaml::from_str(frontmatter).unwrap_or(TicketMetadata {
                                         title: "Error parsing YAML".to_string(),
                                         created_at: "".to_string(),
+                                        updated_at: "".to_string(),
                                     });
+
+                                if metadata.updated_at.is_empty() && !metadata.created_at.is_empty()
+                                {
+                                    metadata.updated_at = metadata.created_at.clone();
+                                }
 
                                 let ticket_id = resolved_path
                                     .file_name()
@@ -290,13 +301,13 @@ impl Board {
         std::fs::create_dir_all(&ticket_dir)?;
 
         // 3. Create README.md with metadata
-        let now = chrono::Local::now().format("%Y-%m-%d").to_string();
+        let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
         let mut f = std::fs::File::create(ticket_dir.join("README.md"))?;
         use std::io::Write;
         write!(
             f,
-            "---\ntitle: {}\ncreated_at: {}\n---\n{}",
-            title, now, description
+            "---\ntitle: {}\ncreated_at: {}\nupdated_at: {}\n---\n{}",
+            title, now, now, description
         )?;
 
         // 4. Create symlink in the target queue
@@ -329,15 +340,17 @@ impl Board {
             let metadata: TicketMetadata = serde_yaml::from_str(parts[1])?;
             metadata.created_at
         } else {
-            chrono::Local::now().format("%Y-%m-%d").to_string()
+            chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string()
         };
+
+        let updated_at = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
         let mut f = std::fs::File::create(&readme_path)?;
         use std::io::Write;
         write!(
             f,
-            "---\ntitle: {}\ncreated_at: {}\n---\n{}",
-            title, created_at, description
+            "---\ntitle: {}\ncreated_at: {}\nupdated_at: {}\n---\n{}",
+            title, created_at, updated_at, description
         )?;
 
         Ok(())
@@ -356,10 +369,24 @@ mod tests {
         let yaml = "
 title: Buy Groceries
 created_at: 2023-10-27
+updated_at: 2023-10-27
 ";
         let metadata: TicketMetadata = serde_yaml::from_str(yaml).expect("Failed to parse YAML");
         assert_eq!(metadata.title, "Buy Groceries");
         assert_eq!(metadata.created_at, "2023-10-27");
+        assert_eq!(metadata.updated_at, "2023-10-27");
+    }
+
+    #[test]
+    fn test_ticket_metadata_missing_updated_at() {
+        let yaml = "
+title: Buy Groceries
+created_at: 2023-10-27
+";
+        let metadata: TicketMetadata = serde_yaml::from_str(yaml).expect("Failed to parse YAML");
+        assert_eq!(metadata.title, "Buy Groceries");
+        assert_eq!(metadata.created_at, "2023-10-27");
+        assert_eq!(metadata.updated_at, "");
     }
 
     #[test]
@@ -378,7 +405,7 @@ created_at: 2023-10-27
         let mut t1_readme = File::create(t1_path.join("README.md"))?;
         write!(
             t1_readme,
-            "---\ntitle: Task 1\ncreated_at: 2023-01-01\n---\nBody 1"
+            "---\ntitle: Task 1\ncreated_at: 2023-01-01\nupdated_at: 2023-01-01\n---\nBody 1"
         )?;
 
         // Create Queue Q1
@@ -414,13 +441,19 @@ created_at: 2023-10-27
         let t1_path = tickets_dir.join("ttt123");
         std::fs::create_dir(&t1_path)?;
         let mut f1 = File::create(t1_path.join("README.md"))?;
-        write!(f1, "---\ntitle: T123\ncreated_at: 2023-01-01\n---\nBody")?;
+        write!(
+            f1,
+            "---\ntitle: T123\ncreated_at: 2023-01-01\nupdated_at: 2023-01-01\n---\nBody"
+        )?;
 
         // Ticket ttt456
         let t2_path = tickets_dir.join("ttt456");
         std::fs::create_dir(&t2_path)?;
         let mut f2 = File::create(t2_path.join("README.md"))?;
-        write!(f2, "---\ntitle: T456\ncreated_at: 2023-01-02\n---\nBody")?;
+        write!(
+            f2,
+            "---\ntitle: T456\ncreated_at: 2023-01-02\nupdated_at: 2023-01-02\n---\nBody"
+        )?;
 
         // Queue q1
         let q1_path = queues_dir.join("q1");
@@ -480,7 +513,7 @@ created_at: 2023-10-27
         let mut t1_readme = File::create(t1_path.join("README.md"))?;
         write!(
             t1_readme,
-            "---\ntitle: T1\ncreated_at: 2023-01-01\n---\nBody"
+            "---\ntitle: T1\ncreated_at: 2023-01-01\nupdated_at: 2023-01-01\n---\nBody"
         )?;
 
         // Create Queues Q1, Q2
@@ -572,7 +605,10 @@ created_at: 2023-10-27
             std::fs::create_dir(&t1_path)?;
         }
         let mut f1 = File::create(t1_path.join("README.md"))?;
-        write!(f1, "---\ntitle: T1\ncreated_at: 2023-01-01\n---\nBody")?;
+        write!(
+            f1,
+            "---\ntitle: T1\ncreated_at: 2023-01-01\nupdated_at: 2023-01-01\n---\nBody"
+        )?;
 
         let q1_path = queues_dir.join("Q1");
         std::fs::create_dir(&q1_path)?;

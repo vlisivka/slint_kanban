@@ -12,6 +12,7 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
     - [x] `TicketCard` component (display title and short ID).
 - [x] Connect Rust logic to Slint UI to display the board state.
 - [x] Make tickets use fixed amount of vertical space, enough to display title, date, and part of first line of ticket body.
+- [x] UI Refinement: Update ticket cards to show only the first line of the ticket body and ensure it doesn't overflow.
 
 ## Phase 2: Reactivity (File Watcher)
 - [x] Add `notify` crate dependency.

@@ -19,6 +19,15 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
     -   **Header**: YAML frontmatter (Pandoc compatible) containing ticket metadata.
     -   **Body**: Markdown content describing the task.
 
+### User Interface Details
+- **Ticket Cards**:
+    - Show Ticket Title.
+    - Show Short ID.
+    - Show date of creation.
+    - Show date of last modification.
+    - Show **only the first line** of the ticket's `README.md` body.
+    - Text must not overflow the card boundaries (use ellipsis or clipping).
+
 ## Functional Requirements
 1.  **Kanban Board UI**: Visualize queues and tickets in columns.
 2.  **Drag-and-Drop**: Move tickets between queues (directories) using drag-and-drop.
