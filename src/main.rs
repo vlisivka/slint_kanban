@@ -80,7 +80,11 @@ fn main() -> anyhow::Result<()> {
                 if idx < board.queues.len() {
                     board.queues[idx].id.clone()
                 } else {
-                    board.queues.last().map(|q| q.id.clone()).unwrap_or_default()
+                    board
+                        .queues
+                        .last()
+                        .map(|q| q.id.clone())
+                        .unwrap_or_default()
                 }
             } else {
                 target_id.to_string()
@@ -93,7 +97,10 @@ fn main() -> anyhow::Result<()> {
             return; // No move needed
         }
 
-        println!("Moving ticket {} from {} to {}", ticket_id, source_id, resolved_target_id);
+        println!(
+            "Moving ticket {} from {} to {}",
+            ticket_id, source_id, resolved_target_id
+        );
         if let Err(e) = board.move_ticket(&ticket_id, &source_id, &resolved_target_id) {
             eprintln!("Error moving ticket: {:?}", e);
         }

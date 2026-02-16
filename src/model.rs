@@ -70,7 +70,13 @@ impl Board {
         }
 
         if !has_queues {
-            let default_queues = vec!["1. Incoming", "2. ToDo", "3. Doing", "4. Done", "5. Archive"];
+            let default_queues = vec![
+                "1. Incoming",
+                "2. ToDo",
+                "3. Doing",
+                "4. Done",
+                "5. Archive",
+            ];
             for q in default_queues {
                 std::fs::create_dir_all(queues_path.join(q))?;
             }
@@ -164,7 +170,7 @@ impl Board {
                 });
             }
         }
-        
+
         // Sort queues alphabetically by name
         queues.sort_by(|a, b| a.id.cmp(&b.id));
 
@@ -194,7 +200,7 @@ impl Board {
         for entry in std::fs::read_dir(&source_queue_path)? {
             let entry = entry?;
             let path = entry.path();
-            
+
             let real_path = if path.is_symlink() {
                 std::fs::read_link(&path)?
             } else {
@@ -214,7 +220,9 @@ impl Board {
         }
 
         if let Some(source_path) = entry_to_move {
-            let file_name = source_path.file_name().ok_or_else(|| anyhow::anyhow!("Invalid file name"))?;
+            let file_name = source_path
+                .file_name()
+                .ok_or_else(|| anyhow::anyhow!("Invalid file name"))?;
             let dest_path = target_queue_path.join(file_name);
             std::fs::rename(source_path, dest_path)?;
             Ok(())
@@ -236,8 +244,8 @@ impl Board {
 
         // 1. Move the ticket folder to Deleted
         let dest_path = deleted_root.join(ticket_id);
-        
-        // If it already exists in Deleted, we might want to overwrite or version it? 
+
+        // If it already exists in Deleted, we might want to overwrite or version it?
         // For now, let's just remove old deletion if it exists.
         if dest_path.exists() {
             std::fs::remove_dir_all(&dest_path)?;
@@ -252,16 +260,16 @@ impl Board {
                 for ticket_entry in std::fs::read_dir(&queue_dir)? {
                     let ticket_entry = ticket_entry?;
                     let symlink_path = ticket_entry.path();
-                    
+
                     let is_target = if symlink_path.is_symlink() {
                         if let Ok(target) = std::fs::read_link(&symlink_path) {
-                             // Match either absolute or relative to the symlink's parent
-                             let resolved = if target.is_relative() {
-                                 queue_dir.join(&target).canonicalize().unwrap_or(target)
-                             } else {
-                                 target.canonicalize().unwrap_or(target)
-                             };
-                             resolved == dest_path || resolved == ticket_path
+                            // Match either absolute or relative to the symlink's parent
+                            let resolved = if target.is_relative() {
+                                queue_dir.join(&target).canonicalize().unwrap_or(target)
+                            } else {
+                                target.canonicalize().unwrap_or(target)
+                            };
+                            resolved == dest_path || resolved == ticket_path
                         } else {
                             false
                         }
@@ -279,7 +287,12 @@ impl Board {
         Ok(())
     }
 
-    pub fn create_ticket(&self, title: &str, description: &str, queue_id: &str) -> anyhow::Result<String> {
+    pub fn create_ticket(
+        &self,
+        title: &str,
+        description: &str,
+        queue_id: &str,
+    ) -> anyhow::Result<String> {
         use rand::{distributions::Alphanumeric, Rng};
 
         // 1. Generate unique ID
@@ -289,7 +302,7 @@ impl Board {
             .take(6)
             .collect();
         let ticket_id = format!("T-{}", id);
-        
+
         // 2. Create ticket directory
         let ticket_dir = self.tickets_path.join(&ticket_id);
         if ticket_dir.exists() {
@@ -319,7 +332,12 @@ impl Board {
         Ok(ticket_id)
     }
 
-    pub fn update_ticket(&self, ticket_id: &str, title: &str, description: &str) -> anyhow::Result<()> {
+    pub fn update_ticket(
+        &self,
+        ticket_id: &str,
+        title: &str,
+        description: &str,
+    ) -> anyhow::Result<()> {
         let ticket_dir = self.tickets_path.join(ticket_id);
         let readme_path = ticket_dir.join("README.md");
         if !readme_path.exists() {
@@ -329,10 +347,10 @@ impl Board {
         let content = std::fs::read_to_string(&readme_path)?;
         let parts: Vec<&str> = content.splitn(3, "---").collect();
         let created_at = if parts.len() >= 3 {
-             let metadata: TicketMetadata = serde_yaml::from_str(parts[1])?;
-             metadata.created_at
+            let metadata: TicketMetadata = serde_yaml::from_str(parts[1])?;
+            metadata.created_at
         } else {
-             chrono::Local::now().format("%Y-%m-%d").to_string()
+            chrono::Local::now().format("%Y-%m-%d").to_string()
         };
 
         let mut f = std::fs::File::create(&readme_path)?;
@@ -470,13 +488,21 @@ created_at: 2023-10-27
         std::fs::create_dir_all(&queues_dir)?;
 
         // Create Ticket T1
-        let t1_path = tickets_dir.join("T1").canonicalize().unwrap_or(tickets_dir.join("T1"));
-        if !t1_path.exists() { std::fs::create_dir(&t1_path)?; }
+        let t1_path = tickets_dir
+            .join("T1")
+            .canonicalize()
+            .unwrap_or(tickets_dir.join("T1"));
+        if !t1_path.exists() {
+            std::fs::create_dir(&t1_path)?;
+        }
         // tempdir path might not be canonicalizable if it doesn't exist yet, but here it does.
         // Actually, canonicalize fails if the path doesn't exist.
-        
+
         let mut t1_readme = File::create(t1_path.join("README.md"))?;
-        write!(t1_readme, "---\ntitle: T1\ncreated_at: 2023-01-01\n---\nBody")?;
+        write!(
+            t1_readme,
+            "---\ntitle: T1\ncreated_at: 2023-01-01\n---\nBody"
+        )?;
 
         // Create Queues Q1, Q2
         let q1_path = queues_dir.join("Q1");
@@ -489,16 +515,61 @@ created_at: 2023-10-27
         std::os::unix::fs::symlink(&t1_path, q1_path.join("T1"))?;
 
         let board = Board::load(root_path.clone())?;
-        assert_eq!(board.queues.iter().find(|q| q.id == "Q1").unwrap().tickets.len(), 1);
-        assert_eq!(board.queues.iter().find(|q| q.id == "Q2").unwrap().tickets.len(), 0);
+        assert_eq!(
+            board
+                .queues
+                .iter()
+                .find(|q| q.id == "Q1")
+                .unwrap()
+                .tickets
+                .len(),
+            1
+        );
+        assert_eq!(
+            board
+                .queues
+                .iter()
+                .find(|q| q.id == "Q2")
+                .unwrap()
+                .tickets
+                .len(),
+            0
+        );
 
         // Move T1 from Q1 to Q2
         board.move_ticket("T1", "Q1", "Q2")?;
 
         let board_after = Board::load(root_path)?;
-        assert_eq!(board_after.queues.iter().find(|q| q.id == "Q1").unwrap().tickets.len(), 0);
-        assert_eq!(board_after.queues.iter().find(|q| q.id == "Q2").unwrap().tickets.len(), 1);
-        assert_eq!(board_after.queues.iter().find(|q| q.id == "Q2").unwrap().tickets[0].id, "T1");
+        assert_eq!(
+            board_after
+                .queues
+                .iter()
+                .find(|q| q.id == "Q1")
+                .unwrap()
+                .tickets
+                .len(),
+            0
+        );
+        assert_eq!(
+            board_after
+                .queues
+                .iter()
+                .find(|q| q.id == "Q2")
+                .unwrap()
+                .tickets
+                .len(),
+            1
+        );
+        assert_eq!(
+            board_after
+                .queues
+                .iter()
+                .find(|q| q.id == "Q2")
+                .unwrap()
+                .tickets[0]
+                .id,
+            "T1"
+        );
 
         Ok(())
     }
@@ -514,8 +585,13 @@ created_at: 2023-10-27
         std::fs::create_dir_all(&tickets_dir)?;
         std::fs::create_dir_all(&queues_dir)?;
 
-        let t1_path = tickets_dir.join("T1").canonicalize().unwrap_or(tickets_dir.join("T1"));
-        if !t1_path.exists() { std::fs::create_dir(&t1_path)?; }
+        let t1_path = tickets_dir
+            .join("T1")
+            .canonicalize()
+            .unwrap_or(tickets_dir.join("T1"));
+        if !t1_path.exists() {
+            std::fs::create_dir(&t1_path)?;
+        }
         let mut f1 = File::create(t1_path.join("README.md"))?;
         write!(f1, "---\ntitle: T1\ncreated_at: 2023-01-01\n---\nBody")?;
 
@@ -543,24 +619,28 @@ created_at: 2023-10-27
     fn test_create_ticket() -> anyhow::Result<()> {
         let root = tempdir()?;
         let root_path = root.path().to_path_buf();
-        
+
         std::fs::create_dir_all(root_path.join("Tickets"))?;
         let q1_path = root_path.join("Queue").join("Q1");
         std::fs::create_dir_all(&q1_path)?;
 
         let board = Board::load(root_path.clone())?;
         let tid = board.create_ticket("My New Task", "My Description", "Q1")?;
-        
+
         assert!(tid.starts_with("T-"));
         assert!(root_path.join("Tickets").join(&tid).exists());
-        assert!(root_path.join("Tickets").join(&tid).join("README.md").exists());
+        assert!(root_path
+            .join("Tickets")
+            .join(&tid)
+            .join("README.md")
+            .exists());
         assert!(q1_path.join(&tid).exists());
-        
+
         let board2 = Board::load(root_path)?;
         assert_eq!(board2.queues[0].tickets.len(), 1);
         assert_eq!(board2.queues[0].tickets[0].title, "My New Task");
         assert_eq!(board2.queues[0].tickets[0].description, "My Description");
-        
+
         Ok(())
     }
 
@@ -568,20 +648,20 @@ created_at: 2023-10-27
     fn test_update_ticket() -> anyhow::Result<()> {
         let root = tempdir()?;
         let root_path = root.path().to_path_buf();
-        
+
         std::fs::create_dir_all(root_path.join("Tickets"))?;
         std::fs::create_dir_all(root_path.join("Queue").join("Q1"))?;
 
         let board = Board::load(root_path.clone())?;
         let tid = board.create_ticket("Original", "Original Description", "Q1")?;
-        
+
         board.update_ticket(&tid, "Updated Title", "Updated Description")?;
-        
+
         let board2 = Board::load(root_path)?;
         let t = &board2.queues[0].tickets[0];
         assert_eq!(t.title, "Updated Title");
         assert_eq!(t.description, "Updated Description");
-        
+
         Ok(())
     }
     #[test]
@@ -591,7 +671,7 @@ created_at: 2023-10-27
 
         // 1. Initial run: should create default queues with numbers
         Board::ensure_initialized(root_path)?;
-        
+
         let board = Board::load(root_path.to_path_buf())?;
         assert_eq!(board.queues.len(), 5);
         assert_eq!(board.queues[0].id, "1. Incoming");
@@ -604,7 +684,7 @@ created_at: 2023-10-27
         let root2 = tempdir()?;
         let root_path2 = root2.path();
         std::fs::create_dir_all(root_path2.join("Queue").join("CustomQueue"))?;
-        
+
         Board::ensure_initialized(root_path2)?;
         assert!(root_path2.join("Queue/CustomQueue").exists());
         assert!(!root_path2.join("Queue/1. Incoming").exists());
