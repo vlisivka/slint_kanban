@@ -1,0 +1,46 @@
+# Project Name: Slint Kanban
+
+## Description
+A Trello-like Kanban queue application built with Rust and Slint. It manages tasks using a file-system based approach, where queues are directories and tickets are sub-directories containing a `README.md` file.
+
+## Tech Stack
+-   **Language**: Rust
+-   **GUI Framework**: Slint
+-   **OS**: Linux (specifically Alma Linux 10)
+
+## Architecture
+-   **Data Storage**: File-system based.
+    -   **Root Directory**: `~/Kanban`
+    -   **Tickets directory**: `~/Kanban/Ticket`
+    -   **Queues**: Sub-directories within `~/Kanban/Queue` (e.g., `~/Kanban/Queue/Incoming`, `~/Kanban/Queue/ToDo`, `~/Kanban/Queue/Doing`, `~/Kanban/Queue/Done`, `~/Kanban/Queue/Archived`).
+    -   **Tickets**: Symlinks from a queue directory to `~/Kanban/Tickets`.
+    -   **Ticket Content**: `README.md` file inside the ticket directory.
+-   **Ticket Format**:
+    -   **Header**: YAML frontmatter (Pandoc compatible) containing ticket metadata.
+    -   **Body**: Markdown content describing the task.
+
+## Functional Requirements
+1.  **Kanban Board UI**: Visualize queues and tickets in columns.
+2.  **Drag-and-Drop**: Move tickets between queues (directories) using drag-and-drop.
+3.  **CRUD Operations**:
+    -   Create new tickets.
+    -   Read ticket content (render Markdown).
+    -   Update ticket content (edit raw text/YAML).
+    -   Delete tickets (move them from `~/Kanban/Ticket` to `~/Kanban/Deleted` directory).
+4.  **Ticket Editing**: Allow editing of the raw `README.md` content (YAML + Markdown).
+5.  **Cross-Referencing**:
+    -   Generate short IDs based on ticket title and creation date.
+    -   Support linking between tickets using these IDs ad #tick12.
+6.  **Limits on queues**:
+    -  ToDo queue - no more than 21 item (configurable).
+    -  Doing queue - no more than 5 items (configurable).
+
+## Data Models
+-   **Ticket ID Generation**: Short hash/ID (up to 6 chars, lowercase latin letters + numbers) derived from Title + Creation Date. Id is the name of ticket directory in `~/Kanban/Tickets` directory.
+-   **Ticket metainfo**: is stored in README.md file in YAML format. 
+
+## Non-Functional Requirements
+-   **Performance**: Efficient file system monitoring to reflect external changes.
+-   **Compatibility**: Optimized for Alma Linux 10.
+
+

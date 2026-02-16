@@ -1,0 +1,377 @@
+import { ScrollView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
+
+export struct TicketStr {
+    id: string,
+    title: string,
+    description: string,
+    created_at: string,
+}
+
+export struct QueueStr {
+    id: string,
+    name: string,
+    tickets: [TicketStr],
+}
+
+component TicketDetail inherits Rectangle {
+    in-out property <string> title_text;
+    in-out property <string> description_text;
+    in property <string> ticket_id;
+    
+    callback save(string, string, string); // id, title, desc
+    callback cancel();
+
+    background: #000000a0; // Dark overlay
+    
+    // BACKDROP: Catch clicks outside the card to cancel
+    TouchArea {
+        clicked => { cancel(); }
+    }
+    
+    Rectangle {
+        width: 600px;
+        height: 520px;
+        background: #434141ee; // Pure white for maximum contrast
+        border-radius: 8px;
+        drop-shadow-blur: 32px;
+        drop-shadow-color: #00000040;
+        
+        // This empty TouchArea prevents clicks on the dialog from closing it.
+        // It is placed first so it's behind the content but covers the dialog area.
+        TouchArea { }
+
+        VerticalBox {
+            padding: 30px;
+            spacing: 20px;
+            
+            Text {
+                text: ticket_id == "" ? "Create New Ticket" : "Edit Ticket #" + ticket_id;
+                font-size: 24px;
+                font-weight: 800;
+                // color: #0e0e0fff; // Charcoal Blue
+            }
+            
+            VerticalLayout {
+                spacing: 8px;
+                Text { text: "Title"; font-size: 11px; font-weight: 800; }
+                LineEdit {
+                    text <=> title_text;
+                    placeholder-text: "What needs to be done?";
+                    height: 40px;
+                }
+            }
+            
+            VerticalLayout {
+                spacing: 8px;
+                Text { text: "Description (Markdown)"; font-size: 11px; font-weight: 800; }
+                TextEdit {
+                    text <=> description_text;
+                    placeholder-text: "What needs to be done?";
+                    preferred-height: 200px;
+                }
+            }
+            
+            HorizontalBox {
+                alignment: end;
+                spacing: 12px;
+                
+                Button {
+                    text: "Cancel";
+                    width: 100px;
+                    height: 40px;
+                    clicked => { cancel(); }
+                }
+
+                Button {
+                    text: "Save Ticket";
+                    primary: true;
+                    width: 120px;
+                    height: 40px;
+                    clicked => { save(ticket_id, title_text, description_text); }
+                }
+            }
+        }
+    }
+}
+
+component TicketCard inherits Rectangle {
+    in property <TicketStr> ticket;
+    in property <string> from_queue_id;
+    
+    // Drag/Delete/Edit callbacks
+    callback start_dragging(string, string, length, length);
+    callback move_dragging(length, length);
+    callback drop_ticket(length);
+    callback delete_clicked(string);
+    callback edit_clicked(TicketStr);
+
+    background: touch-area.has-hover ? #ffffff : #ffffff;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: touch-area.has-hover ? #0079bf : #dfe1e6;
+    height: 120px;
+    drop-shadow-blur: touch-area.has-hover ? 8px : 2px;
+    drop-shadow-offset-y: touch-area.has-hover ? 4px : 1px;
+    drop-shadow-color: #00000020;
+    animate background, border-color, drop-shadow-blur, drop-shadow-offset-y { duration: 150ms; }
+
+    // Drag-and-Drop Area
+    touch-area := TouchArea {
+        pointer-event(event) => {
+            if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
+                 start_dragging(ticket.id, from_queue_id, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+            }
+            if (event.kind == PointerEventKind.up) {
+                 drop_ticket(self.absolute-position.x + self.mouse-x);
+            }
+        }
+        moved => {
+            if (self.pressed) {
+                move_dragging(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+            }
+        }
+        clicked => {
+             // If not dragging, open for edit
+             edit_clicked(ticket);
+        }
+    }
+
+    VerticalBox {
+        padding: 12px;
+        spacing: 8px;
+        
+        HorizontalBox {
+            padding: 0px;
+            alignment: space-between;
+            
+            Text {
+                text: ticket.title;
+                font-weight: 700;
+                font-size: 15px;
+                color: #172b4d;
+                overflow: elide;
+            }
+            
+            // Delete Button
+            Rectangle {
+                width: 24px;
+                height: 24px;
+                background: touch-del.pressed ? #eb1abaff : (touch-del.has-hover ? #ff0048ff : transparent);
+                border-radius: 4px;
+                
+                Text {
+                    text: "×";
+                    color: #5e6c84;
+                    font-size: 18px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+                
+                touch-del := TouchArea {
+                    clicked => { delete_clicked(ticket.id); }
+                }
+            }
+        }
+        
+        Text {
+            text: ticket.description;
+            font-size: 13px;
+            color: #5e6c84;
+            wrap: word-wrap;
+            overflow: elide;
+        }
+
+        Text {
+            text: "#" + ticket.id;
+            font-size: 11px;
+            font-weight: 700;
+            color: #5e6c84;
+            opacity: 0.6;
+        }
+    }
+}
+
+component KanbanColumn inherits Rectangle {
+    in property <QueueStr> queue;
+    
+    // Drag/Drop/Delete/Edit callbacks
+    callback start_dragging(string, string, length, length);
+    callback move_dragging(length, length);
+    callback drop_ticket(length);
+    callback delete_ticket(string);
+    callback edit_ticket(TicketStr);
+    callback create_ticket(string); // queue_id
+
+    width: 280px;
+    background: #ebecf0; // Premium Trello Gray
+    border-radius: 12px;
+    
+    VerticalBox {
+        padding: 16px;
+        spacing: 12px;
+        
+        HorizontalBox {
+             padding: 0px;
+             alignment: space-between;
+             Text {
+                 text: queue.name;
+                 font-weight: 800;
+                 font-size: 16px;
+                 color: #172b4d;
+             }
+             
+             // Styled New Ticket Button
+             Rectangle {
+                 width: 32px;
+                 height: 32px;
+                 background: touch-add.pressed ? #005a8e : (touch-add.has-hover ? #0067a3 : #0079bf);
+                 border-radius: 16px;
+                 
+                 Text {
+                     text: "+";
+                     color: white;
+                     font-size: 20px;
+                     font-weight: 800;
+                     horizontal-alignment: center;
+                     vertical-alignment: center;
+                 }
+                 
+                 touch-add := TouchArea {
+                     clicked => { create_ticket(queue.id); }
+                 }
+             }
+        }
+        
+        ScrollView {
+            VerticalLayout {
+                spacing: 10px;
+                for ticket in queue.tickets : TicketCard {
+                    ticket: ticket;
+                    from_queue_id: queue.id;
+                    start_dragging(tid, qid, mx, my) => { start_dragging(tid, qid, mx, my); }
+                    move_dragging(mx, my) => { move_dragging(mx, my); }
+                    drop_ticket(mx) => { drop_ticket(mx); }
+                    delete_clicked(tid) => { delete_ticket(tid); }
+                    edit_clicked(t) => { edit_ticket(t); }
+                }
+            }
+        }
+    }
+}
+
+export component App inherits Window {
+    in property <[QueueStr]> board_queues;
+    callback move_ticket(string, string, string); // ticket_id, from_queue, index:...
+    callback delete_ticket(string);
+    callback save_ticket(string, string, string); // id, title, desc
+    callback request_create_ticket(string, string, string); // queue_id, title, desc
+    
+    // Global dragging state
+    property <string> dragging_ticket_id: "";
+    property <string> dragging_from_queue_id: "";
+    property <bool> is_dragging: false;
+    property <length> mouse_x: 0px;
+    property <length> mouse_y: 0px;
+
+    // Editing state
+    property <bool> is_editing: false;
+    property <string> editing_id: "";
+    property <string> editing_title: "";
+    property <string> editing_desc: "";
+    property <string> target_queue_for_new: "";
+
+    preferred-width: 1024px;
+    preferred-height: 768px;
+    min-width: 400px;
+    min-height: 300px;
+    
+    title: "Slint Kanban";
+    background: #0052cc; // Premium Vibrant Blue
+
+    ScrollView {
+        HorizontalLayout {
+            padding: 16px;
+            spacing: 16px;
+            alignment: start;
+            
+            for queue in board_queues : KanbanColumn {
+                queue: queue;
+                start_dragging(tid, qid, mx, my) => {
+                    dragging_ticket_id = tid;
+                    dragging_from_queue_id = qid;
+                    mouse_x = mx;
+                    mouse_y = my;
+                    is_dragging = true;
+                }
+                move_dragging(mx, my) => {
+                    mouse_x = mx;
+                    mouse_y = my;
+                }
+                drop_ticket(mx) => {
+                    if (is_dragging) {
+                        is_dragging = false;
+                        if (mx > 16px) {
+                            let idx = (mx - 16px) / 296px;
+                            move_ticket(dragging_ticket_id, dragging_from_queue_id, "index:" + idx);
+                        }
+                        dragging_ticket_id = "";
+                        dragging_from_queue_id = "";
+                    }
+                }
+                delete_ticket(tid) => {
+                    delete_ticket(tid);
+                }
+                edit_ticket(t) => {
+                    editing_id = t.id;
+                    editing_title = t.title;
+                    editing_desc = t.description;
+                    is_editing = true;
+                }
+                create_ticket(qid) => {
+                    editing_id = "";
+                    editing_title = "New Ticket";
+                    editing_desc = "";
+                    target_queue_for_new = qid;
+                    is_editing = true;
+                }
+            }
+        }
+    }
+
+    // Ghost card follows mouse
+    if (is_dragging) : Rectangle {
+        x: mouse_x - 100px;
+        y: mouse_y - 30px;
+        width: 200px;
+        height: 60px;
+        background: #ffffffc0;
+        border-radius: 4px;
+        border-width: 2px;
+        border-color: #0079bf;
+        
+        Text {
+             text: "Moving #" + dragging_ticket_id;
+             color: black;
+             font-weight: 700;
+             horizontal-alignment: center;
+             vertical-alignment: center;
+        }
+    }
+
+    // Detail Overlay
+    if (is_editing) : TicketDetail {
+        ticket_id: editing_id;
+        title_text: editing_title;
+        description_text: editing_desc;
+        
+        cancel => { is_editing = false; }
+        save(id, title, desc) => {
+            is_editing = false;
+            if (id == "") {
+                request_create_ticket(target_queue_for_new, title, desc);
+            } else {
+                save_ticket(id, title, desc);
+            }
+        }
+    }
+}
