@@ -10,7 +10,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 
 ## Architecture
 -   **Data Storage**: File-system based.
-    -   **Root Directory**: `~/Kanban`
+    -   **Root Directory**: Default is `~/Kanban`. Can be overridden by the first command-line argument.
     -   **Tickets directory**: `~/Kanban/Ticket`
     - **Queues**: Sub-directories within `~/Kanban/Queue`. Sorted alphabetically by directory name. Names should start with a number and a dot (e.g., `1. Incoming`, `2. ToDo`) to ensure predictable ordering.
     -   **Tickets**: Symlinks from a queue directory to `~/Kanban/Tickets`.

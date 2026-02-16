@@ -50,9 +50,16 @@ fn reload_board(ui: &App, root_path: &Path) -> anyhow::Result<()> {
 fn main() -> anyhow::Result<()> {
     let ui = App::new()?;
 
-    // Load board from ~/Kanban
-    let home_dir = std::env::var("HOME").expect("HOME directory not set");
-    let root_path = PathBuf::from(home_dir).join("Kanban");
+    // Determine the root path: from command-line argument or default to ~/Kanban
+    let args: Vec<String> = std::env::args().collect();
+    let root_path = if args.len() > 1 {
+        PathBuf::from(&args[1])
+    } else {
+        let home_dir = std::env::var("HOME").expect("HOME directory not set");
+        PathBuf::from(home_dir).join("Kanban")
+    };
+
+    println!("Using Kanban root: {:?}", root_path);
 
     // Ensure directory exists and default queues are created for initial run
     Board::ensure_initialized(&root_path)?;

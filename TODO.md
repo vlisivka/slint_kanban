@@ -46,4 +46,5 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 ## Phase 6: Initialization & Bootstrapping
 - [x] Implement automatic creation of `~/Kanban` root and sub-directories (`Ticket`, `Queue`).
 - [x] Refine: Create default queues with numbered prefixes (e.g., `1. Incoming`) for easy sorting.
+- [x] Implement command-line argument handling to allow overriding the root directory (defaults to `~/Kanban`).
 - [x] Implement queue sorting by name in `Board::load`.
