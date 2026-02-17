@@ -17,6 +17,13 @@ export struct QueueStr {
     ticket_count: int,
 }
 
+component AppConfig {
+    out property <length> column-width: 280px;
+    out property <length> column-spacing: 16px;
+    out property <length> board-padding: 16px;
+    out property <length> card-height: 140px;
+}
+
 component TicketView inherits Rectangle {
     in property <TicketStr> ticket;
     callback close();
@@ -355,9 +362,10 @@ component KanbanColumn inherits Rectangle {
     callback edit_ticket(TicketStr);
     callback create_ticket(string); // queue_id
 
-    width: 280px;
+    width: 280px; // Matching AppConfig.column-width
     horizontal-stretch: 0; // Prevent shrinking in layouts
     border-radius: 12px;
+    background: Palette.alternate-background;
     
     VerticalBox {
         padding: 16px;
@@ -479,14 +487,18 @@ export component App inherits Window {
     
     title: "Slint Kanban";
 
+    config := AppConfig {}
+
     ScrollView {
         HorizontalLayout {
-            padding: 16px;
-            spacing: 16px;
+            padding: config.board-padding;
+            spacing: config.column-spacing;
             alignment: start;
             
             for queue in board_queues : KanbanColumn {
                 queue: queue;
+                width: config.column-width;
+                
                 start_dragging(tid, qid, mx, my) => {
                     dragging_ticket_id = tid;
                     dragging_from_queue_id = qid;
@@ -501,8 +513,8 @@ export component App inherits Window {
                 drop_ticket(mx) => {
                     if (is_dragging) {
                         is_dragging = false;
-                        if (mx > 16px) {
-                            let idx = (mx - 16px) / 296px;
+                        if (mx > config.board-padding) {
+                            let idx = (mx - config.board-padding) / (config.column-width + config.column-spacing);
                             move_ticket(dragging_ticket_id, dragging_from_queue_id, "index:" + idx);
                         }
                         dragging_ticket_id = "";

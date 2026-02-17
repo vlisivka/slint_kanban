@@ -18,18 +18,18 @@ impl Default for Config {
 impl Config {
     pub fn load(root_path: &std::path::Path) -> anyhow::Result<Self> {
         let config_path = root_path.join("config.toml");
-        
+
         if !config_path.exists() {
             // Create default config file
             let default_config = Self::default();
             Ok(default_config)
-        } else {        
+        } else {
             let content = std::fs::read_to_string(&config_path)?;
             let config: Config = toml::from_str(&content)?;
             Ok(config)
         }
     }
-    
+
     pub fn get_limit(&self, queue_id: &str) -> Option<usize> {
         self.queue_limits.get(queue_id).copied()
     }
@@ -45,7 +45,6 @@ impl Config {
         Ok(())
     }
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TicketMetadata {
@@ -118,7 +117,7 @@ impl Board {
                 "2. ToDo",
                 "3. Doing",
                 "4. Reviewing",
-                "5. Testing",                
+                "5. Testing",
                 "6. Done",
                 "7. Archive",
             ];
@@ -139,105 +138,132 @@ impl Board {
         Ok(())
     }
 
+    pub fn queue_path(&self, queue_id: &str) -> PathBuf {
+        self.queues_path.join(queue_id)
+    }
+
+    pub fn ticket_path(&self, ticket_id: &str) -> PathBuf {
+        self.tickets_path.join(ticket_id)
+    }
+
+    fn load_ticket(&self, path: &std::path::Path) -> anyhow::Result<Ticket> {
+        let ticket_id = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(|| anyhow::anyhow!("Invalid ticket path: {:?}", path))?
+            .to_string();
+
+        let readme_path = path.join("README.md");
+        if !readme_path.exists() {
+            return Err(anyhow::anyhow!("README.md not found in {:?}", path));
+        }
+
+        let content = std::fs::read_to_string(&readme_path)
+            .map_err(|e| anyhow::anyhow!("Failed to read README.md in {:?}: {}", path, e))?;
+
+        let parts: Vec<&str> = content.splitn(3, "---").collect();
+        if parts.len() < 3 {
+            return Err(anyhow::anyhow!(
+                "Invalid ticket format in {:?}",
+                readme_path
+            ));
+        }
+
+        let frontmatter = parts[1];
+        let body = parts[2].trim().to_string();
+
+        let mut metadata: TicketMetadata = serde_yaml::from_str(frontmatter)
+            .map_err(|e| anyhow::anyhow!("Failed to parse YAML in {:?}: {}", readme_path, e))?;
+
+        if metadata.updated_at.is_empty() && !metadata.created_at.is_empty() {
+            metadata.updated_at = metadata.created_at.clone();
+        }
+
+        Ok(Ticket::from_metadata(ticket_id, metadata, body))
+    }
+
     pub fn load(root_path: PathBuf) -> anyhow::Result<Self> {
         let queues_path = root_path.join("Queue");
         let tickets_path = root_path.join("Tickets");
-        
-        // Load configuration
         let config = Config::load(&root_path)?;
 
-        if !queues_path.exists() {
-            return Ok(Board {
-                queues: vec![],
-                tickets_path,
-                queues_path,
-                config,
-            });
-        }
-
-        let mut queues = vec![];
-        for entry in std::fs::read_dir(&queues_path)?.flatten() {
-            let path = entry.path();
-            if path.is_dir() {
-                let queue_id = path
-                    .file_name()
-                    .and_then(|n| n.to_str())
-                    .unwrap_or_default()
-                    .to_string();
-                let mut tickets = vec![];
-
-                for ticket_entry in std::fs::read_dir(&path)?.flatten() {
-                    let ticket_path = ticket_entry.path();
-
-                    // In the architecture, tickets in queues are symlinks to ../../Tickets/<id>
-                    // We need to resolve the symlink or read the target directory.
-                    // The spec says "Tickets: Symlinks from a queue directory to ~/Kanban/Tickets".
-                    // So we treat the entry as a ticket if it resolves to a directory containing README.md
-
-                    let real_path = if ticket_path.is_symlink() {
-                        std::fs::read_link(&ticket_path)?
-                    } else {
-                        ticket_path.clone()
-                    };
-
-                    // If relative symlink, verify it resolves relative to the ticket_path's parent?
-                    // std::fs::read_link returns the content of the symlink.
-                    // If it's absolute, fine. If relative, we need to join it.
-                    let resolved_path = if real_path.is_relative() {
-                        path.join(&real_path).canonicalize()?
-                    } else {
-                        real_path
-                    };
-
-                    if resolved_path.exists() && resolved_path.is_dir() {
-                        let readme_path = resolved_path.join("README.md");
-                        if readme_path.exists() {
-                            let content = std::fs::read_to_string(&readme_path)?;
-                            let parts: Vec<&str> = content.splitn(3, "---").collect();
-                            if parts.len() >= 3 {
-                                let frontmatter = parts[1];
-                                let body = parts[2].trim().to_string();
-                                let mut metadata: TicketMetadata =
-                                    serde_yaml::from_str(frontmatter).unwrap_or(TicketMetadata {
-                                        title: "Error parsing YAML".to_string(),
-                                        created_at: "".to_string(),
-                                        updated_at: "".to_string(),
-                                    });
-
-                                if metadata.updated_at.is_empty() && !metadata.created_at.is_empty()
-                                {
-                                    metadata.updated_at = metadata.created_at.clone();
-                                }
-
-                                let ticket_id = resolved_path
-                                    .file_name()
-                                    .and_then(|n| n.to_str())
-                                    .unwrap_or_default()
-                                    .to_string();
-                                tickets.push(Ticket::from_metadata(ticket_id, metadata, body));
-                            }
-                        }
-                    }
-                }
-
-                let limit = config.get_limit(&queue_id);
-                queues.push(Queue {
-                    id: queue_id.clone(),
-                    name: queue_id, // Use ID as name for now
-                    tickets,
-                    limit,
-                });
-            }
-        }
-
-        // Sort queues alphabetically by name
-        queues.sort_by(|a, b| a.id.cmp(&b.id));
-
-        Ok(Board {
-            queues,
+        let mut board = Board {
+            queues: vec![],
             tickets_path,
             queues_path,
             config,
+        };
+
+        if board.queues_path.exists() {
+            board.load_all_queues()?;
+        }
+
+        Ok(board)
+    }
+
+    fn load_all_queues(&mut self) -> anyhow::Result<()> {
+        let mut queues = vec![];
+        for entry in std::fs::read_dir(&self.queues_path)?.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                queues.push(self.load_queue(&path)?);
+            }
+        }
+        queues.sort_by(|a, b| a.id.cmp(&b.id));
+        self.queues = queues;
+        Ok(())
+    }
+
+    fn load_queue(&self, path: &std::path::Path) -> anyhow::Result<Queue> {
+        let queue_id = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(|| anyhow::anyhow!("Invalid queue path: {:?}", path))?
+            .to_string();
+
+        let mut tickets = vec![];
+        for entry in std::fs::read_dir(path)?.flatten() {
+            let ticket_link_path = entry.path();
+
+            // Resolve the symlink to get the actual ticket directory
+            let resolved_result = if ticket_link_path.is_symlink() {
+                let link_target = std::fs::read_link(&ticket_link_path)?;
+                if link_target.is_relative() {
+                    path.join(&link_target).canonicalize()
+                } else {
+                    link_target.canonicalize()
+                }
+            } else {
+                ticket_link_path.canonicalize()
+            };
+
+            match resolved_result {
+                Ok(resolved_path) => {
+                    if resolved_path.exists() && resolved_path.is_dir() {
+                        match self.load_ticket(&resolved_path) {
+                            Ok(ticket) => tickets.push(ticket),
+                            Err(e) => eprintln!(
+                                "Warning: Failed to load ticket at {:?}: {}",
+                                resolved_path, e
+                            ),
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!(
+                        "Warning: Skipping broken or inaccessible ticket link {:?}: {}",
+                        ticket_link_path, e
+                    );
+                }
+            }
+        }
+
+        let limit = self.config.get_limit(&queue_id);
+        Ok(Queue {
+            id: queue_id.clone(),
+            name: queue_id,
+            tickets,
+            limit,
         })
     }
 
@@ -247,21 +273,25 @@ impl Board {
         source_queue_id: &str,
         target_queue_id: &str,
     ) -> anyhow::Result<()> {
-        let source_queue_path = self.queues_path.join(source_queue_id);
-        let target_queue_path = self.queues_path.join(target_queue_id);
-        let ticket_target_path = self.tickets_path.join(ticket_id).canonicalize()?;
+        let source_path = self.queue_path(source_queue_id);
+        let target_path = self.queue_path(target_queue_id);
+        let ticket_dir = self.ticket_path(ticket_id).canonicalize()?;
 
-        if !source_queue_path.exists() || !target_queue_path.exists() {
-            return Err(anyhow::anyhow!("Source or target queue not found"));
+        if !source_path.exists() || !target_path.exists() {
+            return Err(anyhow::anyhow!(
+                "Source ({:?}) or target ({:?}) queue not found",
+                source_path,
+                target_path
+            ));
         }
-        
+
         // Check if target queue has reached its limit
         if let Some(limit) = self.config.get_limit(target_queue_id) {
-            let current_count = std::fs::read_dir(&target_queue_path)?
+            let current_count = std::fs::read_dir(&target_path)?
                 .flatten()
                 .filter(|e| e.path().is_symlink() || e.path().is_dir())
                 .count();
-            
+
             if current_count >= limit {
                 return Err(anyhow::anyhow!(
                     "Queue '{}' has reached its limit of {} tickets",
@@ -271,87 +301,89 @@ impl Board {
             }
         }
 
-        // Find the symlink in source_queue that points to target_ticket_path
-        let mut entry_to_move = None;
-        for entry in std::fs::read_dir(&source_queue_path)?.flatten() {
+        // Find the symlink in source_queue that points to the ticket
+        let mut link_to_move = None;
+        for entry in std::fs::read_dir(&source_path)?.flatten() {
             let path = entry.path();
-
-            let real_path = if path.is_symlink() {
-                std::fs::read_link(&path)?
+            let resolved = if path.is_symlink() {
+                let target = std::fs::read_link(&path)?;
+                if target.is_relative() {
+                    source_path.join(&target).canonicalize()?
+                } else {
+                    target.canonicalize()?
+                }
             } else {
-                path.clone()
+                path.canonicalize()?
             };
 
-            let resolved_path = if real_path.is_relative() {
-                source_queue_path.join(&real_path).canonicalize()?
-            } else {
-                real_path.canonicalize()?
-            };
-
-            if resolved_path == ticket_target_path {
-                entry_to_move = Some(path);
+            if resolved == ticket_dir {
+                link_to_move = Some(path);
                 break;
             }
         }
 
-        if let Some(source_path) = entry_to_move {
-            let file_name = source_path
-                .file_name()
-                .ok_or_else(|| anyhow::anyhow!("Invalid file name"))?;
-            let dest_path = target_queue_path.join(file_name);
-            std::fs::rename(source_path, dest_path)?;
+        if let Some(source_link) = link_to_move {
+            let file_name = source_link.file_name().unwrap();
+            let dest_link = target_path.join(file_name);
+            std::fs::rename(source_link, dest_link)?;
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Ticket not found in source queue"))
+            Err(anyhow::anyhow!(
+                "Ticket {} not found in queue {}",
+                ticket_id,
+                source_queue_id
+            ))
         }
     }
 
     pub fn delete_ticket(&self, ticket_id: &str) -> anyhow::Result<()> {
-        let ticket_path = self.tickets_path.join(ticket_id);
+        let ticket_path = self.ticket_path(ticket_id);
         if !ticket_path.exists() {
-            return Err(anyhow::anyhow!("Ticket not found"));
+            return Err(anyhow::anyhow!("Ticket {} not found", ticket_id));
         }
 
-        let deleted_root = self.tickets_path.parent().unwrap().join("Deleted");
+        let root_dir = self.tickets_path.parent().unwrap();
+        let deleted_root = root_dir.join("Deleted");
         if !deleted_root.exists() {
             std::fs::create_dir_all(&deleted_root)?;
         }
 
-        // 1. Move the ticket folder to Deleted
         let dest_path = deleted_root.join(ticket_id);
-
-        // If it already exists in Deleted, we might want to overwrite or version it?
-        // For now, let's just remove old deletion if it exists.
         if dest_path.exists() {
             std::fs::remove_dir_all(&dest_path)?;
         }
+
+        // Canonicalize paths for comparison (before rename)
+        let abs_ticket_path = ticket_path.canonicalize()?;
+
         std::fs::rename(&ticket_path, &dest_path)?;
 
-        // 2. Cleanup symlinks in all queues
+        // Update abs_dest_path after rename
+        let abs_dest_path = dest_path.canonicalize()?;
+
+        // Cleanup symlinks in all queues
         for entry in std::fs::read_dir(&self.queues_path)?.flatten() {
             let queue_dir = entry.path();
             if queue_dir.is_dir() {
                 for ticket_entry in std::fs::read_dir(&queue_dir)?.flatten() {
                     let symlink_path = ticket_entry.path();
-
-                    let is_target = if symlink_path.is_symlink() {
+                    if symlink_path.is_symlink() {
                         if let Ok(target) = std::fs::read_link(&symlink_path) {
-                            // Match either absolute or relative to the symlink's parent
+                            // Resolve target without canonicalize if it's broken
                             let resolved = if target.is_relative() {
-                                queue_dir.join(&target).canonicalize().unwrap_or(target)
+                                queue_dir.join(&target)
                             } else {
-                                target.canonicalize().unwrap_or(target)
+                                target.clone()
                             };
-                            resolved == dest_path || resolved == ticket_path
-                        } else {
-                            false
-                        }
-                    } else {
-                        false
-                    };
 
-                    if is_target {
-                        std::fs::remove_file(symlink_path)?;
+                            // Check if it matches either old or new location
+                            // We use absolute paths for more reliable comparison
+                            let resolved_abs = resolved.canonicalize().unwrap_or(resolved);
+
+                            if resolved_abs == abs_dest_path || resolved_abs == abs_ticket_path {
+                                std::fs::remove_file(symlink_path)?;
+                            }
+                        }
                     }
                 }
             }
@@ -368,18 +400,17 @@ impl Board {
     ) -> anyhow::Result<String> {
         use rand::{distributions::Alphanumeric, Rng};
 
-        // 1. Check queue limit before creating
-        let queue_path = self.queues_path.join(queue_id);
+        let queue_path = self.queue_path(queue_id);
         if !queue_path.exists() {
             return Err(anyhow::anyhow!("Queue {} not found", queue_id));
         }
-        
+
         if let Some(limit) = self.config.get_limit(queue_id) {
             let current_count = std::fs::read_dir(&queue_path)?
                 .flatten()
                 .filter(|e| e.path().is_symlink() || e.path().is_dir())
                 .count();
-            
+
             if current_count >= limit {
                 return Err(anyhow::anyhow!(
                     "Queue '{}' has reached its limit of {} tickets",
@@ -389,7 +420,7 @@ impl Board {
             }
         }
 
-        // 2. Generate unique ID
+        // Generate unique ID
         let id: String = std::iter::repeat(())
             .map(|()| rand::thread_rng().sample(Alphanumeric))
             .map(char::from)
@@ -397,28 +428,38 @@ impl Board {
             .collect();
         let ticket_id = format!("T-{}", id);
 
-        // 3. Create ticket directory
-        let ticket_dir = self.tickets_path.join(&ticket_id);
+        let ticket_dir = self.ticket_path(&ticket_id);
         if ticket_dir.exists() {
             return self.create_ticket(title, description, queue_id);
         }
         std::fs::create_dir_all(&ticket_dir)?;
 
-        // 4. Create README.md with metadata
         let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        let mut f = std::fs::File::create(ticket_dir.join("README.md"))?;
-        use std::io::Write;
-        write!(
-            f,
-            "---\ntitle: {}\ncreated_at: {}\nupdated_at: {}\n---\n{}",
-            title, now, now, description
-        )?;
+        self.write_ticket_readme(&ticket_dir, title, &now, &now, description)?;
 
-        // 5. Create symlink in the target queue
         #[cfg(unix)]
         std::os::unix::fs::symlink(&ticket_dir, queue_path.join(&ticket_id))?;
 
         Ok(ticket_id)
+    }
+
+    fn write_ticket_readme(
+        &self,
+        dir: &std::path::Path,
+        title: &str,
+        created_at: &str,
+        updated_at: &str,
+        description: &str,
+    ) -> anyhow::Result<()> {
+        let readme_path = dir.join("README.md");
+        let mut f = std::fs::File::create(&readme_path)?;
+        use std::io::Write;
+        write!(
+            f,
+            "---\ntitle: {}\ncreated_at: {}\nupdated_at: {}\n---\n{}",
+            title, created_at, updated_at, description
+        )?;
+        Ok(())
     }
 
     pub fn update_ticket(
@@ -427,29 +468,16 @@ impl Board {
         title: &str,
         description: &str,
     ) -> anyhow::Result<()> {
-        let ticket_dir = self.tickets_path.join(ticket_id);
-        let readme_path = ticket_dir.join("README.md");
-        if !readme_path.exists() {
-            return Err(anyhow::anyhow!("Ticket {} not found", ticket_id));
-        }
-
-        let content = std::fs::read_to_string(&readme_path)?;
-        let parts: Vec<&str> = content.splitn(3, "---").collect();
-        let created_at = if parts.len() >= 3 {
-            let metadata: TicketMetadata = serde_yaml::from_str(parts[1])?;
-            metadata.created_at
-        } else {
-            chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string()
-        };
+        let ticket_dir = self.ticket_path(ticket_id);
+        let ticket = self.load_ticket(&ticket_dir)?;
 
         let updated_at = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-
-        let mut f = std::fs::File::create(&readme_path)?;
-        use std::io::Write;
-        write!(
-            f,
-            "---\ntitle: {}\ncreated_at: {}\nupdated_at: {}\n---\n{}",
-            title, created_at, updated_at, description
+        self.write_ticket_readme(
+            &ticket_dir,
+            title,
+            &ticket.created_at,
+            &updated_at,
+            description,
         )?;
 
         Ok(())
@@ -812,26 +840,29 @@ created_at: 2023-10-27
     fn test_queue_limit_creation() -> anyhow::Result<()> {
         let root = tempdir()?;
         let root_path = root.path().to_path_buf();
-        
+
         Board::ensure_initialized(&root_path)?;
         let mut board = Board::load(root_path.clone())?;
-        
+
         // Set limit to 1 for "2. ToDo"
         board.config.set_limit("2. ToDo".to_string(), 1);
         board.config.write(&root_path)?;
-        
+
         // Reload board to pick up config change if necessary, or just use the current board
         // Board::load re-reads the config.
         let board = Board::load(root_path)?;
-        
+
         // Create first ticket - should succeed
         board.create_ticket("Task 1", "Desc 1", "2. ToDo")?;
-        
+
         // Create second ticket - should fail
         let result = board.create_ticket("Task 2", "Desc 2", "2. ToDo");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("has reached its limit"));
-        
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("has reached its limit"));
+
         Ok(())
     }
 
@@ -839,28 +870,31 @@ created_at: 2023-10-27
     fn test_queue_limit_moving() -> anyhow::Result<()> {
         let root = tempdir()?;
         let root_path = root.path().to_path_buf();
-        
+
         Board::ensure_initialized(&root_path)?;
         let mut board = Board::load(root_path.clone())?;
-        
+
         // Set limit to 1 for "3. Doing"
         board.config.set_limit("3. Doing".to_string(), 1);
         board.config.write(&root_path)?;
-        
+
         let board = Board::load(root_path)?;
-        
+
         // Create two tickets in ToDo
         let tid1 = board.create_ticket("Task 1", "Desc 1", "2. ToDo")?;
         let tid2 = board.create_ticket("Task 2", "Desc 2", "2. ToDo")?;
-        
+
         // Move first ticket to Doing - should succeed
         board.move_ticket(&tid1, "2. ToDo", "3. Doing")?;
-        
+
         // Move second ticket to Doing - should fail
         let result = board.move_ticket(&tid2, "2. ToDo", "3. Doing");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("has reached its limit"));
-        
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("has reached its limit"));
+
         Ok(())
     }
 }

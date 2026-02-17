@@ -8,6 +8,11 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 -   **GUI Framework**: Slint
 -   **OS**: Linux (specifically Alma Linux 10)
 
+## Communication with developer
+-   **Primary Language**: Ukrainian (Українська)
+-   **Secondary Language**: English (understand only)
+-   **Preference**: The developer prefers communicating in Ukrainian.
+
 ## Architecture
 -   **Data Storage**: File-system based.
     -   **Root Directory**: Default is `~/Kanban`. Can be overridden by the first command-line argument.
@@ -54,7 +59,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 -   **Performance**: Efficient file system monitoring to reflect external changes.
 -   **Compatibility**: Optimized for Alma Linux 10.
 
-- **Initialization**: Automatically create the root directory and sub-directories (`Ticket`, `Queue`). Create default queues (`Incoming`, `ToDo`, `Doing`, `Done`, `Archive`) **only if no queues already exist** in the `Queue` directory.
+- **Initialization**: Automatically create the root directory and sub-directories (`Ticket`, `Queue`). Create default queues (`Incoming`, `ToDo`, `Doing`, `Reviewing`, `Testing`, `Done`, `Archive`) **only if no queues already exist** in the `Queue` directory.
 
 ## Future Enhancements
 

@@ -11,37 +11,34 @@ slint::include_modules!();
 
 static RELOAD_COUNT: AtomicU64 = AtomicU64::new(0);
 
-fn reload_board(ui: &App, root_path: &Path) -> anyhow::Result<()> {
-    let count = RELOAD_COUNT.fetch_add(1, Ordering::SeqCst);
-    println!("Reloading board #{}...", count + 1);
-
-    let board = Board::load(root_path.to_path_buf())?;
-
-    // Convert Board to Slint Models
+fn sync_ui_with_board(ui: &App, board: &Board) {
     let mut slint_queues: Vec<QueueStr> = vec![];
 
-    for queue in board.queues {
+    for queue in &board.queues {
         let ticket_count = queue.tickets.len() as i32;
         let limit = queue.limit.map(|l| l as i32).unwrap_or(-1);
-        
-        let mut slint_tickets: Vec<TicketStr> = vec![];
-        for ticket in queue.tickets {
-            let snippet = ticket.description.lines().next().unwrap_or("").to_string();
-            slint_tickets.push(TicketStr {
-                id: SharedString::from(ticket.id),
-                title: SharedString::from(ticket.title),
-                description: SharedString::from(ticket.description),
-                snippet: SharedString::from(snippet),
-                created_at: SharedString::from(ticket.created_at),
-                updated_at: SharedString::from(ticket.updated_at),
-            });
-        }
+
+        let slint_tickets: Vec<TicketStr> = queue
+            .tickets
+            .iter()
+            .map(|ticket| {
+                let snippet = ticket.description.lines().next().unwrap_or("").to_string();
+                TicketStr {
+                    id: SharedString::from(&ticket.id),
+                    title: SharedString::from(&ticket.title),
+                    description: SharedString::from(&ticket.description),
+                    snippet: SharedString::from(snippet),
+                    created_at: SharedString::from(&ticket.created_at),
+                    updated_at: SharedString::from(&ticket.updated_at),
+                }
+            })
+            .collect();
 
         let tickets_model = Rc::new(VecModel::from(slint_tickets));
 
         slint_queues.push(QueueStr {
-            id: SharedString::from(queue.id),
-            name: SharedString::from(queue.name),
+            id: SharedString::from(&queue.id),
+            name: SharedString::from(&queue.name),
             tickets: tickets_model.into(),
             limit,
             ticket_count,
@@ -50,6 +47,14 @@ fn reload_board(ui: &App, root_path: &Path) -> anyhow::Result<()> {
 
     let queues_model = Rc::new(VecModel::from(slint_queues));
     ui.set_board_queues(queues_model.into());
+}
+
+fn reload_board(ui: &App, root_path: &Path) -> anyhow::Result<()> {
+    let count = RELOAD_COUNT.fetch_add(1, Ordering::SeqCst);
+    println!("Reloading board #{}...", count + 1);
+
+    let board = Board::load(root_path.to_path_buf())?;
+    sync_ui_with_board(ui, &board);
     Ok(())
 }
 
@@ -79,6 +84,7 @@ fn main() -> anyhow::Result<()> {
     // Set up callbacks
     let move_root = root_path.clone();
     let move_ui_handle = ui.as_weak();
+
     ui.on_move_ticket(move |ticket_id, source_id, target_id| {
         let board = match Board::load(move_root.clone()) {
             Ok(b) => b,
@@ -89,18 +95,14 @@ fn main() -> anyhow::Result<()> {
         };
 
         let resolved_target_id = if let Some(idx_str) = target_id.strip_prefix("index:") {
-            // Slint might send a float string like "1.36...". Parse as f64 and floor it.
             if let Ok(idx_f) = idx_str.parse::<f64>() {
                 let idx = idx_f.floor() as usize;
-                if idx < board.queues.len() {
-                    board.queues[idx].id.clone()
-                } else {
-                    board
-                        .queues
-                        .last()
-                        .map(|q| q.id.clone())
-                        .unwrap_or_default()
-                }
+                board
+                    .queues
+                    .get(idx)
+                    .or(board.queues.last())
+                    .map(|q| q.id.clone())
+                    .unwrap_or_default()
             } else {
                 target_id.to_string()
             }
@@ -109,7 +111,7 @@ fn main() -> anyhow::Result<()> {
         };
 
         if source_id == resolved_target_id {
-            return; // No move needed
+            return;
         }
 
         println!(
@@ -118,9 +120,8 @@ fn main() -> anyhow::Result<()> {
         );
         if let Err(e) = board.move_ticket(&ticket_id, &source_id, &resolved_target_id) {
             eprintln!("Error moving ticket: {:?}", e);
-            // Show warning dialog if it's a limit error
             if let Some(ui) = move_ui_handle.upgrade() {
-                ui.invoke_show_warning_dialog(slint::SharedString::from(e.to_string()));
+                ui.invoke_show_warning_dialog(SharedString::from(e.to_string()));
             }
         }
     });
@@ -229,9 +230,8 @@ fn main() -> anyhow::Result<()> {
         println!("Creating ticket in queue {}", queue_id);
         if let Err(e) = board.create_ticket(&title, &description, &queue_id) {
             eprintln!("Error creating ticket: {:?}", e);
-            // Show warning dialog if it's a limit error
             if let Some(ui) = create_ui_handle.upgrade() {
-                ui.invoke_show_warning_dialog(slint::SharedString::from(e.to_string()));
+                ui.invoke_show_warning_dialog(SharedString::from(e.to_string()));
             }
         }
     });
