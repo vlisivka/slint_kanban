@@ -37,8 +37,7 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 - [x] Add "New Ticket" button to columns.
 - [x] Implement `create_ticket` function (create directory + basic `README.md`).
 - [x] Add a click handler to `TicketCard` to open read-only full-window details view.
-- [/] Implement Markdown rendering in the read-only details view.
-- [ ] Add an "Edit" button to the details view or `TicketCard` to trigger editing.
+- [x] Add an "Edit" button to the details view or `TicketCard` to trigger editing.
 - [x] Implement text editing for `README.md` content.
 - [x] Save changes to disk on button press or auto-save.
 - [x] Fix: Save description when creating a new ticket.
@@ -49,3 +48,74 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 - [x] Refine: Create default queues with numbered prefixes (e.g., `1. Incoming`) for easy sorting.
 - [x] Implement command-line argument handling to allow overriding the root directory (defaults to `~/Kanban`).
 - [x] Implement queue sorting by name in `Board::load`.
+
+## Phase 7: Future Enhancements
+
+### Queue Limits
+- [ ] Implement configurable queue limits
+  - [ ] Add configuration file support (YAML/TOML)
+  - [ ] Add limit settings per queue
+  - [ ] Visual indicators when approaching limits
+  - [ ] Prevent adding tickets when limit reached
+  - [ ] Show warning dialog when limit exceeded
+
+### Cross-Reference Navigation
+- [ ] Implement ticket cross-referencing
+  - [ ] Parse ticket IDs in markdown content (e.g., `#tick12`)
+  - [ ] Make ticket references clickable
+  - [ ] Navigate to referenced ticket on click
+  - [ ] Show preview tooltip on hover
+
+### Search and Filter
+- [ ] Implement search functionality
+  - [ ] Add search input field to UI
+  - [ ] Full-text search across ticket titles and descriptions
+  - [ ] Filter by queue
+  - [ ] Filter by date range
+  - [ ] Highlight search results
+  - [ ] Search history
+
+### Keyboard Shortcuts
+- [ ] Implement keyboard navigation
+  - [ ] Arrow keys for navigation between tickets
+  - [ ] Shortcuts for creating new tickets (Ctrl+N)
+  - [ ] Shortcuts for editing (Ctrl+E)
+  - [ ] Shortcuts for deleting (Delete key)
+  - [ ] Quick search (Ctrl+F)
+  - [ ] Customizable key bindings configuration
+
+### Theme Customization
+- [ ] Implement theming support
+  - [ ] Dark mode implementation
+  - [ ] Light mode implementation
+  - [ ] Theme switcher in UI
+  - [ ] Custom color scheme support
+  - [ ] Font customization (size, family)
+  - [ ] Save theme preferences
+
+### Export Functionality
+- [ ] Implement export features
+  - [ ] Export single ticket to PDF
+  - [ ] Export entire board to PDF
+  - [ ] Export to HTML format
+  - [ ] Export to Markdown
+  - [ ] Batch export functionality
+  - [ ] Export configuration options
+
+### Statistics and Analytics
+- [ ] Implement analytics dashboard
+  - [ ] Ticket count per queue
+  - [ ] Time tracking per ticket/queue
+  - [ ] Completion rate calculations
+  - [ ] Trend visualization
+  - [ ] Burndown charts
+  - [ ] Export statistics to CSV
+
+### Markdown Rendering
+- [/] Implement Markdown rendering in ticket detail view using Servo
+  - [ ] Integrate markdown rendering library (pulldown-cmark or similar)
+  - [ ] Copy WebView component from Slint "servo" example into project and use it
+  - [ ] Create styled text rendering component
+  - [ ] Support for headings, lists, code blocks
+  - [ ] Support for links and images
+

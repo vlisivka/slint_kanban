@@ -56,4 +56,42 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 
 - **Initialization**: Automatically create the root directory and sub-directories (`Ticket`, `Queue`). Create default queues (`Incoming`, `ToDo`, `Doing`, `Done`, `Archive`) **only if no queues already exist** in the `Queue` directory.
 
+## Future Enhancements
+
+The following features are planned for future releases:
+
+1. **Markdown Rendering**: Full Markdown rendering in ticket detail view with support for formatting, lists, code blocks, and other Markdown features.
+
+2. **Queue Limits**: Configurable limits on the number of tickets per queue with visual indicators and enforcement:
+   - ToDo queue: Maximum 21 items (configurable)
+   - Doing queue: Maximum 5 items (configurable)
+   - Visual warnings when approaching limits
+
+3. **Cross-Reference Navigation**: Clickable links between tickets using short IDs (e.g., `#tick12`) with automatic detection and navigation.
+
+4. **Search and Filter**: 
+   - Full-text search across all tickets
+   - Filter by queue, date range, or tags
+   - Quick search with keyboard shortcuts
+
+5. **Keyboard Shortcuts**: 
+   - Navigation between queues and tickets
+   - Quick ticket creation and editing
+   - Customizable key bindings
+
+6. **Theme Customization**:
+   - Dark/light mode support
+   - Custom color schemes
+   - Font size and family preferences
+
+7. **Export Functionality**:
+   - Export board or individual tickets to PDF
+   - HTML export for web viewing
+   - Markdown export for documentation
+
+8. **Statistics and Analytics**:
+   - Dashboard with ticket metrics
+   - Time tracking per queue
+   - Completion rates and trends
+   - Burndown charts for project tracking
 
