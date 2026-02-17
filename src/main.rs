@@ -21,6 +21,9 @@ fn reload_board(ui: &App, root_path: &Path) -> anyhow::Result<()> {
     let mut slint_queues: Vec<QueueStr> = vec![];
 
     for queue in board.queues {
+        let ticket_count = queue.tickets.len() as i32;
+        let limit = queue.limit.map(|l| l as i32).unwrap_or(-1);
+        
         let mut slint_tickets: Vec<TicketStr> = vec![];
         for ticket in queue.tickets {
             let snippet = ticket.description.lines().next().unwrap_or("").to_string();
@@ -40,6 +43,8 @@ fn reload_board(ui: &App, root_path: &Path) -> anyhow::Result<()> {
             id: SharedString::from(queue.id),
             name: SharedString::from(queue.name),
             tickets: tickets_model.into(),
+            limit,
+            ticket_count,
         });
     }
 
@@ -73,6 +78,7 @@ fn main() -> anyhow::Result<()> {
 
     // Set up callbacks
     let move_root = root_path.clone();
+    let move_ui_handle = ui.as_weak();
     ui.on_move_ticket(move |ticket_id, source_id, target_id| {
         let board = match Board::load(move_root.clone()) {
             Ok(b) => b,
@@ -112,6 +118,10 @@ fn main() -> anyhow::Result<()> {
         );
         if let Err(e) = board.move_ticket(&ticket_id, &source_id, &resolved_target_id) {
             eprintln!("Error moving ticket: {:?}", e);
+            // Show warning dialog if it's a limit error
+            if let Some(ui) = move_ui_handle.upgrade() {
+                ui.invoke_show_warning_dialog(slint::SharedString::from(e.to_string()));
+            }
         }
     });
 
@@ -206,6 +216,7 @@ fn main() -> anyhow::Result<()> {
     });
 
     let create_root = root_path.clone();
+    let create_ui_handle = ui.as_weak();
     ui.on_request_create_ticket(move |queue_id, title, description| {
         let board = match Board::load(create_root.clone()) {
             Ok(b) => b,
@@ -218,6 +229,10 @@ fn main() -> anyhow::Result<()> {
         println!("Creating ticket in queue {}", queue_id);
         if let Err(e) = board.create_ticket(&title, &description, &queue_id) {
             eprintln!("Error creating ticket: {:?}", e);
+            // Show warning dialog if it's a limit error
+            if let Some(ui) = create_ui_handle.upgrade() {
+                ui.invoke_show_warning_dialog(slint::SharedString::from(e.to_string()));
+            }
         }
     });
 

@@ -13,6 +13,8 @@ export struct QueueStr {
     id: string,
     name: string,
     tickets: [TicketStr],
+    limit: int,           // -1 means no limit
+    ticket_count: int,
 }
 
 component TicketView inherits Rectangle {
@@ -164,6 +166,77 @@ component TicketEdit inherits Rectangle {
     }
 }
 
+component WarningDialog inherits Rectangle {
+    in property <string> message;
+    callback close();
+    
+    background: #00000080; // Semi-transparent backdrop
+    
+    // BACKDROP: Catch clicks outside to close
+    TouchArea {
+        clicked => { close(); }
+    }
+    
+    Rectangle {
+        width: 400px;
+        height: 200px;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        background: Palette.background;
+        border-radius: 12px;
+        drop-shadow-blur: 16px;
+        drop-shadow-color: #00000040;
+        
+        TouchArea { } // Block clicks
+        
+        VerticalBox {
+            padding: 24px;
+            spacing: 20px;
+            
+            // Warning Icon and Title
+            HorizontalLayout {
+                spacing: 12px;
+                alignment: center;
+                
+                Rectangle {
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 24px;
+                    background: #ff9800;
+                    
+                    Text {
+                        text: "⚠";
+                        font-size: 32px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                Text {
+                    text: "Queue Limit Reached";
+                    font-size: 20px;
+                    font-weight: 700;
+                }
+            }
+            
+            // Message
+            Text {
+                text: message;
+                font-size: 14px;
+                wrap: word-wrap;
+                horizontal-alignment: center;
+            }
+            
+            // Close Button
+            Button {
+                text: "OK";
+                primary: true;
+                clicked => { close(); }
+            }
+        }
+    }
+}
+
 component TicketCard inherits Rectangle {
     in property <TicketStr> ticket;
     in property <string> from_queue_id;
@@ -293,31 +366,64 @@ component KanbanColumn inherits Rectangle {
         HorizontalBox {
              padding: 0px;
              alignment: space-between;
-             Text {
-                 text: queue.name;
-                 font-weight: 800;
-                 font-size: 16px;
+             
+             VerticalLayout {
+                 Text {
+                     text: queue.name;
+                     font-weight: 800;
+                     font-size: 16px;
+                 }
              }
              
-             // Styled New Ticket Button
-             Rectangle {
-                 width: 32px;
-                 height: 32px;
-                 border-radius: 16px;
+             HorizontalLayout {
+                 spacing: 8px;
+                 alignment: end;
                  
-                 Text {
-                     text: "+";
-                     font-size: 20px;
-                     font-weight: 800;
-                     horizontal-alignment: center;
-                     vertical-alignment: center;
+                 // Limit Counter Badge
+                 if queue.limit > 0 : Rectangle {
+                     height: 24px;
+                     min-width: 50px;
+                     border-radius: 12px;
+                     background: {
+                         if queue.ticket_count >= queue.limit {
+                             #ff4444  // Red when at limit
+                         } else if queue.ticket_count >= queue.limit * 80 / 100 {
+                             #ff9800  // Orange when >= 80%
+                         } else {
+                             #4caf50  // Green when normal
+                         }
+                     };
+                     
+                     Text {
+                         text: queue.ticket_count + "/" + queue.limit;
+                         font-size: 12px;
+                         font-weight: 700;
+                         color: white;
+                         horizontal-alignment: center;
+                         vertical-alignment: center;
+                     }
                  }
                  
-                 touch-add := TouchArea {
-                     clicked => { create_ticket(queue.id); }
+                 // Styled New Ticket Button
+                 Rectangle {
+                     width: 32px;
+                     height: 32px;
+                     border-radius: 16px;
+                     
+                     Text {
+                         text: "+";
+                         font-size: 20px;
+                         font-weight: 800;
+                         horizontal-alignment: center;
+                         vertical-alignment: center;
+                     }
+                     
+                     touch-add := TouchArea {
+                         clicked => { create_ticket(queue.id); }
+                     }
                  }
              }
-        }
+         }
         
         ScrollView {
             VerticalLayout {
@@ -342,6 +448,7 @@ export component App inherits Window {
     callback delete_ticket(string);
     callback save_ticket(string, string, string); // id, title, desc
     callback request_create_ticket(string, string, string); // queue_id, title, desc
+    callback show_warning_dialog(string); // message
     
     // Global dragging state
     property <string> dragging_ticket_id: "";
@@ -360,6 +467,10 @@ export component App inherits Window {
     property <string> editing_title: "";
     property <string> editing_desc: "";
     property <string> target_queue_for_new: "";
+    
+    // Warning dialog state
+    property <bool> show_warning: false;
+    property <string> warning_message: "";
 
     preferred-width: 1024px;
     preferred-height: 768px;
@@ -415,6 +526,12 @@ export component App inherits Window {
             }
         }
     }
+    
+    // Initialize callback
+    show_warning_dialog(msg) => {
+        warning_message = msg;
+        show_warning = true;
+    }
 
     // Ghost card follows mouse
     if (is_dragging) : Rectangle {
@@ -461,5 +578,11 @@ export component App inherits Window {
                 save_ticket(id, title, desc);
             }
         }
+    }
+    
+    // Warning Dialog Overlay
+    if (show_warning) : WarningDialog {
+        message: warning_message;
+        close => { show_warning = false; }
     }
 }

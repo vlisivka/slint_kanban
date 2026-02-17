@@ -1,5 +1,51 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::PathBuf;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Config {
+    #[serde(default)]
+    pub queue_limits: HashMap<String, usize>,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        let queue_limits = HashMap::new();
+        Self { queue_limits }
+    }
+}
+
+impl Config {
+    pub fn load(root_path: &std::path::Path) -> anyhow::Result<Self> {
+        let config_path = root_path.join("config.toml");
+        
+        if !config_path.exists() {
+            // Create default config file
+            let default_config = Self::default();
+            Ok(default_config)
+        } else {        
+            let content = std::fs::read_to_string(&config_path)?;
+            let config: Config = toml::from_str(&content)?;
+            Ok(config)
+        }
+    }
+    
+    pub fn get_limit(&self, queue_id: &str) -> Option<usize> {
+        self.queue_limits.get(queue_id).copied()
+    }
+
+    pub fn set_limit(&mut self, queue_id: String, limit: usize) {
+        self.queue_limits.insert(queue_id, limit);
+    }
+
+    pub fn write(&self, root_path: &std::path::Path) -> anyhow::Result<()> {
+        let config_path = root_path.join("config.toml");
+        let content = toml::to_string_pretty(self)?;
+        std::fs::write(&config_path, content)?;
+        Ok(())
+    }
+}
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TicketMetadata {
@@ -24,6 +70,7 @@ pub struct Queue {
     pub id: String,
     pub name: String,
     pub tickets: Vec<Ticket>,
+    pub limit: Option<usize>,
 }
 
 #[derive(Debug, Clone)]
@@ -31,6 +78,7 @@ pub struct Board {
     pub queues: Vec<Queue>,
     pub tickets_path: PathBuf,
     pub queues_path: PathBuf,
+    pub config: Config,
 }
 
 impl Ticket {
@@ -69,11 +117,22 @@ impl Board {
                 "1. Incoming",
                 "2. ToDo",
                 "3. Doing",
-                "4. Done",
-                "5. Archive",
+                "4. Reviewing",
+                "5. Testing",                
+                "6. Done",
+                "7. Archive",
             ];
             for q in default_queues {
                 std::fs::create_dir_all(queues_path.join(q))?;
+            }
+
+            // Create default config file
+            let config_path = root_path.join("config.toml");
+            if !config_path.exists() {
+                let mut default_config = Config::default();
+                default_config.set_limit("2. ToDo".to_string(), 21);
+                default_config.set_limit("3. Doing".to_string(), 5);
+                default_config.write(root_path)?;
             }
         }
 
@@ -83,12 +142,16 @@ impl Board {
     pub fn load(root_path: PathBuf) -> anyhow::Result<Self> {
         let queues_path = root_path.join("Queue");
         let tickets_path = root_path.join("Tickets");
+        
+        // Load configuration
+        let config = Config::load(&root_path)?;
 
         if !queues_path.exists() {
             return Ok(Board {
                 queues: vec![],
                 tickets_path,
                 queues_path,
+                config,
             });
         }
 
@@ -156,10 +219,13 @@ impl Board {
                         }
                     }
                 }
+
+                let limit = config.get_limit(&queue_id);
                 queues.push(Queue {
                     id: queue_id.clone(),
                     name: queue_id, // Use ID as name for now
                     tickets,
+                    limit,
                 });
             }
         }
@@ -171,6 +237,7 @@ impl Board {
             queues,
             tickets_path,
             queues_path,
+            config,
         })
     }
 
@@ -186,6 +253,22 @@ impl Board {
 
         if !source_queue_path.exists() || !target_queue_path.exists() {
             return Err(anyhow::anyhow!("Source or target queue not found"));
+        }
+        
+        // Check if target queue has reached its limit
+        if let Some(limit) = self.config.get_limit(target_queue_id) {
+            let current_count = std::fs::read_dir(&target_queue_path)?
+                .flatten()
+                .filter(|e| e.path().is_symlink() || e.path().is_dir())
+                .count();
+            
+            if current_count >= limit {
+                return Err(anyhow::anyhow!(
+                    "Queue '{}' has reached its limit of {} tickets",
+                    target_queue_id,
+                    limit
+                ));
+            }
         }
 
         // Find the symlink in source_queue that points to target_ticket_path
@@ -285,7 +368,28 @@ impl Board {
     ) -> anyhow::Result<String> {
         use rand::{distributions::Alphanumeric, Rng};
 
-        // 1. Generate unique ID
+        // 1. Check queue limit before creating
+        let queue_path = self.queues_path.join(queue_id);
+        if !queue_path.exists() {
+            return Err(anyhow::anyhow!("Queue {} not found", queue_id));
+        }
+        
+        if let Some(limit) = self.config.get_limit(queue_id) {
+            let current_count = std::fs::read_dir(&queue_path)?
+                .flatten()
+                .filter(|e| e.path().is_symlink() || e.path().is_dir())
+                .count();
+            
+            if current_count >= limit {
+                return Err(anyhow::anyhow!(
+                    "Queue '{}' has reached its limit of {} tickets",
+                    queue_id,
+                    limit
+                ));
+            }
+        }
+
+        // 2. Generate unique ID
         let id: String = std::iter::repeat(())
             .map(|()| rand::thread_rng().sample(Alphanumeric))
             .map(char::from)
@@ -293,14 +397,14 @@ impl Board {
             .collect();
         let ticket_id = format!("T-{}", id);
 
-        // 2. Create ticket directory
+        // 3. Create ticket directory
         let ticket_dir = self.tickets_path.join(&ticket_id);
         if ticket_dir.exists() {
             return self.create_ticket(title, description, queue_id);
         }
         std::fs::create_dir_all(&ticket_dir)?;
 
-        // 3. Create README.md with metadata
+        // 4. Create README.md with metadata
         let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
         let mut f = std::fs::File::create(ticket_dir.join("README.md"))?;
         use std::io::Write;
@@ -310,12 +414,7 @@ impl Board {
             title, now, now, description
         )?;
 
-        // 4. Create symlink in the target queue
-        let queue_path = self.queues_path.join(queue_id);
-        if !queue_path.exists() {
-            return Err(anyhow::anyhow!("Queue {} not found", queue_id));
-        }
-
+        // 5. Create symlink in the target queue
         #[cfg(unix)]
         std::os::unix::fs::symlink(&ticket_dir, queue_path.join(&ticket_id))?;
 
@@ -688,12 +787,14 @@ created_at: 2023-10-27
         Board::ensure_initialized(root_path)?;
 
         let board = Board::load(root_path.to_path_buf())?;
-        assert_eq!(board.queues.len(), 5);
+        assert_eq!(board.queues.len(), 7);
         assert_eq!(board.queues[0].id, "1. Incoming");
         assert_eq!(board.queues[1].id, "2. ToDo");
         assert_eq!(board.queues[2].id, "3. Doing");
-        assert_eq!(board.queues[3].id, "4. Done");
-        assert_eq!(board.queues[4].id, "5. Archive");
+        assert_eq!(board.queues[3].id, "4. Reviewing");
+        assert_eq!(board.queues[4].id, "5. Testing");
+        assert_eq!(board.queues[5].id, "6. Done");
+        assert_eq!(board.queues[6].id, "7. Archive");
 
         // 2. Existing queue run: should NOT create defaults if something exists
         let root2 = tempdir()?;
@@ -704,6 +805,62 @@ created_at: 2023-10-27
         assert!(root_path2.join("Queue/CustomQueue").exists());
         assert!(!root_path2.join("Queue/1. Incoming").exists());
 
+        Ok(())
+    }
+
+    #[test]
+    fn test_queue_limit_creation() -> anyhow::Result<()> {
+        let root = tempdir()?;
+        let root_path = root.path().to_path_buf();
+        
+        Board::ensure_initialized(&root_path)?;
+        let mut board = Board::load(root_path.clone())?;
+        
+        // Set limit to 1 for "2. ToDo"
+        board.config.set_limit("2. ToDo".to_string(), 1);
+        board.config.write(&root_path)?;
+        
+        // Reload board to pick up config change if necessary, or just use the current board
+        // Board::load re-reads the config.
+        let board = Board::load(root_path)?;
+        
+        // Create first ticket - should succeed
+        board.create_ticket("Task 1", "Desc 1", "2. ToDo")?;
+        
+        // Create second ticket - should fail
+        let result = board.create_ticket("Task 2", "Desc 2", "2. ToDo");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("has reached its limit"));
+        
+        Ok(())
+    }
+
+    #[test]
+    fn test_queue_limit_moving() -> anyhow::Result<()> {
+        let root = tempdir()?;
+        let root_path = root.path().to_path_buf();
+        
+        Board::ensure_initialized(&root_path)?;
+        let mut board = Board::load(root_path.clone())?;
+        
+        // Set limit to 1 for "3. Doing"
+        board.config.set_limit("3. Doing".to_string(), 1);
+        board.config.write(&root_path)?;
+        
+        let board = Board::load(root_path)?;
+        
+        // Create two tickets in ToDo
+        let tid1 = board.create_ticket("Task 1", "Desc 1", "2. ToDo")?;
+        let tid2 = board.create_ticket("Task 2", "Desc 2", "2. ToDo")?;
+        
+        // Move first ticket to Doing - should succeed
+        board.move_ticket(&tid1, "2. ToDo", "3. Doing")?;
+        
+        // Move second ticket to Doing - should fail
+        let result = board.move_ticket(&tid2, "2. ToDo", "3. Doing");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("has reached its limit"));
+        
         Ok(())
     }
 }

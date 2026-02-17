@@ -80,7 +80,7 @@ The following features are planned for future releases:
    - Customizable key bindings
 
 6. **Theme Customization**:
-   - Dark/light mode support
+   - Dark/light/system mode support
    - Custom color schemes
    - Font size and family preferences
 
