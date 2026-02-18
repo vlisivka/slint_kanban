@@ -13,6 +13,11 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 -   **Secondary Language**: English (understand only)
 -   **Preference**: The developer prefers communicating in Ukrainian.
 
+## Development Process
+-   **Planning**: Before starting implementation, a plan must be created in the `plans` directory.
+-   **Format**: The plan should be a Markdown file named `Plan - NAME OF PLAN.md`.
+-   **Approval**: The plan must be reviewed and approved by the developer before work begins.
+
 ## Architecture
 -   **Data Storage**: File-system based.
     -   **Root Directory**: Default is `~/Kanban`. Can be overridden by the first command-line argument.
