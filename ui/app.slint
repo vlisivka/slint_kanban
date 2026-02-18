@@ -597,6 +597,8 @@ component KanbanColumn inherits Rectangle {
 
 export component App inherits Window {
     in-out property <[QueueStr]> board_queues;
+    in-out property <string> search_query: "";
+    callback search_edited(string);
     callback move_ticket(string, string, string); // ticket_id, from_queue, index:...
     callback delete_ticket(string);
     callback save_ticket(string, string, string); // id, title, desc
@@ -651,8 +653,41 @@ export component App inherits Window {
 
     config := AppConfig {}
 
-    ScrollView {
-        HorizontalLayout {
+    VerticalBox {
+        padding: 0px;
+        spacing: 0px;
+
+        // Search Header
+        Rectangle {
+            height: 60px;
+            background: Palette.alternate-background;
+            HorizontalBox {
+                padding: 10px;
+                spacing: 12px;
+                alignment: center;
+                
+                Text {
+                    text: "Search:";
+                    vertical-alignment: center;
+                    font-weight: 700;
+                }
+                
+                LineEdit {
+                    text <=> search_query;
+                    placeholder-text: "Filter titles, descriptions or IDs...";
+                    width: 400px;
+                    edited(text) => { search_edited(text); }
+                }
+                
+                if (search_query != "") : Button {
+                    text: "Clear";
+                    clicked => { search_query = ""; search_edited(""); }
+                }
+            }
+        }
+
+        ScrollView {
+            HorizontalLayout {
             padding: config.board-padding;
             spacing: config.column-spacing;
             alignment: start;
@@ -705,6 +740,7 @@ export component App inherits Window {
                 }
             }
         }
+    }
     }
     
     // Initialize callback

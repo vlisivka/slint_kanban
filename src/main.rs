@@ -41,18 +41,19 @@ fn ticket_to_slint(ticket: &model::Ticket, board: &Board) -> TicketStr {
     }
 }
 
-fn sync_ui_with_board(ui: &App, board: &Board) {
+fn sync_ui_with_board(ui: &App, board: &Board, query: &str) {
     let mut slint_queues: Vec<QueueStr> = vec![];
 
     for queue in &board.queues {
-        let ticket_count = queue.tickets.len() as i32;
-        let limit = queue.limit.map(|l| l as i32).unwrap_or(-1);
-
         let slint_tickets: Vec<TicketStr> = queue
             .tickets
             .iter()
+            .filter(|t| t.matches(query))
             .map(|t| ticket_to_slint(t, board))
             .collect();
+
+        let ticket_count = slint_tickets.len() as i32;
+        let limit = queue.limit.map(|l| l as i32).unwrap_or(-1);
 
         let tickets_model = Rc::new(VecModel::from(slint_tickets));
 
@@ -74,7 +75,8 @@ fn reload_board(ui: &App, root_path: &Path) -> anyhow::Result<()> {
     println!("Reloading board #{}...", count + 1);
 
     let board = Board::load(root_path.to_path_buf())?;
-    sync_ui_with_board(ui, &board);
+    let query = ui.get_search_query();
+    sync_ui_with_board(ui, &board, query.as_str());
     Ok(())
 }
 
@@ -240,6 +242,21 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
                     target_id
                 )));
             }
+        }
+    });
+
+    let search_root = root_path.clone();
+    let search_ui_handle = ui.as_weak();
+    ui.on_search_edited(move |query| {
+        let board = match Board::load(search_root.clone()) {
+            Ok(b) => b,
+            Err(e) => {
+                eprintln!("Error loading board for search: {:?}", e);
+                return;
+            }
+        };
+        if let Some(ui) = search_ui_handle.upgrade() {
+            sync_ui_with_board(&ui, &board, query.as_str());
         }
     });
 

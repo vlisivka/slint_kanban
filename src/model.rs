@@ -112,6 +112,16 @@ impl Ticket {
         refs.dedup();
         refs
     }
+
+    pub fn matches(&self, query: &str) -> bool {
+        if query.is_empty() {
+            return true;
+        }
+        let query_lower = query.to_lowercase();
+        self.title.to_lowercase().contains(&query_lower)
+            || self.description.to_lowercase().contains(&query_lower)
+            || self.id.to_lowercase().contains(&query_lower)
+    }
 }
 
 impl Board {

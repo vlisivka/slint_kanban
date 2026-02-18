@@ -26,6 +26,31 @@ updated_at: 2023-10-27
 }
 
 #[test]
+fn test_ticket_matches() {
+    let ticket = Ticket {
+        id: "T123".to_string(),
+        title: "Buy Milk".to_string(),
+        description: "Need whole milk for the coffee".to_string(),
+        created_at: "now".to_string(),
+        updated_at: "now".to_string(),
+    };
+
+    assert!(
+        ticket.matches("milk"),
+        "Should match title (case-insensitive)"
+    );
+    assert!(
+        ticket.matches("MILK"),
+        "Should match title (case-insensitive)"
+    );
+    assert!(ticket.matches("coffee"), "Should match description");
+    assert!(ticket.matches("T123"), "Should match ID");
+    assert!(ticket.matches("t123"), "Should match ID (case-insensitive)");
+    assert!(ticket.matches(""), "Empty query should always match");
+    assert!(!ticket.matches("bread"), "Should not match unrelated text");
+}
+
+#[test]
 fn test_ticket_metadata_missing_updated_at() {
     let yaml = "
 title: Buy Groceries
