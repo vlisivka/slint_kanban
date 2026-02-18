@@ -1,4 +1,4 @@
-import { ScrollView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit, Palette } from "std-widgets.slint";
+import { ScrollView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit, Palette, CheckBox } from "std-widgets.slint";
 
 export struct RefStr {
     id: string,
@@ -21,6 +21,7 @@ export struct QueueStr {
     tickets: [TicketStr],
     limit: int,           // -1 means no limit
     ticket_count: int,
+    visible: bool,
 }
 
 component AppConfig {
@@ -471,6 +472,55 @@ component TicketCard inherits Rectangle {
     }
 }
 
+component FilterMenu inherits Rectangle {
+    in-out property <[QueueStr]> queues;
+    callback toggle_visibility(string, bool);
+    callback close();
+
+    background: Palette.background;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: Palette.border;
+    drop-shadow-blur: 15px;
+    drop-shadow-color: #00000040;
+
+    height: self.preferred-height;
+
+    VerticalLayout {
+        padding: 20px;
+        spacing: 15px;
+        
+        HorizontalLayout {
+            alignment: space-between;
+            Text {
+                text: "Visible Queues";
+                font-size: 16px;
+                font-weight: 700;
+            }
+        }
+
+        VerticalLayout {
+            spacing: 10px;
+            for q in queues : HorizontalLayout {
+                spacing: 10px;
+                CheckBox {
+                    text: q.name;
+                    checked: q.visible;
+                    toggled => { toggle_visibility(q.id, self.checked); }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            alignment: end;
+            Button {
+                text: "Close";
+                clicked => { close(); }
+            }
+        }
+    }
+}
+
 component KanbanColumn inherits Rectangle {
     in property <QueueStr> queue;
     
@@ -598,7 +648,9 @@ component KanbanColumn inherits Rectangle {
 export component App inherits Window {
     in-out property <[QueueStr]> board_queues;
     in-out property <string> search_query: "";
+    in-out property <bool> show_filter_menu: false;
     callback search_edited(string);
+    callback toggle_queue_visibility(string, bool);
     callback move_ticket(string, string, string); // ticket_id, from_queue, index:...
     callback delete_ticket(string);
     callback save_ticket(string, string, string); // id, title, desc
@@ -661,27 +713,45 @@ export component App inherits Window {
         Rectangle {
             height: 60px;
             background: Palette.alternate-background;
-            HorizontalBox {
+            HorizontalLayout {
                 padding: 10px;
-                spacing: 12px;
-                alignment: center;
+                spacing: 20px;
                 
-                Text {
-                    text: "Search:";
-                    vertical-alignment: center;
-                    font-weight: 700;
+                // Left spacer to balance if needed, or just alignment
+                Rectangle { width: 40px; } 
+
+                HorizontalBox {
+                    spacing: 12px;
+                    alignment: center;
+                    
+                    Text {
+                        text: "Search:";
+                        vertical-alignment: center;
+                        font-weight: 700;
+                    }
+                    
+                    LineEdit {
+                        text <=> search_query;
+                        placeholder-text: "Filter titles, descriptions or IDs...";
+                        width: 400px;
+                        edited(text) => { search_edited(text); }
+                    }
+                    
+                    if (search_query != "") : Button {
+                        text: "Clear";
+                        clicked => { search_query = ""; search_edited(""); }
+                    }
                 }
-                
-                LineEdit {
-                    text <=> search_query;
-                    placeholder-text: "Filter titles, descriptions or IDs...";
-                    width: 400px;
-                    edited(text) => { search_edited(text); }
-                }
-                
-                if (search_query != "") : Button {
-                    text: "Clear";
-                    clicked => { search_query = ""; search_edited(""); }
+
+                // Right aligned filter button
+                HorizontalLayout {
+                    alignment: end;
+                    padding-right: 15px;
+                    Button {
+                        text: "⚙"; // Gear icon for settings/filter
+                        width: 40px;
+                        clicked => { show_filter_menu = !show_filter_menu; }
+                    }
                 }
             }
         }
@@ -693,8 +763,9 @@ export component App inherits Window {
             alignment: start;
             
             for queue in board_queues : KanbanColumn {
+                visible: queue.visible;
                 queue: queue;
-                width: config.column-width;
+                width: self.visible ? config.column-width : 0px;
                 
                 start_dragging(tid, qid, mx, my) => {
                     dragging_ticket_id = tid;
@@ -847,6 +918,17 @@ export component App inherits Window {
             is_editing_limit = false;
             request_change_limit(qid, limit);
         }
+    }
+
+    // Filter Menu Overlay
+    if (show_filter_menu) : FilterMenu {
+        x: parent.width - self.width - 20px; // Top Right
+        y: 70px; // Below header
+        width: 250px;
+        height: self.preferred-height;
+        queues: board_queues;
+        close => { show_filter_menu = false; }
+        toggle_visibility(qid, visible) => { toggle_queue_visibility(qid, visible); }
     }
 
     // Floating Tooltip

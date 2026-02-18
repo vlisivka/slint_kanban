@@ -6,12 +6,16 @@ use std::path::PathBuf;
 pub struct Config {
     #[serde(default)]
     pub queue_limits: HashMap<String, usize>,
+    #[serde(default)]
+    pub hidden_queues: Vec<String>,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        let queue_limits = HashMap::new();
-        Self { queue_limits }
+        Self {
+            queue_limits: HashMap::new(),
+            hidden_queues: Vec::new(),
+        }
     }
 }
 
@@ -36,6 +40,18 @@ impl Config {
 
     pub fn set_limit(&mut self, queue_id: String, limit: usize) {
         self.queue_limits.insert(queue_id, limit);
+    }
+
+    pub fn is_visible(&self, queue_id: &str) -> bool {
+        !self.hidden_queues.contains(&queue_id.to_string())
+    }
+
+    pub fn set_visible(&mut self, queue_id: String, visible: bool) {
+        if visible {
+            self.hidden_queues.retain(|id| id != &queue_id);
+        } else if !self.hidden_queues.contains(&queue_id) {
+            self.hidden_queues.push(queue_id);
+        }
     }
 
     pub fn write(&self, root_path: &std::path::Path) -> anyhow::Result<()> {
@@ -70,6 +86,7 @@ pub struct Queue {
     pub name: String,
     pub tickets: Vec<Ticket>,
     pub limit: Option<usize>,
+    pub visible: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -253,49 +270,55 @@ impl Board {
             .ok_or_else(|| anyhow::anyhow!("Invalid queue path: {:?}", path))?
             .to_string();
 
+        let visible = self.config.is_visible(&queue_id);
         let mut tickets = vec![];
-        for entry in std::fs::read_dir(path)?.flatten() {
-            let ticket_link_path = entry.path();
 
-            // Resolve the symlink to get the actual ticket directory
-            let resolved_result = if ticket_link_path.is_symlink() {
-                let link_target = std::fs::read_link(&ticket_link_path)?;
-                if link_target.is_relative() {
-                    path.join(&link_target).canonicalize()
+        if visible {
+            for entry in std::fs::read_dir(path)?.flatten() {
+                let ticket_link_path = entry.path();
+
+                // Resolve the symlink to get the actual ticket directory
+                let resolved_result = if ticket_link_path.is_symlink() {
+                    let link_target = std::fs::read_link(&ticket_link_path)?;
+                    if link_target.is_relative() {
+                        path.join(&link_target).canonicalize()
+                    } else {
+                        link_target.canonicalize()
+                    }
                 } else {
-                    link_target.canonicalize()
-                }
-            } else {
-                ticket_link_path.canonicalize()
-            };
+                    ticket_link_path.canonicalize()
+                };
 
-            match resolved_result {
-                Ok(resolved_path) => {
-                    if resolved_path.exists() && resolved_path.is_dir() {
-                        match self.load_ticket(&resolved_path) {
-                            Ok(ticket) => tickets.push(ticket),
-                            Err(e) => eprintln!(
-                                "Warning: Failed to load ticket at {:?}: {}",
-                                resolved_path, e
-                            ),
+                match resolved_result {
+                    Ok(resolved_path) => {
+                        if resolved_path.exists() && resolved_path.is_dir() {
+                            match self.load_ticket(&resolved_path) {
+                                Ok(ticket) => tickets.push(ticket),
+                                Err(e) => eprintln!(
+                                    "Warning: Failed to load ticket at {:?}: {}",
+                                    resolved_path, e
+                                ),
+                            }
                         }
                     }
-                }
-                Err(e) => {
-                    eprintln!(
-                        "Warning: Skipping broken or inaccessible ticket link {:?}: {}",
-                        ticket_link_path, e
-                    );
+                    Err(e) => {
+                        eprintln!(
+                            "Warning: Skipping broken or inaccessible ticket link {:?}: {}",
+                            ticket_link_path, e
+                        );
+                    }
                 }
             }
         }
 
         let limit = self.config.get_limit(&queue_id);
+        let visible = self.config.is_visible(&queue_id);
         Ok(Queue {
             id: queue_id.clone(),
             name: queue_id,
             tickets,
             limit,
+            visible,
         })
     }
 

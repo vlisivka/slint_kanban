@@ -2,7 +2,7 @@ mod cli;
 mod model;
 
 use cli::{CliArgs, Commands};
-use model::Board;
+use model::{Board, Config};
 use notify::{RecursiveMode, Watcher};
 use slint::{ComponentHandle, SharedString, VecModel};
 use std::path::{Path, PathBuf};
@@ -63,6 +63,7 @@ fn sync_ui_with_board(ui: &App, board: &Board, query: &str) {
             tickets: tickets_model.into(),
             limit,
             ticket_count,
+            visible: queue.visible,
         });
     }
 
@@ -168,9 +169,9 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
                         continue;
                     }
 
-                    // Consume any other events that occur within a small time window (debounce)
-                    let debounce_duration = Duration::from_millis(200);
-                    while rx.recv_timeout(debounce_duration).is_ok() {
+                    // Fixed-window debounce: wait a bit and then drain everything
+                    std::thread::sleep(Duration::from_millis(100));
+                    while rx.try_recv().is_ok() {
                         // Drainage loop
                     }
 
@@ -258,6 +259,23 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
         if let Some(ui) = search_ui_handle.upgrade() {
             sync_ui_with_board(&ui, &board, query.as_str());
         }
+    });
+
+    let toggle_root = root_path.clone();
+    ui.on_toggle_queue_visibility(move |queue_id, visible| {
+        let mut config = match Config::load(&toggle_root) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("Error loading config for toggle: {:?}", e);
+                return;
+            }
+        };
+
+        config.set_visible(queue_id.to_string(), visible);
+        if let Err(e) = config.write(&toggle_root) {
+            eprintln!("Error writing config: {:?}", e);
+        }
+        // No manual reload here - rely on file watcher
     });
 
     let create_root = root_path.clone();

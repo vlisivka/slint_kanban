@@ -687,12 +687,14 @@ fn test_resolve_queue_id() -> anyhow::Result<()> {
                 name: "Queue 1".to_string(),
                 tickets: vec![],
                 limit: None,
+                visible: true,
             },
             Queue {
                 id: "Q2".to_string(),
                 name: "Queue 2".to_string(),
                 tickets: vec![],
                 limit: None,
+                visible: true,
             },
         ],
     };
@@ -773,6 +775,7 @@ fn test_find_ticket_by_id() {
                     description: "".to_string(),
                 }],
                 limit: None,
+                visible: true,
             },
             Queue {
                 id: "Q2".to_string(),
@@ -785,6 +788,7 @@ fn test_find_ticket_by_id() {
                     description: "".to_string(),
                 }],
                 limit: None,
+                visible: true,
             },
         ],
     };

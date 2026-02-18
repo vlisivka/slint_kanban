@@ -79,10 +79,10 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 - [x] Add automated tests for all CLI commands.
 
 ### Search and Filter
-- [ ] Implement search functionality
-  - [ ] Add search input field to UI
-  - [ ] Full-text search across ticket titles and descriptions
-  - [ ] Filter by queue
+- [x] Implement search functionality
+  - [x] Add search input field to UI
+  - [x] Full-text search across ticket titles and descriptions
+  - [x] Filter by queue
   - [ ] Filter by date range
   - [ ] Highlight search results
   - [ ] Search history

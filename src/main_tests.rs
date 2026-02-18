@@ -28,6 +28,7 @@ fn test_ui() -> anyhow::Result<()> {
         tickets: Rc::new(VecModel::default()).into(),
         limit: -1,
         ticket_count: 0,
+        visible: true,
     }]));
     ui.set_board_queues(queues_model.into());
 
