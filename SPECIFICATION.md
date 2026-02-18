@@ -6,6 +6,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 ## Tech Stack
 -   **Language**: Rust
 -   **GUI Framework**: Slint
+-   **CLI Framework**: `clap`
 -   **OS**: Linux (specifically Alma Linux 10)
 
 ## Communication with developer
@@ -57,6 +58,16 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
     -  ToDo queue - no more than 21 item (configurable).
     -  Doing queue - no more than 5 items (configurable).
 
+7.  **Command Line Interface (CLI)**:
+    -   Non-interactive interface controlled via arguments and options.
+    -   **Commands**:
+        -   `add`: Create a new ticket (options: `--title`/`-t`, `--description`/`-d`, `--queue`/`-q`).
+        -   `update`: Update existing ticket (options: `--id`/`-i`, `--title`/`-t`, `--description`/`-d`).
+        -   `move`: Move ticket to another queue (options: `--id`/`-i`, `--queue`/`-q`).
+        -   `remove`: Delete ticket (options: `--id`/`-i`).
+        -   `open PATH`: Open specified directory in the GUI.
+    -   **Testability**: Core logic must be decoupled from the `main` function to allow automated CLI testing.
+
 ## Data Models
 -   **Ticket ID Generation**: Short hash/ID (up to 6 chars, lowercase latin letters + numbers) derived from Title + Creation Date. Id is the name of ticket directory in `~/Kanban/Tickets` directory.
 -   **Ticket metainfo**: is stored in README.md file in YAML format. 
@@ -66,6 +77,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 - **Compatibility**: Optimized for Alma Linux 10.
 - **Testing Requirements**:
     - **Unit Tests**: Mandatory for all core business logic in `model.rs`.
+    - **CLI Tests**: Mandatory for all CLI commands, testing via automated functions by calling a testable entry point (not `main`).
     - **GUI Tests**: Mandatory for critical UI interactions and state transitions using `slint::testing` and `i-slint-backend-testing`.
     - **Assertions**: All `assert!` and `assert_eq!` calls in tests MUST contain a descriptive message explaining the expected behavior and providing guidance on how to fix the issue if the assertion fails.
 

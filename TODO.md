@@ -66,6 +66,17 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Navigate to referenced ticket on click
   - [ ] Show preview tooltip on hover
 
+### Command Line Interface (CLI)
+- [ ] Refactor `main.rs` to move application logic into a testable function.
+- [ ] Implement CLI argument parsing using `clap`.
+- [ ] Implement non-interactive commands:
+    - [ ] `add`: create new ticket with options for title, description, and queue.
+    - [ ] `update`: update ticket attributes by ID.
+    - [ ] `move`: move ticket between queues by ID.
+    - [ ] `remove`: delete ticket by ID.
+- [ ] Implement `open PATH` command to control GUI from command line.
+- [ ] Add automated tests for all CLI commands.
+
 ### Search and Filter
 - [ ] Implement search functionality
   - [ ] Add search input field to UI
