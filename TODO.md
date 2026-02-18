@@ -60,10 +60,10 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Show warning dialog when limit exceeded
 
 ### Cross-Reference Navigation
-- [ ] Implement ticket cross-referencing
-  - [ ] Parse ticket IDs in markdown content (e.g., `#tick12`)
-  - [ ] Make ticket references clickable
-  - [ ] Navigate to referenced ticket on click
+- [x] Implement ticket cross-referencing
+  - [x] Parse ticket IDs in markdown content (e.g., `#T-abc123`)
+  - [x] Make ticket references clickable
+  - [x] Navigate to referenced ticket on click
   - [ ] Show preview tooltip on hover
 
 ### Search and Filter

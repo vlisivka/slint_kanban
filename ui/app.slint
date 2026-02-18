@@ -7,6 +7,7 @@ export struct TicketStr {
     snippet: string,
     created_at: string,
     updated_at: string,
+    references: [string],
 }
 
 export struct QueueStr {
@@ -28,6 +29,7 @@ component TicketView inherits Rectangle {
     in property <TicketStr> ticket;
     callback close();
     callback edit();
+    callback navigate_to(string);
  
     background: #00000080; // Semi-transparent backdrop for focus
     
@@ -81,11 +83,30 @@ component TicketView inherits Rectangle {
             ScrollView {
                 VerticalBox {
                     padding: 20px;
+                    spacing: 20px;
                     Text {
                         text: ticket.description;
                         font-size: 18px;
                         wrap: word-wrap;
                         horizontal-alignment: left;
+                    }
+
+                    if ticket.references.length > 0 : VerticalLayout {
+                        spacing: 12px;
+                        Text {
+                            text: "Related Tickets:";
+                            font-size: 16px;
+                            font-weight: 800;
+                            opacity: 0.7;
+                        }
+                        HorizontalBox {
+                            padding: 0px;
+                            alignment: start;
+                            for ref in ticket.references : Button {
+                                text: ref;
+                                clicked => { navigate_to(ref); }
+                            }
+                        }
                     }
                 }
             }
@@ -457,6 +478,7 @@ export component App inherits Window {
     callback save_ticket(string, string, string); // id, title, desc
     callback request_create_ticket(string, string, string); // queue_id, title, desc
     callback show_warning_dialog(string); // message
+    callback navigate_to(string); // for cross-references
     callback test_trigger_add_ticket(string); // for testing
     callback test_trigger_close_view(); // for testing
     callback test_trigger_cancel_edit(); // for testing
@@ -597,6 +619,7 @@ export component App inherits Window {
             editing_desc = active_ticket.description;
             is_editing = true;
         }
+        navigate_to(target) => { navigate_to(target); }
     }
 
     // Edit Overlay

@@ -90,6 +90,25 @@ impl Ticket {
             description,
         }
     }
+
+    pub fn extract_references(&self) -> Vec<String> {
+        let mut refs = Vec::new();
+        let mut start = 0;
+        while let Some(pos) = self.description[start..].find("#T-") {
+            let actual_pos = start + pos;
+            if actual_pos + 9 <= self.description.len() {
+                let potential_id = &self.description[actual_pos..actual_pos + 9];
+                // Check if it's #T- followed by 6 alphanumeric chars
+                if potential_id.chars().skip(3).all(|c| c.is_alphanumeric()) {
+                    refs.push(potential_id.to_string());
+                }
+            }
+            start = actual_pos + 3;
+        }
+        refs.sort();
+        refs.dedup();
+        refs
+    }
 }
 
 impl Board {
@@ -496,6 +515,15 @@ impl Board {
             }
         }
         target_id.to_string()
+    }
+
+    pub fn find_ticket_by_id(&self, id: &str) -> Option<&Ticket> {
+        for queue in &self.queues {
+            if let Some(ticket) = queue.tickets.iter().find(|t| t.id == id) {
+                return Some(ticket);
+            }
+        }
+        None
     }
 }
 
@@ -1044,6 +1072,53 @@ created_at: 2023-10-27
         assert_eq!(board.resolve_queue_id("random"), "random", "Non-index strings should resolve as-is");
         
         Ok(())
+    }
+
+    #[test]
+    fn test_extract_references() {
+        let t = Ticket {
+            id: "T1".to_string(),
+            title: "T".to_string(),
+            created_at: "now".to_string(),
+            updated_at: "now".to_string(),
+            description: "Check #T-abc123 and #T-def456. Also #T-123 is too short, and #T-abcdef78 is too long but should extract #T-abcdef7. And #T-abc123 again.".to_string(),
+        };
+        let refs = t.extract_references();
+        assert_eq!(refs.len(), 3, "Should extract exactly 3 unique valid references. Check extract_references logic.");
+        assert!(refs.contains(&"#T-abc123".to_string()), "Should contain #T-abc123");
+        assert!(refs.contains(&"#T-def456".to_string()), "Should contain #T-def456");
+        assert!(refs.contains(&"#T-abcdef".to_string()), "Should contain #T-abcdef (first 8 chars of a longer match starting with #T-).");
+    }
+
+    #[test]
+    fn test_find_ticket_by_id() {
+        let board = Board {
+            tickets_path: PathBuf::new(),
+            queues_path: PathBuf::new(),
+            config: Config::default(),
+            queues: vec![
+                Queue {
+                    id: "Q1".to_string(),
+                    name: "Q1".to_string(),
+                    tickets: vec![
+                        Ticket { id: "T1".to_string(), title: "T1".to_string(), created_at: "".to_string(), updated_at: "".to_string(), description: "".to_string() }
+                    ],
+                    limit: None,
+                },
+                Queue {
+                    id: "Q2".to_string(),
+                    name: "Q2".to_string(),
+                    tickets: vec![
+                        Ticket { id: "T2".to_string(), title: "T2".to_string(), created_at: "".to_string(), updated_at: "".to_string(), description: "".to_string() }
+                    ],
+                    limit: None,
+                }
+            ],
+        };
+
+        assert!(board.find_ticket_by_id("T1").is_some(), "Ticket T1 should be found in Q1. Ensure find_ticket_by_id iterates over all queues.");
+        assert!(board.find_ticket_by_id("T2").is_some(), "Ticket T2 should be found in Q2. Ensure find_ticket_by_id iterates over all queues.");
+        assert!(board.find_ticket_by_id("T3").is_none(), "Non-existent ticket T3 should not be found.");
     }
 }
 

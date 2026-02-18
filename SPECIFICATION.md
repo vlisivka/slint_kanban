@@ -56,8 +56,12 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 -   **Ticket metainfo**: is stored in README.md file in YAML format. 
 
 ## Non-Functional Requirements
--   **Performance**: Efficient file system monitoring to reflect external changes.
--   **Compatibility**: Optimized for Alma Linux 10.
+- **Performance**: Efficient file system monitoring to reflect external changes.
+- **Compatibility**: Optimized for Alma Linux 10.
+- **Testing Requirements**:
+    - **Unit Tests**: Mandatory for all core business logic in `model.rs`.
+    - **GUI Tests**: Mandatory for critical UI interactions and state transitions using `slint::testing` and `i-slint-backend-testing`.
+    - **Assertions**: All `assert!` and `assert_eq!` calls in tests MUST contain a descriptive message explaining the expected behavior and providing guidance on how to fix the issue if the assertion fails.
 
 - **Initialization**: Automatically create the root directory and sub-directories (`Ticket`, `Queue`). Create default queues (`Incoming`, `ToDo`, `Doing`, `Reviewing`, `Testing`, `Done`, `Archive`) **only if no queues already exist** in the `Queue` directory.
 
@@ -72,7 +76,7 @@ The following features are planned for future releases:
    - Doing queue: Maximum 5 items (configurable)
    - Visual warnings when approaching limits
 
-3. **Cross-Reference Navigation**: Clickable links between tickets using short IDs (e.g., `#tick12`) with automatic detection and navigation.
+3. **Cross-Reference Navigation (Implemented)**: Clickable links between tickets using short IDs (e.g., `#T-abc123`) with automatic detection and navigation.
 
 4. **Search and Filter**: 
    - Full-text search across all tickets

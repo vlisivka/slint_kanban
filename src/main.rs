@@ -11,6 +11,24 @@ slint::include_modules!();
 
 static RELOAD_COUNT: AtomicU64 = AtomicU64::new(0);
 
+fn ticket_to_slint(ticket: &model::Ticket) -> TicketStr {
+    let snippet = ticket.description.lines().next().unwrap_or("").to_string();
+    let refs: Vec<SharedString> = ticket
+        .extract_references()
+        .into_iter()
+        .map(SharedString::from)
+        .collect();
+    TicketStr {
+        id: SharedString::from(&ticket.id),
+        title: SharedString::from(&ticket.title),
+        description: SharedString::from(&ticket.description),
+        snippet: SharedString::from(snippet),
+        created_at: SharedString::from(&ticket.created_at),
+        updated_at: SharedString::from(&ticket.updated_at),
+        references: Rc::new(VecModel::from(refs)).into(),
+    }
+}
+
 fn sync_ui_with_board(ui: &App, board: &Board) {
     let mut slint_queues: Vec<QueueStr> = vec![];
 
@@ -21,17 +39,7 @@ fn sync_ui_with_board(ui: &App, board: &Board) {
         let slint_tickets: Vec<TicketStr> = queue
             .tickets
             .iter()
-            .map(|ticket| {
-                let snippet = ticket.description.lines().next().unwrap_or("").to_string();
-                TicketStr {
-                    id: SharedString::from(&ticket.id),
-                    title: SharedString::from(&ticket.title),
-                    description: SharedString::from(&ticket.description),
-                    snippet: SharedString::from(snippet),
-                    created_at: SharedString::from(&ticket.created_at),
-                    updated_at: SharedString::from(&ticket.updated_at),
-                }
-            })
+            .map(ticket_to_slint)
             .collect();
 
         let tickets_model = Rc::new(VecModel::from(slint_tickets));
@@ -202,6 +210,36 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    let nav_root = root_path.clone();
+    let nav_ui_handle = ui.as_weak();
+    ui.on_navigate_to(move |target_id| {
+        let board = match Board::load(nav_root.clone()) {
+            Ok(b) => b,
+            Err(e) => {
+                eprintln!("Error loading board for navigation: {:?}", e);
+                return;
+            }
+        };
+
+        // If target_id starts with #, strip it for search
+        let id_to_find = if target_id.starts_with('#') {
+            &target_id[1..]
+        } else {
+            &target_id
+        };
+
+        if let Some(ticket) = board.find_ticket_by_id(id_to_find) {
+            if let Some(ui) = nav_ui_handle.upgrade() {
+                ui.set_active_ticket(ticket_to_slint(ticket));
+                ui.set_is_viewing_ticket(true);
+            }
+        } else {
+            if let Some(ui) = nav_ui_handle.upgrade() {
+                ui.invoke_show_warning_dialog(SharedString::from(format!("Ticket NOT FOUND: {}", target_id)));
+            }
+        }
+    });
+
     let create_root = root_path.clone();
     let create_ui_handle = ui.as_weak();
     ui.on_request_create_ticket(move |queue_id, title, description| {
@@ -268,6 +306,7 @@ mod tests {
             snippet: "Desc 1".into(),
             created_at: "now".into(),
             updated_at: "now".into(),
+            references: Rc::new(VecModel::from(vec![])).into(),
         });
         ui.set_is_viewing_ticket(true);
         assert!(ui.get_is_viewing_ticket());
