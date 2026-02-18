@@ -265,6 +265,79 @@ component WarningDialog inherits Rectangle {
     }
 }
 
+component QueueLimitEdit inherits Rectangle {
+    in property <string> queue_name;
+    in property <string> queue_id;
+    in-out property <string> limit_text;
+    
+    callback save(string, int); // id, limit
+    callback cancel();
+    callback remove_limit(string); // id
+  
+    background: #00000080; // Semi-transparent backdrop
+    
+    // BACKDROP: Catch clicks outside to cancel
+    TouchArea {
+        clicked => { cancel(); }
+    }
+    
+    Rectangle {
+        width: 400px;
+        height: 280px;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        background: Palette.background;
+        border-radius: 12px;
+        drop-shadow-blur: 16px;
+        drop-shadow-color: #00000040;
+        
+        TouchArea { } // Block clicks
+        
+        VerticalBox {
+            padding: 24px;
+            spacing: 20px;
+            
+            Text {
+                text: "Set Limit for " + queue_name;
+                font-size: 20px;
+                font-weight: 700;
+                horizontal-alignment: center;
+            }
+            
+            VerticalLayout {
+                spacing: 8px;
+                Text { text: "Max Tickets"; font-size: 11px; font-weight: 800; opacity: 0.6; }
+                LineEdit {
+                    text <=> limit_text;
+                    placeholder-text: "e.g. 5, 21";
+                    height: 40px;
+                    input-type: number;
+                }
+            }
+            
+            HorizontalLayout {
+                spacing: 12px;
+                Button {
+                    text: "Cancel";
+                    clicked => { cancel(); }
+                    horizontal-stretch: 1;
+                }
+                Button {
+                    text: "Remove Limit";
+                    clicked => { remove_limit(queue_id); }
+                    horizontal-stretch: 1;
+                }
+                Button {
+                    text: "Save";
+                    primary: true;
+                    clicked => { save(queue_id, limit_text.to-float()); }
+                    horizontal-stretch: 1;
+                }
+            }
+        }
+    }
+}
+
 component TicketCard inherits Rectangle {
     in property <TicketStr> ticket;
     in property <string> from_queue_id;
@@ -382,6 +455,7 @@ component KanbanColumn inherits Rectangle {
     callback delete_ticket(string);
     callback edit_ticket(TicketStr);
     callback create_ticket(string); // queue_id
+    callback edit_limit(string, string, int); // id, name, current_limit
 
     width: 280px; // Matching AppConfig.column-width
     horizontal-stretch: 0; // Prevent shrinking in layouts
@@ -404,57 +478,81 @@ component KanbanColumn inherits Rectangle {
                  }
              }
              
-             HorizontalLayout {
-                 spacing: 8px;
-                 alignment: end;
-                 
-                 // Limit Counter Badge
-                 if queue.limit > 0 : Rectangle {
-                     height: 24px;
-                     min-width: 50px;
-                     border-radius: 12px;
-                     background: {
-                         if queue.ticket_count >= queue.limit {
-                             #ff4444  // Red when at limit
-                         } else if queue.ticket_count >= queue.limit * 80 / 100 {
-                             #ff9800  // Orange when >= 80%
-                         } else {
-                             #4caf50  // Green when normal
-                         }
-                     };
-                     
-                     Text {
-                         text: queue.ticket_count + "/" + queue.limit;
-                         font-size: 12px;
-                         font-weight: 700;
-                         color: white;
-                         horizontal-alignment: center;
-                         vertical-alignment: center;
-                     }
-                 }
-                 
-                 // Styled New Ticket Button
-                 Rectangle {
-                     width: 32px;
-                     height: 32px;
-                     border-radius: 16px;
-                     
-                     Text {
-                         text: "+";
-                         font-size: 20px;
-                         font-weight: 800;
-                         horizontal-alignment: center;
-                         vertical-alignment: center;
-                     }
-                     
-                     touch-add := TouchArea {
-                         clicked => { create_ticket(queue.id); }
-                     }
-                 }
-             }
-         }
-        
-        ScrollView {
+                  // Limit Indicators and Settings
+                  HorizontalLayout {
+                      spacing: 8px;
+                      alignment: end;
+
+                      // Styled New Ticket Button first
+                      Rectangle {
+                          width: 32px;
+                          height: 32px;
+                          border-radius: 16px;
+                          
+                          Text {
+                              text: "+";
+                              font-size: 20px;
+                              font-weight: 800;
+                              horizontal-alignment: center;
+                              vertical-alignment: center;
+                          }
+                          
+                          touch-add := TouchArea {
+                              clicked => { create_ticket(queue.id); }
+                          }
+                      }
+                      
+                      // Limit Badge (clickable)
+                      if queue.limit > 0 : TouchArea {
+                          clicked => { edit_limit(queue.id, queue.name, queue.limit); }
+                          
+                          Rectangle {
+                              height: 24px;
+                              min-width: 50px;
+                              border-radius: 12px;
+                              background: {
+                                  if queue.ticket_count >= queue.limit {
+                                      #ff4444  // Red when at limit
+                                  } else if queue.ticket_count >= queue.limit * 80 / 100 {
+                                      #ff9800  // Orange when >= 80%
+                                  } else {
+                                      #4caf50  // Green when normal
+                                  }
+                              };
+                              
+                              Text {
+                                  text: queue.ticket_count + "/" + queue.limit;
+                                  font-size: 12px;
+                                  font-weight: 700;
+                                  color: white;
+                                  horizontal-alignment: center;
+                                  vertical-alignment: center;
+                              }
+                          }
+                      }
+
+                      // Gear icon if no limit, to allow setting one
+                      if queue.limit <= 0 : Rectangle {
+                          width: 32px;
+                          height: 32px;
+                          border-radius: 16px;
+                          opacity: touch-limit-none.has-hover ? 1.0 : 0.3;
+                          
+                          Text {
+                              text: "⚙";
+                              font-size: 16px;
+                              horizontal-alignment: center;
+                              vertical-alignment: center;
+                          }
+                          
+                          touch-limit-none := TouchArea {
+                              clicked => { edit_limit(queue.id, queue.name, -1); }
+                          }
+                      }
+                  }
+              }
+         
+         ScrollView {
             VerticalLayout {
                 spacing: 10px;
                 for ticket in queue.tickets : TicketCard {
@@ -477,6 +575,7 @@ export component App inherits Window {
     callback delete_ticket(string);
     callback save_ticket(string, string, string); // id, title, desc
     callback request_create_ticket(string, string, string); // queue_id, title, desc
+    callback request_change_limit(string, int); // queue_id, limit
     callback show_warning_dialog(string); // message
     callback navigate_to(string); // for cross-references
     callback test_trigger_add_ticket(string); // for testing
@@ -505,6 +604,12 @@ export component App inherits Window {
     // Warning dialog state
     property <bool> show_warning: false;
     property <string> warning_message: "";
+
+    // Limit editing state
+    property <bool> is_editing_limit: false;
+    property <string> editing_limit_id: "";
+    property <string> editing_limit_name: "";
+    property <string> editing_limit_text: "";
 
     preferred-width: 1024px;
     preferred-height: 768px;
@@ -560,6 +665,12 @@ export component App inherits Window {
                     editing_desc = "";
                     target_queue_for_new = qid;
                     is_editing = true;
+                }
+                edit_limit(qid, qname, qlimit) => {
+                    editing_limit_id = qid;
+                    editing_limit_name = qname;
+                    editing_limit_text = qlimit > 0 ? qlimit : "";
+                    is_editing_limit = true;
                 }
             }
         }
@@ -643,5 +754,22 @@ export component App inherits Window {
     if (show_warning) : WarningDialog {
         message: warning_message;
         close => { show_warning = false; }
+    }
+
+    // Limit Edit Overlay
+    if (is_editing_limit) : QueueLimitEdit {
+        queue_id: editing_limit_id;
+        queue_name: editing_limit_name;
+        limit_text: editing_limit_text;
+        
+        cancel => { is_editing_limit = false; }
+        remove_limit(qid) => {
+            is_editing_limit = false;
+            request_change_limit(qid, -1);
+        }
+        save(qid, limit) => {
+            is_editing_limit = false;
+            request_change_limit(qid, limit);
+        }
     }
 }

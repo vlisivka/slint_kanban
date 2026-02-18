@@ -58,6 +58,7 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Visual indicators when approaching limits
   - [x] Prevent adding tickets when limit reached
   - [x] Show warning dialog when limit exceeded
+  - [x] Add button to set or change queue limits.
 
 ### Cross-Reference Navigation
 - [x] Implement ticket cross-referencing
@@ -67,15 +68,15 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [ ] Show preview tooltip on hover
 
 ### Command Line Interface (CLI)
-- [ ] Refactor `main.rs` to move application logic into a testable function.
-- [ ] Implement CLI argument parsing using `clap`.
-- [ ] Implement non-interactive commands:
-    - [ ] `add`: create new ticket with options for title, description, and queue.
-    - [ ] `update`: update ticket attributes by ID.
-    - [ ] `move`: move ticket between queues by ID.
-    - [ ] `remove`: delete ticket by ID.
-- [ ] Implement `open PATH` command to control GUI from command line.
-- [ ] Add automated tests for all CLI commands.
+- [x] Refactor `main.rs` to move application logic into a testable function.
+- [x] Implement CLI argument parsing using `clap`.
+- [x] Implement non-interactive commands:
+    - [x] `add`: create new ticket with options for title, description, and queue.
+    - [x] `update`: update ticket attributes by ID.
+    - [x] `move`: move ticket between queues by ID.
+    - [x] `remove`: delete ticket by ID.
+- [x] Implement `open PATH` command to control GUI from command line.
+- [x] Add automated tests for all CLI commands.
 
 ### Search and Filter
 - [ ] Implement search functionality

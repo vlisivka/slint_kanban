@@ -253,7 +253,7 @@ fn test_move_ticket() -> anyhow::Result<()> {
             .tickets[0]
             .id,
         "T1",
-        "Moved ticket ID should be T1"
+        "The ticket ID in the target queue should match the moved ticket ID. Verify Board::move_ticket correctly re-links the ticket."
     );
 
     Ok(())
@@ -299,22 +299,22 @@ fn test_delete_ticket() -> anyhow::Result<()> {
 
     assert!(
         !t1_path.exists(),
-        "Ticket directory should be deleted from Tickets/"
+        "The ticket folder in 'Tickets/' should be removed after deletion. Ensure Board::delete_ticket correctly moves the folder."
     );
     assert!(
         deleted_dir.join("T1").exists(),
-        "Ticket directory should be moved to Deleted/"
+        "The ticket folder should be moved to 'Deleted/' folder after deletion. Check Board::delete_ticket implementation."
     );
     assert!(
         !q1_path.join("T1_link").exists(),
-        "Ticket symlink should be removed from the queue"
+        "The ticket symlink in the queue folder should be removed after deletion. Check Board::delete_ticket logic for cleaning up symlinks."
     );
 
     let board_after = Board::load(root_dir)?;
     assert_eq!(
         board_after.queues[0].tickets.len(),
         0,
-        "Queue should be empty after deletion"
+        "The board model should reflect the deletion by showing 0 tickets in the queue. Verify core scanning logic in Board::load."
     );
 
     Ok(())
@@ -352,7 +352,7 @@ fn test_create_ticket() -> anyhow::Result<()> {
     );
     assert!(
         q1_path.join(&tid).exists(),
-        "Symlink to ticket should be created in the queue"
+        "A symlink to the new ticket should be created in the target queue folder. Check symlink logic in Board::create_ticket."
     );
 
     let board2 = Board::load(root_path)?;
@@ -410,13 +410,13 @@ fn test_initialization() -> anyhow::Result<()> {
         7,
         "Default initialization should create 7 queues"
     );
-    assert_eq!(board.queues[0].id, "1. Incoming", "Queue 0 ID mismatch");
-    assert_eq!(board.queues[1].id, "2. ToDo", "Queue 1 ID mismatch");
-    assert_eq!(board.queues[2].id, "3. Doing", "Queue 2 ID mismatch");
-    assert_eq!(board.queues[3].id, "4. Reviewing", "Queue 3 ID mismatch");
-    assert_eq!(board.queues[4].id, "5. Testing", "Queue 4 ID mismatch");
-    assert_eq!(board.queues[5].id, "6. Done", "Queue 5 ID mismatch");
-    assert_eq!(board.queues[6].id, "7. Archive", "Queue 6 ID mismatch");
+    assert_eq!(board.queues[0].id, "1. Incoming", "Queue 0 ID mismatch. Board::ensure_initialized should create '1. Incoming' as the first queue.");
+    assert_eq!(board.queues[1].id, "2. ToDo", "Queue 1 ID mismatch. Board::ensure_initialized should create '2. ToDo' as the second queue.");
+    assert_eq!(board.queues[2].id, "3. Doing", "Queue 2 ID mismatch. Board::ensure_initialized should create '3. Doing' as the third queue.");
+    assert_eq!(board.queues[3].id, "4. Reviewing", "Queue 3 ID mismatch. Board::ensure_initialized should create '4. Reviewing' as the fourth queue.");
+    assert_eq!(board.queues[4].id, "5. Testing", "Queue 4 ID mismatch. Board::ensure_initialized should create '5. Testing' as the fifth queue.");
+    assert_eq!(board.queues[5].id, "6. Done", "Queue 5 ID mismatch. Board::ensure_initialized should create '6. Done' as the sixth queue.");
+    assert_eq!(board.queues[6].id, "7. Archive", "Queue 6 ID mismatch. Board::ensure_initialized should create '7. Archive' as the seventh queue.");
 
     // 2. Existing queue run: should NOT create defaults if something exists
     let root2 = tempdir()?;
@@ -459,14 +459,14 @@ fn test_queue_limit_creation() -> anyhow::Result<()> {
     let result = board.create_ticket("Task 2", "Desc 2", "2. ToDo");
     assert!(
         result.is_err(),
-        "Creation should fail as queue limit is reached"
+        "Board::create_ticket should return an error if the queue has reached its limit. Verify limit enforcement in create_ticket."
     );
     assert!(
         result
             .unwrap_err()
             .to_string()
             .contains("has reached its limit"),
-        "Error message should mention the queue limit"
+        "The error message from Board::create_ticket should clearly state that the queue limit has been reached. Check error message consistency."
     );
 
     Ok(())
@@ -497,14 +497,14 @@ fn test_queue_limit_moving() -> anyhow::Result<()> {
     let result = board.move_ticket(&tid2, "2. ToDo", "3. Doing");
     assert!(
         result.is_err(),
-        "Moving should fail as target queue limit is reached"
+        "Board::move_ticket should return an error if the target queue has reached its limit. Verify limit enforcement in move_ticket."
     );
     assert!(
         result
             .unwrap_err()
             .to_string()
             .contains("has reached its limit"),
-        "Error message should mention the queue limit"
+        "The error message from Board::move_ticket should clearly state that the target queue limit has been reached. Check error message consistency."
     );
 
     Ok(())

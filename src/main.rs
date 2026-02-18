@@ -249,6 +249,28 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
         }
     });
 
+    let limit_root = root_path.clone();
+    ui.on_request_change_limit(move |queue_id, limit| {
+        let mut board = match Board::load(limit_root.clone()) {
+            Ok(b) => b,
+            Err(e) => {
+                eprintln!("Error loading board for limit change: {:?}", e);
+                return;
+            }
+        };
+
+        println!("Changing limit for queue {} to {}", queue_id, limit);
+        if limit < 0 {
+            board.config.queue_limits.remove(&queue_id.to_string());
+        } else {
+            board.config.set_limit(queue_id.to_string(), limit as usize);
+        }
+
+        if let Err(e) = board.config.write(&limit_root) {
+            eprintln!("Error saving config: {:?}", e);
+        }
+    });
+
     ui.run()?;
     Ok(())
 }
