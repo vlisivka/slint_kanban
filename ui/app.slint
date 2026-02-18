@@ -451,30 +451,34 @@ component KanbanColumn inherits Rectangle {
 }
 
 export component App inherits Window {
-    in property <[QueueStr]> board_queues;
+    in-out property <[QueueStr]> board_queues;
     callback move_ticket(string, string, string); // ticket_id, from_queue, index:...
     callback delete_ticket(string);
     callback save_ticket(string, string, string); // id, title, desc
     callback request_create_ticket(string, string, string); // queue_id, title, desc
     callback show_warning_dialog(string); // message
+    callback test_trigger_add_ticket(string); // for testing
+    callback test_trigger_close_view(); // for testing
+    callback test_trigger_cancel_edit(); // for testing
+    callback test_trigger_delete_ticket(string); // for testing
     
     // Global dragging state
     property <string> dragging_ticket_id: "";
     property <string> dragging_from_queue_id: "";
-    property <bool> is_dragging: false;
+    in-out property <bool> is_dragging: false;
     property <length> mouse_x: 0px;
     property <length> mouse_y: 0px;
 
     // State
-    property <bool> is_viewing_ticket: false;
-    property <TicketStr> active_ticket;
+    in-out property <bool> is_viewing_ticket: false;
+    in-out property <TicketStr> active_ticket;
 
     // Editing state
-    property <bool> is_editing: false;
-    property <string> editing_id: "";
-    property <string> editing_title: "";
-    property <string> editing_desc: "";
-    property <string> target_queue_for_new: "";
+    in-out property <bool> is_editing: false;
+    out property <string> editing_id: "";
+    out property <string> editing_title: "";
+    out property <string> editing_desc: "";
+    out property <string> target_queue_for_new: "";
     
     // Warning dialog state
     property <bool> show_warning: false;
@@ -543,6 +547,26 @@ export component App inherits Window {
     show_warning_dialog(msg) => {
         warning_message = msg;
         show_warning = true;
+    }
+    
+    test_trigger_add_ticket(qid) => {
+        editing_id = "";
+        editing_title = "New Ticket";
+        editing_desc = "";
+        target_queue_for_new = qid;
+        is_editing = true;
+    }
+
+    test_trigger_close_view() => {
+        is_viewing_ticket = false;
+    }
+
+    test_trigger_cancel_edit() => {
+        is_editing = false;
+    }
+
+    test_trigger_delete_ticket(tid) => {
+        delete_ticket(tid);
     }
 
     // Ghost card follows mouse

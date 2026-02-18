@@ -17,4 +17,5 @@ toml = "0.8"
 [build-dependencies]
 slint-build = "1.9"
 [dev-dependencies]
+i-slint-backend-testing = "1.15.1"
 tempfile = "3.10"
