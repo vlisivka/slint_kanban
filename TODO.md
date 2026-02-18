@@ -52,12 +52,12 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 ## Phase 7: Future Enhancements
 
 ### Queue Limits
-- [ ] Implement configurable queue limits
-  - [ ] Add configuration file support (YAML/TOML)
-  - [ ] Add limit settings per queue
-  - [ ] Visual indicators when approaching limits
-  - [ ] Prevent adding tickets when limit reached
-  - [ ] Show warning dialog when limit exceeded
+- [x] Implement configurable queue limits
+  - [x] Add configuration file support (YAML/TOML)
+  - [x] Add limit settings per queue
+  - [x] Visual indicators when approaching limits
+  - [x] Prevent adding tickets when limit reached
+  - [x] Show warning dialog when limit exceeded
 
 ### Cross-Reference Navigation
 - [ ] Implement ticket cross-referencing
