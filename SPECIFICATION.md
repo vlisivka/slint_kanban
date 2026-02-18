@@ -46,7 +46,8 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
     -   **Edit Button**: Opens the editor for raw `README.md` content.
 5.  **Cross-Referencing**:
     -   Generate short IDs based on ticket title and creation date.
-    -   Support linking between tickets using these IDs ad #tick12.
+    -   Support linking between tickets using these IDs (e.g., `#abc123`).
+    -   IDs must be short, easy to enter, and consists only of lowercase letters and digits.
 6.  **Limits on queues**:
     -  ToDo queue - no more than 21 item (configurable).
     -  Doing queue - no more than 5 items (configurable).
@@ -76,7 +77,7 @@ The following features are planned for future releases:
    - Doing queue: Maximum 5 items (configurable)
    - Visual warnings when approaching limits
 
-3. **Cross-Reference Navigation (Implemented)**: Clickable links between tickets using short IDs (e.g., `#T-abc123`) with automatic detection and navigation.
+3. **Cross-Reference Navigation (Implemented)**: Clickable links between tickets using short IDs (e.g., `#abc123`) with automatic detection and navigation.
 
 4. **Search and Filter**: 
    - Full-text search across all tickets

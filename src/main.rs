@@ -36,11 +36,7 @@ fn sync_ui_with_board(ui: &App, board: &Board) {
         let ticket_count = queue.tickets.len() as i32;
         let limit = queue.limit.map(|l| l as i32).unwrap_or(-1);
 
-        let slint_tickets: Vec<TicketStr> = queue
-            .tickets
-            .iter()
-            .map(ticket_to_slint)
-            .collect();
+        let slint_tickets: Vec<TicketStr> = queue.tickets.iter().map(ticket_to_slint).collect();
 
         let tickets_model = Rc::new(VecModel::from(slint_tickets));
 
@@ -235,7 +231,10 @@ fn main() -> anyhow::Result<()> {
             }
         } else {
             if let Some(ui) = nav_ui_handle.upgrade() {
-                ui.invoke_show_warning_dialog(SharedString::from(format!("Ticket NOT FOUND: {}", target_id)));
+                ui.invoke_show_warning_dialog(SharedString::from(format!(
+                    "Ticket NOT FOUND: {}",
+                    target_id
+                )));
             }
         }
     });
@@ -272,13 +271,22 @@ mod tests {
     #[test]
     fn test_ui() -> anyhow::Result<()> {
         let ui = App::new()?;
-        
+
         // 1. Test initialization
         assert_eq!(ui.get_board_queues().row_count(), 0, "Initially there should be no queues in the model. Ensure App initialization correctly sets an empty model.");
-        assert!(!ui.get_is_dragging(), "is_dragging should be false by default.");
-        assert!(!ui.get_is_editing(), "is_editing should be false by default.");
-        assert!(!ui.get_is_viewing_ticket(), "is_viewing_ticket should be false by default.");
-        
+        assert!(
+            !ui.get_is_dragging(),
+            "is_dragging should be false by default."
+        );
+        assert!(
+            !ui.get_is_editing(),
+            "is_editing should be false by default."
+        );
+        assert!(
+            !ui.get_is_viewing_ticket(),
+            "is_viewing_ticket should be false by default."
+        );
+
         // 2. Test interaction
         let queues_model = Rc::new(VecModel::from(vec![QueueStr {
             id: SharedString::from("q1"),
@@ -288,15 +296,18 @@ mod tests {
             ticket_count: 0,
         }]));
         ui.set_board_queues(queues_model.into());
-        
+
         ui.invoke_test_trigger_add_ticket(SharedString::from("q1"));
-        
+
         assert!(ui.get_is_editing(), "is_editing should be true after triggering add_ticket. Verify that test_trigger_add_ticket callback correctly updates the state.");
         assert_eq!(ui.get_target_queue_for_new(), "q1", "target_queue_for_new should match the queue ID where '+' was clicked. Check the value passed to test_trigger_add_ticket.");
-        
+
         // 3. Test cancel edit
         ui.invoke_test_trigger_cancel_edit();
-        assert!(!ui.get_is_editing(), "is_editing should be false after cancel.");
+        assert!(
+            !ui.get_is_editing(),
+            "is_editing should be false after cancel."
+        );
 
         // 4. Test view and close
         ui.set_active_ticket(TicketStr {
@@ -311,7 +322,10 @@ mod tests {
         ui.set_is_viewing_ticket(true);
         assert!(ui.get_is_viewing_ticket());
         ui.invoke_test_trigger_close_view();
-        assert!(!ui.get_is_viewing_ticket(), "is_viewing_ticket should be false after close.");
+        assert!(
+            !ui.get_is_viewing_ticket(),
+            "is_viewing_ticket should be false after close."
+        );
 
         // 5. Test deletion callback
         let (tx, rx) = std::sync::mpsc::channel();
@@ -319,7 +333,9 @@ mod tests {
             tx.send(tid.to_string()).unwrap();
         });
         ui.invoke_test_trigger_delete_ticket("T-DELETE".into());
-        let deleted_id = rx.recv_timeout(std::time::Duration::from_millis(100)).expect("Delete callback should be triggered");
+        let deleted_id = rx
+            .recv_timeout(std::time::Duration::from_millis(100))
+            .expect("Delete callback should be triggered");
         assert_eq!(deleted_id, "T-DELETE");
 
         Ok(())
