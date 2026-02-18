@@ -51,6 +51,73 @@ fn test_ticket_matches() {
 }
 
 #[test]
+fn test_ticket_matches_date_range() {
+    let ticket = Ticket {
+        id: "T123".to_string(),
+        title: "Buy Milk".to_string(),
+        description: "Need whole milk for the coffee".to_string(),
+        created_at: "2024-02-18 12:00:00".to_string(),
+        updated_at: "2024-02-18 12:00:00".to_string(),
+    };
+
+    // 1. No filters
+    assert!(
+        ticket.matches_date_range("", ""),
+        "Empty filters should always match"
+    );
+
+    // 2. From filter
+    assert!(
+        ticket.matches_date_range("2024-01-01", ""),
+        "Should match if created after 2024-01-01"
+    );
+    assert!(
+        ticket.matches_date_range("2024-02-18", ""),
+        "Should match if created on the same day"
+    );
+    assert!(
+        ticket.matches_date_range("2024-02-18 12:00:00", ""),
+        "Should match if created at exactly the same time"
+    );
+    assert!(
+        !ticket.matches_date_range("2024-02-19", ""),
+        "Should not match if created before 2024-02-19"
+    );
+
+    // 3. To filter
+    assert!(
+        ticket.matches_date_range("", "2024-03-01"),
+        "Should match if created before 2024-03-01"
+    );
+    assert!(
+        ticket.matches_date_range("", "2024-02-18"),
+        "Should match if created on the same day"
+    );
+    assert!(
+        ticket.matches_date_range("", "2024-02-18 12:00:00"),
+        "Should match if created at exactly the same time"
+    );
+    assert!(
+        !ticket.matches_date_range("", "2024-02-17"),
+        "Should not match if created after 2024-02-17"
+    );
+
+    // 4. Range
+    assert!(
+        ticket.matches_date_range("2024-01-01", "2024-12-31"),
+        "Within range"
+    );
+    assert!(
+        !ticket.matches_date_range("2024-02-19", "2024-12-31"),
+        "Out of range (too early)"
+    );
+    assert!(
+        !ticket.matches_date_range("2023-01-01", "2024-02-17"),
+        "Out of range (too late)"
+    );
+}
+
+#[test]
 fn test_ticket_metadata_missing_updated_at() {
     let yaml = "
 title: Buy Groceries

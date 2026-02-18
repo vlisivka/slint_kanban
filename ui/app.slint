@@ -1,4 +1,13 @@
-import { ScrollView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit, Palette, CheckBox } from "std-widgets.slint";
+import {
+    ScrollView,
+    VerticalBox,
+    HorizontalBox,
+    Button,
+    LineEdit,
+    TextEdit,
+    Palette,
+    CheckBox,
+} from "std-widgets.slint";
 
 export struct RefStr {
     id: string,
@@ -38,35 +47,39 @@ component TicketView inherits Rectangle {
     callback navigate_to(string);
     callback show_tooltip(string, length, length);
     callback hide_tooltip();
- 
+
     background: #00000080; // Semi-transparent backdrop for focus
-    
+
     // BACKDROP: Catch clicks outside the card to cancel
     TouchArea {
-        clicked => { close(); }
+        clicked => {
+            close();
+        }
     }
-    
+
     Rectangle {
         // Full window (fill parent)
         width: 100%;
         height: 100%;
         background: Palette.background;
-        
+
         TouchArea { } // Block clicks
 
         VerticalBox {
             padding: 40px;
             spacing: 24px;
-            
+
             HorizontalLayout {
                 padding: 0px;
                 alignment: space-between;
-                
+
                 Button {
                     text: "Edit";
                     width: 100px;
                     height: 40px;
-                    clicked => { edit(); }
+                    clicked => {
+                        edit();
+                    }
                 }
 
                 // Title as header (centered)
@@ -78,16 +91,17 @@ component TicketView inherits Rectangle {
                     horizontal-alignment: center;
                     // Centering logic: this text fills the space between buttons
                 }
-                
+
                 Button {
                     text: "Close";
                     width: 100px;
                     height: 40px;
-                    clicked => { close(); }
+                    clicked => {
+                        close();
+                    }
                 }
             }
-            
-            
+
             ScrollView {
                 VerticalBox {
                     padding: 20px;
@@ -99,7 +113,7 @@ component TicketView inherits Rectangle {
                         horizontal-alignment: left;
                     }
 
-                    if ticket.references.length > 0 : VerticalLayout {
+                    if ticket.references.length > 0: VerticalLayout {
                         spacing: 12px;
                         Text {
                             text: "Related Tickets:";
@@ -107,15 +121,16 @@ component TicketView inherits Rectangle {
                             font-weight: 800;
                             opacity: 0.7;
                         }
+
                         HorizontalBox {
                             padding: 0px;
                             alignment: start;
-                            for ref in ticket.references : Rectangle {
+                            for ref in ticket.references: Rectangle {
                                 width: ref_label.preferred-width + 20px;
                                 height: 32px;
                                 border-radius: 4px;
                                 background: Palette.alternate-background;
-                                
+
                                 ref_label := Text {
                                     text: ref.id;
                                     horizontal-alignment: center;
@@ -123,7 +138,9 @@ component TicketView inherits Rectangle {
                                 }
 
                                 TouchArea {
-                                    clicked => { navigate_to(ref.id); }
+                                    clicked => {
+                                        navigate_to(ref.id);
+                                    }
                                     changed has-hover => {
                                         if (self.has-hover) {
                                             show_tooltip(ref.title, self.absolute-position.x, self.absolute-position.y - 30px);
@@ -145,38 +162,42 @@ component TicketEdit inherits Rectangle {
     in-out property <string> title_text;
     in-out property <string> description_text;
     in property <string> ticket_id;
-    
+
     callback save(string, string, string); // id, title, desc
     callback cancel();
- 
+
     background: #00000080; // Semi-transparent backdrop for focus
-    
+
     // BACKDROP: Catch clicks outside the card to cancel
     TouchArea {
-        clicked => { cancel(); }
+        clicked => {
+            cancel();
+        }
     }
-    
+
     Rectangle {
         // Full window (fill parent)
         width: 100%;
         height: 100%;
         background: Palette.background;
-        
+
         TouchArea { } // Block clicks
 
         VerticalBox {
             padding: 40px;
             spacing: 24px;
-            
+
             HorizontalLayout {
                 padding: 0px;
                 alignment: space-between;
-                
+
                 Button {
                     text: "Cancel";
                     width: 100px;
                     height: 40px;
-                    clicked => { cancel(); }
+                    clicked => {
+                        cancel();
+                    }
                 }
 
                 // Title as header (centered)
@@ -187,29 +208,43 @@ component TicketEdit inherits Rectangle {
                     wrap: word-wrap;
                     horizontal-alignment: center;
                 }
-                
+
                 Button {
                     text: "Save Ticket";
                     primary: true;
                     width: 120px;
                     height: 40px;
-                    clicked => { save(ticket_id, title_text, description_text); }
+                    clicked => {
+                        save(ticket_id, title_text, description_text);
+                    }
                 }
             }
-            
+
             VerticalLayout {
                 spacing: 8px;
-                Text { text: "Title"; font-size: 11px; font-weight: 800; opacity: 0.6; }
+                Text {
+                    text: "Title";
+                    font-size: 11px;
+                    font-weight: 800;
+                    opacity: 0.6;
+                }
+
                 LineEdit {
                     text <=> title_text;
                     placeholder-text: "What needs to be done?";
                     height: 40px;
                 }
             }
-            
+
             VerticalLayout {
                 spacing: 8px;
-                Text { text: "Description"; font-size: 11px; font-weight: 800; opacity: 0.6; }
+                Text {
+                    text: "Description";
+                    font-size: 11px;
+                    font-weight: 800;
+                    opacity: 0.6;
+                }
+
                 TextEdit {
                     text <=> description_text;
                     placeholder-text: "What needs to be done?";
@@ -224,14 +259,16 @@ component TicketEdit inherits Rectangle {
 component WarningDialog inherits Rectangle {
     in property <string> message;
     callback close();
-    
+
     background: #00000080; // Semi-transparent backdrop
-    
+
     // BACKDROP: Catch clicks outside to close
     TouchArea {
-        clicked => { close(); }
+        clicked => {
+            close();
+        }
     }
-    
+
     Rectangle {
         width: 400px;
         height: 200px;
@@ -241,24 +278,24 @@ component WarningDialog inherits Rectangle {
         border-radius: 12px;
         drop-shadow-blur: 16px;
         drop-shadow-color: #00000040;
-        
+
         TouchArea { } // Block clicks
-        
+
         VerticalBox {
             padding: 24px;
             spacing: 20px;
-            
+
             // Warning Icon and Title
             HorizontalLayout {
                 spacing: 12px;
                 alignment: center;
-                
+
                 Rectangle {
                     width: 48px;
                     height: 48px;
                     border-radius: 24px;
                     background: #ff9800;
-                    
+
                     Text {
                         text: "⚠";
                         font-size: 32px;
@@ -266,14 +303,14 @@ component WarningDialog inherits Rectangle {
                         vertical-alignment: center;
                     }
                 }
-                
+
                 Text {
                     text: "Warning";
                     font-size: 20px;
                     font-weight: 700;
                 }
             }
-            
+
             // Message
             Text {
                 text: message;
@@ -281,12 +318,14 @@ component WarningDialog inherits Rectangle {
                 wrap: word-wrap;
                 horizontal-alignment: center;
             }
-            
+
             // Close Button
             Button {
                 text: "OK";
                 primary: true;
-                clicked => { close(); }
+                clicked => {
+                    close();
+                }
             }
         }
     }
@@ -296,18 +335,20 @@ component QueueLimitEdit inherits Rectangle {
     in property <string> queue_name;
     in property <string> queue_id;
     in-out property <string> limit_text;
-    
+
     callback save(string, int); // id, limit
     callback cancel();
     callback remove_limit(string); // id
-  
+
     background: #00000080; // Semi-transparent backdrop
-    
+
     // BACKDROP: Catch clicks outside to cancel
     TouchArea {
-        clicked => { cancel(); }
+        clicked => {
+            cancel();
+        }
     }
-    
+
     Rectangle {
         width: 400px;
         height: 280px;
@@ -317,23 +358,29 @@ component QueueLimitEdit inherits Rectangle {
         border-radius: 12px;
         drop-shadow-blur: 16px;
         drop-shadow-color: #00000040;
-        
+
         TouchArea { } // Block clicks
-        
+
         VerticalBox {
             padding: 24px;
             spacing: 20px;
-            
+
             Text {
                 text: "Set Limit for " + queue_name;
                 font-size: 20px;
                 font-weight: 700;
                 horizontal-alignment: center;
             }
-            
+
             VerticalLayout {
                 spacing: 8px;
-                Text { text: "Max Tickets"; font-size: 11px; font-weight: 800; opacity: 0.6; }
+                Text {
+                    text: "Max Tickets";
+                    font-size: 11px;
+                    font-weight: 800;
+                    opacity: 0.6;
+                }
+
                 LineEdit {
                     text <=> limit_text;
                     placeholder-text: "e.g. 5, 21";
@@ -341,23 +388,31 @@ component QueueLimitEdit inherits Rectangle {
                     input-type: number;
                 }
             }
-            
+
             HorizontalLayout {
                 spacing: 12px;
                 Button {
                     text: "Cancel";
-                    clicked => { cancel(); }
+                    clicked => {
+                        cancel();
+                    }
                     horizontal-stretch: 1;
                 }
+
                 Button {
                     text: "Remove Limit";
-                    clicked => { remove_limit(queue_id); }
+                    clicked => {
+                        remove_limit(queue_id);
+                    }
                     horizontal-stretch: 1;
                 }
+
                 Button {
                     text: "Save";
                     primary: true;
-                    clicked => { save(queue_id, limit_text.to-float()); }
+                    clicked => {
+                        save(queue_id, limit_text.to-float());
+                    }
                     horizontal-stretch: 1;
                 }
             }
@@ -368,7 +423,7 @@ component QueueLimitEdit inherits Rectangle {
 component TicketCard inherits Rectangle {
     in property <TicketStr> ticket;
     in property <string> from_queue_id;
-    
+
     // Drag/Delete/Edit callbacks
     callback start_dragging(string, string, length, length);
     callback move_dragging(length, length);
@@ -388,10 +443,10 @@ component TicketCard inherits Rectangle {
     touch-area := TouchArea {
         pointer-event(event) => {
             if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
-                 start_dragging(ticket.id, from_queue_id, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                start_dragging(ticket.id, from_queue_id, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
             }
             if (event.kind == PointerEventKind.up) {
-                 drop_ticket(self.absolute-position.x + self.mouse-x);
+                drop_ticket(self.absolute-position.x + self.mouse-x);
             }
         }
         moved => {
@@ -408,38 +463,40 @@ component TicketCard inherits Rectangle {
     VerticalBox {
         padding: 12px;
         spacing: 8px;
-        
+
         HorizontalBox {
             padding: 0px;
             alignment: space-between;
-            
+
             Text {
                 text: ticket.title;
                 font-weight: 700;
                 font-size: 15px;
                 overflow: elide;
             }
-            
+
             // Delete Button
             Rectangle {
                 width: 24px;
                 height: 24px;
                 background: touch-del.pressed ? #eb1abaff : (touch-del.has-hover ? #ff0048ff : transparent);
                 border-radius: 4px;
-                
+
                 Text {
                     text: "×";
                     font-size: 18px;
                     horizontal-alignment: center;
                     vertical-alignment: center;
                 }
-                
+
                 touch-del := TouchArea {
-                    clicked => { delete_clicked(ticket.id); }
+                    clicked => {
+                        delete_clicked(ticket.id);
+                    }
                 }
             }
         }
-        
+
         Text {
             text: ticket.snippet;
             font-size: 13px;
@@ -457,12 +514,14 @@ component TicketCard inherits Rectangle {
                 color: #5e6c84;
                 opacity: 0.6;
             }
+
             VerticalLayout {
                 spacing: 2px;
                 Text {
                     text: "C: " + ticket.created_at;
                     font-size: 9px;
                 }
+
                 Text {
                     text: "U: " + ticket.updated_at;
                     font-size: 9px;
@@ -474,7 +533,10 @@ component TicketCard inherits Rectangle {
 
 component FilterMenu inherits Rectangle {
     in-out property <[QueueStr]> queues;
+    in-out property <string> date_from;
+    in-out property <string> date_to;
     callback toggle_visibility(string, bool);
+    callback date_filter_changed();
     callback close();
 
     background: Palette.background;
@@ -489,7 +551,7 @@ component FilterMenu inherits Rectangle {
     VerticalLayout {
         padding: 20px;
         spacing: 15px;
-        
+
         HorizontalLayout {
             alignment: space-between;
             Text {
@@ -501,12 +563,62 @@ component FilterMenu inherits Rectangle {
 
         VerticalLayout {
             spacing: 10px;
-            for q in queues : HorizontalLayout {
+            for q in queues: HorizontalLayout {
                 spacing: 10px;
                 CheckBox {
                     text: q.name;
                     checked: q.visible;
-                    toggled => { toggle_visibility(q.id, self.checked); }
+                    toggled => {
+                        toggle_visibility(q.id, self.checked);
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            height: 1px;
+            background: Palette.border;
+        }
+
+        Text {
+            text: "Filter by Date Range";
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        VerticalLayout {
+            spacing: 8px;
+            HorizontalLayout {
+                spacing: 10px;
+                Text {
+                    text: "From:";
+                    vertical-alignment: center;
+                    width: 40px;
+                }
+
+                LineEdit {
+                    text <=> date_from;
+                    placeholder-text: "YYYY-MM-DD";
+                    edited => {
+                        date_filter_changed();
+                    }
+                }
+            }
+
+            HorizontalLayout {
+                spacing: 10px;
+                Text {
+                    text: "To:";
+                    vertical-alignment: center;
+                    width: 40px;
+                }
+
+                LineEdit {
+                    text <=> date_to;
+                    placeholder-text: "YYYY-MM-DD";
+                    edited => {
+                        date_filter_changed();
+                    }
                 }
             }
         }
@@ -515,7 +627,9 @@ component FilterMenu inherits Rectangle {
             alignment: end;
             Button {
                 text: "Close";
-                clicked => { close(); }
+                clicked => {
+                    close();
+                }
             }
         }
     }
@@ -523,7 +637,7 @@ component FilterMenu inherits Rectangle {
 
 component KanbanColumn inherits Rectangle {
     in property <QueueStr> queue;
-    
+
     // Drag/Drop/Delete/Edit callbacks
     callback start_dragging(string, string, length, length);
     callback move_dragging(length, length);
@@ -537,108 +651,124 @@ component KanbanColumn inherits Rectangle {
     horizontal-stretch: 0; // Prevent shrinking in layouts
     border-radius: 12px;
     background: Palette.alternate-background;
-    
+
     VerticalBox {
         padding: 16px;
         spacing: 12px;
-        
+
         HorizontalBox {
-             padding: 0px;
-             alignment: space-between;
-             
-             VerticalLayout {
-                 Text {
-                     text: queue.name;
-                     font-weight: 800;
-                     font-size: 16px;
-                 }
-             }
-             
-                  // Limit Indicators and Settings
+            padding: 0px;
+            alignment: space-between;
+
+            VerticalLayout {
+                Text {
+                    text: queue.name;
+                    font-weight: 800;
+                    font-size: 16px;
+                }
+            }
+
+            // Limit Indicators and Settings
                   HorizontalLayout {
-                      spacing: 8px;
-                      alignment: end;
+                spacing: 8px;
+                alignment: end;
 
-                      // Styled New Ticket Button first
+                // Styled New Ticket Button first
                       Rectangle {
-                          width: 32px;
-                          height: 32px;
-                          border-radius: 16px;
-                          
-                          Text {
-                              text: "+";
-                              font-size: 20px;
-                              font-weight: 800;
-                              horizontal-alignment: center;
-                              vertical-alignment: center;
-                          }
-                          
-                          touch-add := TouchArea {
-                              clicked => { create_ticket(queue.id); }
-                          }
-                      }
-                      
-                      // Limit Badge (clickable)
-                      if queue.limit > 0 : TouchArea {
-                          clicked => { edit_limit(queue.id, queue.name, queue.limit); }
-                          
-                          Rectangle {
-                              height: 24px;
-                              min-width: 50px;
-                              border-radius: 12px;
-                              background: {
-                                  if queue.ticket_count >= queue.limit {
-                                      #ff4444  // Red when at limit
-                                  } else if queue.ticket_count >= queue.limit * 80 / 100 {
-                                      #ff9800  // Orange when >= 80%
-                                  } else {
-                                      #4caf50  // Green when normal
-                                  }
-                              };
-                              
-                              Text {
-                                  text: queue.ticket_count + "/" + queue.limit;
-                                  font-size: 12px;
-                                  font-weight: 700;
-                                  color: white;
-                                  horizontal-alignment: center;
-                                  vertical-alignment: center;
-                              }
-                          }
-                      }
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 16px;
 
-                      // Gear icon if no limit, to allow setting one
-                      if queue.limit <= 0 : Rectangle {
-                          width: 32px;
-                          height: 32px;
-                          border-radius: 16px;
-                          opacity: touch-limit-none.has-hover ? 1.0 : 0.3;
-                          
-                          Text {
-                              text: "⚙";
-                              font-size: 16px;
-                              horizontal-alignment: center;
-                              vertical-alignment: center;
-                          }
-                          
-                          touch-limit-none := TouchArea {
-                              clicked => { edit_limit(queue.id, queue.name, -1); }
-                          }
-                      }
-                  }
-              }
-         
-         ScrollView {
+                    Text {
+                        text: "+";
+                        font-size: 20px;
+                        font-weight: 800;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    touch-add := TouchArea {
+                        clicked => {
+                            create_ticket(queue.id);
+                        }
+                    }
+                }
+
+                // Limit Badge (clickable)
+                      if queue.limit > 0: TouchArea {
+                    clicked => {
+                        edit_limit(queue.id, queue.name, queue.limit);
+                    }
+
+                    Rectangle {
+                        height: 24px;
+                        min-width: 50px;
+                        border-radius: 12px;
+                        background: {
+                            if queue.ticket_count >= queue.limit {
+                                #ff4444  // Red when at limit
+                                  } else if queue.ticket_count >= queue.limit * 80 / 100 {
+                                #ff9800  // Orange when >= 80%
+                                  } else {
+                                #4caf50  // Green when normal
+                                  }
+                        };
+
+                        Text {
+                            text: queue.ticket_count + "/" + queue.limit;
+                            font-size: 12px;
+                            font-weight: 700;
+                            color: white;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+
+                // Gear icon if no limit, to allow setting one
+                      if queue.limit <= 0: Rectangle {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 16px;
+                    opacity: touch-limit-none.has-hover ? 1.0 : 0.3;
+
+                    Text {
+                        text: "⚙";
+                        font-size: 16px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    touch-limit-none := TouchArea {
+                        clicked => {
+                            edit_limit(queue.id, queue.name, -1);
+                        }
+                    }
+                }
+            }
+        }
+
+        ScrollView {
             VerticalLayout {
                 spacing: 10px;
-                for ticket in queue.tickets : TicketCard {
+                for ticket in queue.tickets: TicketCard {
                     ticket: ticket;
                     from_queue_id: queue.id;
-                    start_dragging(tid, qid, mx, my) => { start_dragging(tid, qid, mx, my); }
-                    move_dragging(mx, my) => { move_dragging(mx, my); }
-                    drop_ticket(mx) => { drop_ticket(mx); }
-                    delete_clicked(tid) => { delete_ticket(tid); }
-                    edit_clicked(t) => { edit_ticket(t); }
+                    start_dragging(tid, qid, mx, my) => {
+                        start_dragging(tid, qid, mx, my);
+                    }
+                    move_dragging(mx, my) => {
+                        move_dragging(mx, my);
+                    }
+                    drop_ticket(mx) => {
+                        drop_ticket(mx);
+                    }
+                    delete_clicked(tid) => {
+                        delete_ticket(tid);
+                    }
+                    edit_clicked(t) => {
+                        edit_ticket(t);
+                    }
                 }
             }
         }
@@ -648,8 +778,11 @@ component KanbanColumn inherits Rectangle {
 export component App inherits Window {
     in-out property <[QueueStr]> board_queues;
     in-out property <string> search_query: "";
+    in-out property <string> date_from: "";
+    in-out property <string> date_to: "";
     in-out property <bool> show_filter_menu: false;
     callback search_edited(string);
+    callback date_filter_changed();
     callback toggle_queue_visibility(string, bool);
     callback move_ticket(string, string, string); // ticket_id, from_queue, index:...
     callback delete_ticket(string);
@@ -685,7 +818,7 @@ export component App inherits Window {
     out property <string> editing_title: "";
     out property <string> editing_desc: "";
     out property <string> target_queue_for_new: "";
-    
+
     // Warning dialog state
     property <bool> show_warning: false;
     property <string> warning_message: "";
@@ -700,10 +833,10 @@ export component App inherits Window {
     preferred-height: 768px;
     min-width: 400px;
     min-height: 300px;
-    
+
     title: "Slint Kanban";
 
-    config := AppConfig {}
+    config := AppConfig { }
 
     VerticalBox {
         padding: 0px;
@@ -716,30 +849,37 @@ export component App inherits Window {
             HorizontalLayout {
                 padding: 10px;
                 spacing: 20px;
-                
+
                 // Left spacer to balance if needed, or just alignment
-                Rectangle { width: 40px; } 
+                Rectangle {
+                    width: 40px;
+                }
 
                 HorizontalBox {
                     spacing: 12px;
                     alignment: center;
-                    
+
                     Text {
                         text: "Search:";
                         vertical-alignment: center;
                         font-weight: 700;
                     }
-                    
+
                     LineEdit {
                         text <=> search_query;
                         placeholder-text: "Filter titles, descriptions or IDs...";
                         width: 400px;
-                        edited(text) => { search_edited(text); }
+                        edited(text) => {
+                            search_edited(text);
+                        }
                     }
-                    
-                    if (search_query != "") : Button {
+
+                    if (search_query != ""): Button {
                         text: "Clear";
-                        clicked => { search_query = ""; search_edited(""); }
+                        clicked => {
+                            search_query = "";
+                            search_edited("");
+                        }
                     }
                 }
 
@@ -750,7 +890,9 @@ export component App inherits Window {
                     Button {
                         text: "⚙"; // Gear icon for settings/filter
                         width: 40px;
-                        clicked => { show_filter_menu = !show_filter_menu; }
+                        clicked => {
+                            show_filter_menu = !show_filter_menu;
+                        }
                     }
                 }
             }
@@ -758,68 +900,68 @@ export component App inherits Window {
 
         ScrollView {
             HorizontalLayout {
-            padding: config.board-padding;
-            spacing: config.column-spacing;
-            alignment: start;
-            
-            for queue in board_queues : KanbanColumn {
-                visible: queue.visible;
-                queue: queue;
-                width: self.visible ? config.column-width : 0px;
-                
-                start_dragging(tid, qid, mx, my) => {
-                    dragging_ticket_id = tid;
-                    dragging_from_queue_id = qid;
-                    mouse_x = mx;
-                    mouse_y = my;
-                    is_dragging = true;
-                }
-                move_dragging(mx, my) => {
-                    mouse_x = mx;
-                    mouse_y = my;
-                }
-                drop_ticket(mx) => {
-                    if (is_dragging) {
-                        is_dragging = false;
-                        if (mx > config.board-padding) {
-                            let idx = (mx - config.board-padding) / (config.column-width + config.column-spacing);
-                            move_ticket(dragging_ticket_id, dragging_from_queue_id, "index:" + idx);
-                        }
-                        dragging_ticket_id = "";
-                        dragging_from_queue_id = "";
+                padding: config.board-padding;
+                spacing: config.column-spacing;
+                alignment: start;
+
+                for queue in board_queues: KanbanColumn {
+                    visible: queue.visible;
+                    queue: queue;
+                    width: self.visible ? config.column-width : 0px;
+
+                    start_dragging(tid, qid, mx, my) => {
+                        dragging_ticket_id = tid;
+                        dragging_from_queue_id = qid;
+                        mouse_x = mx;
+                        mouse_y = my;
+                        is_dragging = true;
                     }
-                }
-                delete_ticket(tid) => {
-                    delete_ticket(tid);
-                }
-                edit_ticket(t) => {
-                    active_ticket = t;
-                    is_viewing_ticket = true;
-                }
-                create_ticket(qid) => {
-                    editing_id = "";
-                    editing_title = "New Ticket";
-                    editing_desc = "";
-                    target_queue_for_new = qid;
-                    is_editing = true;
-                }
-                edit_limit(qid, qname, qlimit) => {
-                    editing_limit_id = qid;
-                    editing_limit_name = qname;
-                    editing_limit_text = qlimit > 0 ? qlimit : "";
-                    is_editing_limit = true;
+                    move_dragging(mx, my) => {
+                        mouse_x = mx;
+                        mouse_y = my;
+                    }
+                    drop_ticket(mx) => {
+                        if (is_dragging) {
+                            is_dragging = false;
+                            if (mx > config.board-padding) {
+                                let idx = (mx - config.board-padding) / (config.column-width + config.column-spacing);
+                                move_ticket(dragging_ticket_id, dragging_from_queue_id, "index:" + idx);
+                            }
+                            dragging_ticket_id = "";
+                            dragging_from_queue_id = "";
+                        }
+                    }
+                    delete_ticket(tid) => {
+                        delete_ticket(tid);
+                    }
+                    edit_ticket(t) => {
+                        active_ticket = t;
+                        is_viewing_ticket = true;
+                    }
+                    create_ticket(qid) => {
+                        editing_id = "";
+                        editing_title = "New Ticket";
+                        editing_desc = "";
+                        target_queue_for_new = qid;
+                        is_editing = true;
+                    }
+                    edit_limit(qid, qname, qlimit) => {
+                        editing_limit_id = qid;
+                        editing_limit_name = qname;
+                        editing_limit_text = qlimit > 0 ? qlimit : "";
+                        is_editing_limit = true;
+                    }
                 }
             }
         }
     }
-    }
-    
+
     // Initialize callback
     show_warning_dialog(msg) => {
         warning_message = msg;
         show_warning = true;
     }
-    
+
     test_trigger_add_ticket(qid) => {
         editing_id = "";
         editing_title = "New Ticket";
@@ -841,26 +983,28 @@ export component App inherits Window {
     }
 
     // Ghost card follows mouse
-    if (is_dragging) : Rectangle {
+    if (is_dragging): Rectangle {
         x: mouse_x - 100px;
         y: mouse_y - 30px;
         width: 200px;
         height: 60px;
         border-radius: 4px;
         border-width: 2px;
-        
+
         Text {
-             text: "Moving #" + dragging_ticket_id;
-             font-weight: 700;
-             horizontal-alignment: center;
-             vertical-alignment: center;
+            text: "Moving #" + dragging_ticket_id;
+            font-weight: 700;
+            horizontal-alignment: center;
+            vertical-alignment: center;
         }
     }
 
     // Ticket View Overlay
-    if (is_viewing_ticket) : TicketView {
+    if (is_viewing_ticket): TicketView {
         ticket: active_ticket;
-        close => { is_viewing_ticket = false; }
+        close => {
+            is_viewing_ticket = false;
+        }
         edit => {
             is_viewing_ticket = false;
             editing_id = active_ticket.id;
@@ -868,7 +1012,9 @@ export component App inherits Window {
             editing_desc = active_ticket.description;
             is_editing = true;
         }
-        navigate_to(target) => { navigate_to(target); }
+        navigate_to(target) => {
+            navigate_to(target);
+        }
         show_tooltip(text, x, y) => {
             tooltip_text = text;
             tooltip_x = x;
@@ -881,12 +1027,14 @@ export component App inherits Window {
     }
 
     // Edit Overlay
-    if (is_editing) : TicketEdit {
+    if (is_editing): TicketEdit {
         ticket_id: editing_id;
         title_text: editing_title;
         description_text: editing_desc;
-        
-        cancel => { is_editing = false; }
+
+        cancel => {
+            is_editing = false;
+        }
         save(id, title, desc) => {
             is_editing = false;
             if (id == "") {
@@ -896,20 +1044,24 @@ export component App inherits Window {
             }
         }
     }
-    
+
     // Warning Dialog Overlay
-    if (show_warning) : WarningDialog {
+    if (show_warning): WarningDialog {
         message: warning_message;
-        close => { show_warning = false; }
+        close => {
+            show_warning = false;
+        }
     }
 
     // Limit Edit Overlay
-    if (is_editing_limit) : QueueLimitEdit {
+    if (is_editing_limit): QueueLimitEdit {
         queue_id: editing_limit_id;
         queue_name: editing_limit_name;
         limit_text: editing_limit_text;
-        
-        cancel => { is_editing_limit = false; }
+
+        cancel => {
+            is_editing_limit = false;
+        }
         remove_limit(qid) => {
             is_editing_limit = false;
             request_change_limit(qid, -1);
@@ -921,18 +1073,27 @@ export component App inherits Window {
     }
 
     // Filter Menu Overlay
-    if (show_filter_menu) : FilterMenu {
+    if (show_filter_menu): FilterMenu {
         x: parent.width - self.width - 20px; // Top Right
         y: 70px; // Below header
         width: 250px;
         height: self.preferred-height;
         queues: board_queues;
-        close => { show_filter_menu = false; }
-        toggle_visibility(qid, visible) => { toggle_queue_visibility(qid, visible); }
+        date_from <=> root.date_from;
+        date_to <=> root.date_to;
+        close => {
+            show_filter_menu = false;
+        }
+        toggle_visibility(qid, visible) => {
+            toggle_queue_visibility(qid, visible);
+        }
+        date_filter_changed => {
+            root.date_filter_changed();
+        }
     }
 
     // Floating Tooltip
-    if (tooltip_visible) : Rectangle {
+    if (tooltip_visible): Rectangle {
         x: tooltip_x;
         y: tooltip_y;
         width: tooltip_label.preferred-width + 16px;
@@ -942,7 +1103,7 @@ export component App inherits Window {
         drop-shadow-blur: 4px;
         drop-shadow-color: #00000040;
         z: 100; // Ensure it's on top
-        
+
         tooltip_label := Text {
             text: tooltip_text;
             color: white;

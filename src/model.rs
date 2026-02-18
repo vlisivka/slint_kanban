@@ -139,6 +139,16 @@ impl Ticket {
             || self.description.to_lowercase().contains(&query_lower)
             || self.id.to_lowercase().contains(&query_lower)
     }
+
+    pub fn matches_date_range(&self, from: &str, to: &str) -> bool {
+        if !from.is_empty() && self.created_at.as_str() < from {
+            return false;
+        }
+        if !to.is_empty() && self.created_at.as_str() > to && !self.created_at.starts_with(to) {
+            return false;
+        }
+        true
+    }
 }
 
 impl Board {

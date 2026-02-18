@@ -86,6 +86,7 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [ ] Filter by date range
   - [ ] Highlight search results
   - [ ] Search history
+  - [ ] Order tickets in queues by time of last update.
 
 ### Keyboard Shortcuts
 - [ ] Implement keyboard navigation
@@ -94,16 +95,6 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [ ] Shortcuts for editing (Ctrl+E)
   - [ ] Shortcuts for deleting (Delete key)
   - [ ] Quick search (Ctrl+F)
-  - [ ] Customizable key bindings configuration
-
-### Theme Customization
-- [ ] Implement theming support
-  - [ ] Dark mode implementation
-  - [ ] Light mode implementation
-  - [ ] Theme switcher in UI
-  - [ ] Custom color scheme support
-  - [ ] Font customization (size, family)
-  - [ ] Save theme preferences
 
 ### Export Functionality
 - [ ] Implement export features
@@ -130,4 +121,3 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [ ] Create styled text rendering component
   - [ ] Support for headings, lists, code blocks
   - [ ] Support for links and images
-

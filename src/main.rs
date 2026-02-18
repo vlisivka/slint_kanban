@@ -41,14 +41,14 @@ fn ticket_to_slint(ticket: &model::Ticket, board: &Board) -> TicketStr {
     }
 }
 
-fn sync_ui_with_board(ui: &App, board: &Board, query: &str) {
+fn sync_ui_with_board(ui: &App, board: &Board, query: &str, date_from: &str, date_to: &str) {
     let mut slint_queues: Vec<QueueStr> = vec![];
 
     for queue in &board.queues {
         let slint_tickets: Vec<TicketStr> = queue
             .tickets
             .iter()
-            .filter(|t| t.matches(query))
+            .filter(|t| t.matches(query) && t.matches_date_range(date_from, date_to))
             .map(|t| ticket_to_slint(t, board))
             .collect();
 
@@ -77,7 +77,7 @@ fn reload_board(ui: &App, root_path: &Path) -> anyhow::Result<()> {
 
     let board = Board::load(root_path.to_path_buf())?;
     let query = ui.get_search_query();
-    sync_ui_with_board(ui, &board, query.as_str());
+    sync_ui_with_board(ui, &board, query.as_str(), "", "");
     Ok(())
 }
 
@@ -257,7 +257,39 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
             }
         };
         if let Some(ui) = search_ui_handle.upgrade() {
-            sync_ui_with_board(&ui, &board, query.as_str());
+            let date_from = ui.get_date_from();
+            let date_to = ui.get_date_to();
+            sync_ui_with_board(
+                &ui,
+                &board,
+                query.as_str(),
+                date_from.as_str(),
+                date_to.as_str(),
+            );
+        }
+    });
+
+    let date_root = root_path.clone();
+    let date_ui_handle = ui.as_weak();
+    ui.on_date_filter_changed(move || {
+        let board = match Board::load(date_root.clone()) {
+            Ok(b) => b,
+            Err(e) => {
+                eprintln!("Error loading board for date filter: {:?}", e);
+                return;
+            }
+        };
+        if let Some(ui) = date_ui_handle.upgrade() {
+            let query = ui.get_search_query();
+            let date_from = ui.get_date_from();
+            let date_to = ui.get_date_to();
+            sync_ui_with_board(
+                &ui,
+                &board,
+                query.as_str(),
+                date_from.as_str(),
+                date_to.as_str(),
+            );
         }
     });
 
