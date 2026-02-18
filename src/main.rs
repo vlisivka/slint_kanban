@@ -13,12 +13,22 @@ slint::include_modules!();
 
 static RELOAD_COUNT: AtomicU64 = AtomicU64::new(0);
 
-fn ticket_to_slint(ticket: &model::Ticket) -> TicketStr {
+fn ticket_to_slint(ticket: &model::Ticket, board: &Board) -> TicketStr {
     let snippet = ticket.description.lines().next().unwrap_or("").to_string();
-    let refs: Vec<SharedString> = ticket
+    let refs: Vec<RefStr> = ticket
         .extract_references()
         .into_iter()
-        .map(SharedString::from)
+        .map(|id_with_hash| {
+            let id = id_with_hash.trim_start_matches('#');
+            let title = board
+                .find_ticket_by_id(id)
+                .map(|t| t.title.clone())
+                .unwrap_or_else(|| "Unknown Ticket".to_string());
+            RefStr {
+                id: SharedString::from(id_with_hash),
+                title: SharedString::from(title),
+            }
+        })
         .collect();
     TicketStr {
         id: SharedString::from(&ticket.id),
@@ -38,7 +48,11 @@ fn sync_ui_with_board(ui: &App, board: &Board) {
         let ticket_count = queue.tickets.len() as i32;
         let limit = queue.limit.map(|l| l as i32).unwrap_or(-1);
 
-        let slint_tickets: Vec<TicketStr> = queue.tickets.iter().map(ticket_to_slint).collect();
+        let slint_tickets: Vec<TicketStr> = queue
+            .tickets
+            .iter()
+            .map(|t| ticket_to_slint(t, board))
+            .collect();
 
         let tickets_model = Rc::new(VecModel::from(slint_tickets));
 
@@ -216,7 +230,7 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
 
         if let Some(ticket) = board.find_ticket_by_id(id_to_find) {
             if let Some(ui) = nav_ui_handle.upgrade() {
-                ui.set_active_ticket(ticket_to_slint(ticket));
+                ui.set_active_ticket(ticket_to_slint(ticket, &board));
                 ui.set_is_viewing_ticket(true);
             }
         } else {

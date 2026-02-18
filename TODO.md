@@ -65,7 +65,7 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Parse ticket IDs in markdown content (e.g., `#T-abc123`)
   - [x] Make ticket references clickable
   - [x] Navigate to referenced ticket on click
-  - [ ] Show preview tooltip on hover
+  - [x] Show tooltip with title on hover
 
 ### Command Line Interface (CLI)
 - [x] Refactor `main.rs` to move application logic into a testable function.

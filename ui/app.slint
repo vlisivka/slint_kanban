@@ -1,5 +1,10 @@
 import { ScrollView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit, Palette } from "std-widgets.slint";
 
+export struct RefStr {
+    id: string,
+    title: string,
+}
+
 export struct TicketStr {
     id: string,
     title: string,
@@ -7,7 +12,7 @@ export struct TicketStr {
     snippet: string,
     created_at: string,
     updated_at: string,
-    references: [string],
+    references: [RefStr],
 }
 
 export struct QueueStr {
@@ -30,6 +35,8 @@ component TicketView inherits Rectangle {
     callback close();
     callback edit();
     callback navigate_to(string);
+    callback show_tooltip(string, length, length);
+    callback hide_tooltip();
  
     background: #00000080; // Semi-transparent backdrop for focus
     
@@ -102,9 +109,28 @@ component TicketView inherits Rectangle {
                         HorizontalBox {
                             padding: 0px;
                             alignment: start;
-                            for ref in ticket.references : Button {
-                                text: ref;
-                                clicked => { navigate_to(ref); }
+                            for ref in ticket.references : Rectangle {
+                                width: ref_label.preferred-width + 20px;
+                                height: 32px;
+                                border-radius: 4px;
+                                background: Palette.alternate-background;
+                                
+                                ref_label := Text {
+                                    text: ref.id;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+
+                                TouchArea {
+                                    clicked => { navigate_to(ref.id); }
+                                    changed has-hover => {
+                                        if (self.has-hover) {
+                                            show_tooltip(ref.title, self.absolute-position.x, self.absolute-position.y - 30px);
+                                        } else {
+                                            hide_tooltip();
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -582,7 +608,12 @@ export component App inherits Window {
     callback test_trigger_close_view(); // for testing
     callback test_trigger_cancel_edit(); // for testing
     callback test_trigger_delete_ticket(string); // for testing
-    
+    // Tooltip state
+    property <string> tooltip_text: "";
+    property <bool> tooltip_visible: false;
+    property <length> tooltip_x: 0px;
+    property <length> tooltip_y: 0px;
+
     // Global dragging state
     property <string> dragging_ticket_id: "";
     property <string> dragging_from_queue_id: "";
@@ -731,6 +762,15 @@ export component App inherits Window {
             is_editing = true;
         }
         navigate_to(target) => { navigate_to(target); }
+        show_tooltip(text, x, y) => {
+            tooltip_text = text;
+            tooltip_x = x;
+            tooltip_y = y;
+            tooltip_visible = true;
+        }
+        hide_tooltip() => {
+            tooltip_visible = false;
+        }
     }
 
     // Edit Overlay
@@ -770,6 +810,27 @@ export component App inherits Window {
         save(qid, limit) => {
             is_editing_limit = false;
             request_change_limit(qid, limit);
+        }
+    }
+
+    // Floating Tooltip
+    if (tooltip_visible) : Rectangle {
+        x: tooltip_x;
+        y: tooltip_y;
+        width: tooltip_label.preferred-width + 16px;
+        height: tooltip_label.preferred-height + 8px;
+        background: #333333;
+        border-radius: 4px;
+        drop-shadow-blur: 4px;
+        drop-shadow-color: #00000040;
+        z: 100; // Ensure it's on top
+        
+        tooltip_label := Text {
+            text: tooltip_text;
+            color: white;
+            font-size: 12px;
+            horizontal-alignment: center;
+            vertical-alignment: center;
         }
     }
 }
