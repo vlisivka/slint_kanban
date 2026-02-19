@@ -17,6 +17,43 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 
+/// Returns `true` when colored output should be suppressed.
+/// Honors the NO_COLOR standard: https://no-color.org/
+/// NO_COLOR is respected if the variable is set (to any value, including empty).
+pub fn no_color() -> bool {
+    std::env::var_os("NO_COLOR").is_some()
+}
+
+/// Print a line to stdout, stripping ANSI codes when NO_COLOR is set.
+/// Usage: `cprintln!("text {}", value)` — same as println! but color-aware.
+macro_rules! cprintln {
+    ($fmt:literal $(, $arg:expr)* $(,)?) => {
+        if crate::no_color() {
+            // Strip ANSI codes: replace ESC[ sequences with nothing
+            let raw = format!($fmt $(, $arg)*);
+            // Remove ANSI escape sequences \x1b[...m
+            let stripped = raw
+                .split('\x1b')
+                .enumerate()
+                .map(|(i, part)| {
+                    if i == 0 {
+                        part.to_string()
+                    } else {
+                        // Drop up to and including the first 'm'
+                        match part.find('m') {
+                            Some(pos) => part[pos + 1..].to_string(),
+                            None => part.to_string(),
+                        }
+                    }
+                })
+                .collect::<String>();
+            println!("{}", stripped);
+        } else {
+            println!($fmt $(, $arg)*);
+        }
+    };
+}
+
 slint::include_modules!();
 
 pub fn ticket_to_slint(ticket: &model::Ticket, board: &Board) -> TicketStr {
@@ -284,7 +321,7 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
             queue,
             assign_to,
         } => {
-            println!("Adding ticket: {} to queue: {}", title, queue);
+            cprintln!("Adding ticket: {} to queue: {}", title, queue);
             board.create_ticket(&title, &description, &queue, &assign_to)?;
         }
         Commands::Update {
@@ -294,7 +331,7 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
             assign_to,
             unassign,
         } => {
-            println!("Updating ticket: {}", id);
+            cprintln!("Updating ticket: {}", id);
             let ticket = board
                 .find_ticket_by_id(&id)
                 .ok_or_else(|| anyhow::anyhow!("Ticket not found: {}", id))?;
@@ -343,14 +380,14 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
                     .collect();
 
                 if !filtered_tickets.is_empty() {
-                    println!("\n=== {} ===", queue.name);
+                    cprintln!("\n=== {} ===", queue.name);
                     for t in filtered_tickets {
                         let user_display = if t.assigned_to.is_empty() {
                             "<unassigned>".to_string()
                         } else {
                             t.assigned_to.clone()
                         };
-                        println!("[{}] {} (Assigned: {})", t.id, t.title, user_display);
+                        cprintln!("[{}] {} (Assigned: {})", t.id, t.title, user_display);
                     }
                 }
             }
@@ -362,23 +399,23 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
         } => {
             let mut config = board.config.clone();
             if let Some(user) = active_user {
-                println!("Setting active user to: {}", user);
+                cprintln!("Setting active user to: {}", user);
                 config.active_user = user;
             }
             if let Some(mine) = show_only_mine {
-                println!("Setting show_only_mine to: {}", mine);
+                cprintln!("Setting show_only_mine to: {}", mine);
                 config.show_only_mine = mine;
             }
             if let Some(user) = add_user {
                 if !config.users.contains(&user) {
-                    println!("Adding user: {}", user);
+                    cprintln!("Adding user: {}", user);
                     config.users.push(user);
                 }
             }
             config.write(&root_path)?;
         }
         Commands::Move { id, queue } => {
-            println!("Moving ticket: {} to queue: {}", id, queue);
+            cprintln!("Moving ticket: {} to queue: {}", id, queue);
             let _ticket = board
                 .find_ticket_by_id(&id)
                 .ok_or_else(|| anyhow::anyhow!("Ticket not found: {}", id))?;
@@ -391,11 +428,11 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
             board.move_ticket(&id, &source_queue.id, &queue)?;
         }
         Commands::Remove { id } => {
-            println!("Removing ticket: {}", id);
+            cprintln!("Removing ticket: {}", id);
             board.delete_ticket(&id)?;
         }
         Commands::Open { path } => {
-            println!("Opening GUI for path: {:?}", path);
+            cprintln!("Opening GUI for path: {:?}", path);
             run_gui(path)?;
         }
         Commands::Show { id } => {
@@ -410,10 +447,10 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
                 .map(|q| q.name.as_str())
                 .unwrap_or("Unknown");
 
-            println!("ID:          {}", ticket.id);
-            println!("Title:       {}", ticket.title);
-            println!("Status:      {}", queue_name);
-            println!(
+            cprintln!("ID:          {}", ticket.id);
+            cprintln!("Title:       {}", ticket.title);
+            cprintln!("Status:      {}", queue_name);
+            cprintln!(
                 "Assigned to: {}",
                 if ticket.assigned_to.is_empty() {
                     "<unassigned>"
@@ -421,9 +458,9 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
                     &ticket.assigned_to
                 }
             );
-            println!("Created at:  {}", ticket.created_at);
-            println!("Updated at:  {}", ticket.updated_at);
-            println!("\nDescription:\n{}", ticket.description);
+            cprintln!("Created at:  {}", ticket.created_at);
+            cprintln!("Updated at:  {}", ticket.updated_at);
+            cprintln!("\nDescription:\n{}", ticket.description);
         }
     }
 
@@ -433,6 +470,8 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
 fn run_main(args: CliArgs) -> anyhow::Result<()> {
     let root_path = if let Some(path) = args.root {
         path
+    } else if let Ok(kanban_home) = std::env::var("KANBAN_HOME") {
+        PathBuf::from(kanban_home)
     } else {
         let home_dir = std::env::var("HOME").expect("HOME directory not set");
         PathBuf::from(home_dir).join("Kanban")
