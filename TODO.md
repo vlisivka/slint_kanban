@@ -137,3 +137,4 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 
 ## Bugs
 - [x] Fix double board reload (and freeze) when changing user settings.
+- [x] Fix unassign ticket bug: saving empty user assignment fails.

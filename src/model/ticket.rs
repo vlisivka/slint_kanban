@@ -126,7 +126,7 @@ impl Ticket {
         use std::io::Write;
         write!(
             f,
-            "---\ntitle: {}\ncreated_at: {}\nupdated_at: {}\nassigned_to: {}\n---\n{}",
+            "---\ntitle: {}\ncreated_at: {}\nupdated_at: {}\nassigned_to: \"{}\"\n---\n{}",
             self.title, self.created_at, self.updated_at, self.assigned_to, self.description
         )?;
         Ok(())

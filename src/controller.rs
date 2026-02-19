@@ -52,12 +52,12 @@ impl AppController {
 
         // 2. Sync Users
         // Optimized update to prevent UI flickering/reset
-        let new_users: Vec<SharedString> = board
-            .config
-            .users
-            .iter()
-            .map(|s| SharedString::from(s))
-            .collect();
+        let mut new_users: Vec<SharedString> = Vec::new();
+        // Ensure <unassigned> is always available
+        if !board.config.users.iter().any(|u| u == "<unassigned>") {
+            new_users.push(SharedString::from("<unassigned>"));
+        }
+        new_users.extend(board.config.users.iter().map(|s| SharedString::from(s)));
 
         let current_users_model = user_global.get_users();
         let users_changed = if current_users_model.row_count() != new_users.len() {

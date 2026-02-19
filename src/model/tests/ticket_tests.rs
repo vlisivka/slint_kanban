@@ -41,6 +41,29 @@ title: Unassigned Task
     let metadata_empty: TicketMetadata =
         serde_yaml::from_str(yaml_empty).expect("Failed to parse YAML");
     assert_eq!(metadata_empty.assigned_to, "");
+
+    let yaml_blank = "
+title: Blank Assignment
+assigned_to: 
+";
+    let metadata_blank: TicketMetadata =
+        serde_yaml::from_str(yaml_blank).expect("Failed to parse YAML with blank assigned_to");
+    assert_eq!(
+        metadata_blank.assigned_to, "",
+        "Blank assigned_to should be empty string, but got: '{}'",
+        metadata_blank.assigned_to
+    );
+
+    let yaml_explicit_empty = "
+title: Explicit Empty Assignment
+assigned_to: \"\"
+";
+    let metadata_explicit: TicketMetadata = serde_yaml::from_str(yaml_explicit_empty)
+        .expect("Failed to parse YAML with explicit empty string");
+    assert_eq!(
+        metadata_explicit.assigned_to, "",
+        "Explicit empty string assigned_to should be empty string"
+    );
 }
 
 #[test]
@@ -182,4 +205,33 @@ fn test_extract_references() {
         refs.contains(&"#abcdef".to_string()),
         "Should contain #abcdef (first 6 chars after #)."
     );
+}
+
+#[test]
+fn test_update_ticket_unassign() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let ticket_path = temp_dir.path().join("TUnassign");
+    std::fs::create_dir(&ticket_path).unwrap();
+
+    let mut ticket = Ticket {
+        id: "TUnassign".to_string(),
+        title: "Test".to_string(),
+        created_at: "now".to_string(),
+        updated_at: "now".to_string(),
+        description: "Desc".to_string(),
+        assigned_to: "Alice".to_string(),
+    };
+    ticket.save(&ticket_path).unwrap();
+
+    // Verify written
+    let loaded = Ticket::load(&ticket_path).unwrap();
+    assert_eq!(loaded.assigned_to, "Alice");
+
+    // Unassign
+    ticket.assigned_to = "".to_string();
+    ticket.save(&ticket_path).unwrap();
+
+    // Verify unassigned
+    let reloaded = Ticket::load(&ticket_path).unwrap();
+    assert_eq!(reloaded.assigned_to, "", "Should be unassigned");
 }
