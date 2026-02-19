@@ -1,3 +1,7 @@
+//! main_tests.rs
+//!
+//! Purpose: Integration tests for the application, testing UI interactions and CLI flows.
+
 use super::*;
 use slint::Model;
 use tempfile::tempdir;

@@ -1,113 +1,13 @@
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::path::PathBuf;
+//! board.rs
+//!
+//! Purpose: Orchestrates the Kanban board, including loading/saving tickets, moving them between queues, and creating new ones.
+//! Includes: Board struct and its complex operational methods.
+//! Constraints: Should rely on Ticket, Queue, and Config for data structures, but manages the coordination between them.
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Config {
-    #[serde(default)]
-    pub queue_limits: HashMap<String, usize>,
-    #[serde(default)]
-    pub hidden_queues: Vec<String>,
-    #[serde(default)]
-    pub search_history: Vec<String>,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            queue_limits: HashMap::new(),
-            hidden_queues: Vec::new(),
-            search_history: Vec::new(),
-        }
-    }
-}
-
-impl Config {
-    pub fn load(root_path: &std::path::Path) -> anyhow::Result<Self> {
-        let config_path = root_path.join("config.toml");
-
-        if !config_path.exists() {
-            // Create default config file
-            let default_config = Self::default();
-            Ok(default_config)
-        } else {
-            let content = std::fs::read_to_string(&config_path)?;
-            let config: Config = toml::from_str(&content)?;
-            Ok(config)
-        }
-    }
-
-    pub fn get_limit(&self, queue_id: &str) -> Option<usize> {
-        self.queue_limits.get(queue_id).copied()
-    }
-
-    pub fn set_limit(&mut self, queue_id: String, limit: usize) {
-        self.queue_limits.insert(queue_id, limit);
-    }
-
-    pub fn is_visible(&self, queue_id: &str) -> bool {
-        !self.hidden_queues.contains(&queue_id.to_string())
-    }
-
-    pub fn set_visible(&mut self, queue_id: String, visible: bool) {
-        if visible {
-            self.hidden_queues.retain(|id| id != &queue_id);
-        } else if !self.hidden_queues.contains(&queue_id) {
-            self.hidden_queues.push(queue_id);
-        }
-    }
-
-    pub fn add_search_to_history(&mut self, query: String) {
-        if query.trim().is_empty() {
-            return;
-        }
-        // Remove if exists to move to top
-        self.search_history.retain(|q| q != &query);
-        self.search_history.insert(0, query);
-        // Limit to 10 items
-        if self.search_history.len() > 10 {
-            self.search_history.pop();
-        }
-    }
-
-    pub fn remove_search_from_history(&mut self, query: &str) {
-        self.search_history.retain(|q| q != query);
-    }
-
-    pub fn write(&self, root_path: &std::path::Path) -> anyhow::Result<()> {
-        let config_path = root_path.join("config.toml");
-        let content = toml::to_string_pretty(self)?;
-        std::fs::write(&config_path, content)?;
-        Ok(())
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TicketMetadata {
-    pub title: String,
-    #[serde(default)]
-    pub created_at: String, // ISO 8601 or similar
-    #[serde(default)]
-    pub updated_at: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct Ticket {
-    pub id: String,
-    pub title: String,
-    pub created_at: String,
-    pub updated_at: String,
-    pub description: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct Queue {
-    pub id: String,
-    pub name: String,
-    pub tickets: Vec<Ticket>,
-    pub limit: Option<usize>,
-    pub visible: bool,
-}
+use crate::model::config::Config;
+use crate::model::queue::Queue;
+use crate::model::ticket::{Ticket, TicketMetadata};
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct Board {
@@ -117,62 +17,8 @@ pub struct Board {
     pub config: Config,
 }
 
-impl Ticket {
-    pub fn from_metadata(id: String, metadata: TicketMetadata, description: String) -> Self {
-        Self {
-            id,
-            title: metadata.title,
-            created_at: metadata.created_at,
-            updated_at: metadata.updated_at,
-            description,
-        }
-    }
-
-    pub fn extract_references(&self) -> Vec<String> {
-        let mut refs = Vec::new();
-        let mut start = 0;
-        while let Some(pos) = self.description[start..].find('#') {
-            let actual_pos = start + pos;
-            if actual_pos + 7 <= self.description.len() {
-                let potential_id = &self.description[actual_pos + 1..actual_pos + 7];
-                // Check if it's 6 lowercase alphanumeric chars
-                if potential_id
-                    .chars()
-                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
-                {
-                    refs.push(format!("#{}", potential_id));
-                }
-            }
-            start = actual_pos + 1;
-        }
-        refs.sort();
-        refs.dedup();
-        refs
-    }
-
-    pub fn matches(&self, query: &str) -> bool {
-        if query.is_empty() {
-            return true;
-        }
-        let query_lower = query.to_lowercase();
-        self.title.to_lowercase().contains(&query_lower)
-            || self.description.to_lowercase().contains(&query_lower)
-            || self.id.to_lowercase().contains(&query_lower)
-    }
-
-    pub fn matches_date_range(&self, from: &str, to: &str) -> bool {
-        if !from.is_empty() && self.created_at.as_str() < from {
-            return false;
-        }
-        if !to.is_empty() && self.created_at.as_str() > to && !self.created_at.starts_with(to) {
-            return false;
-        }
-        true
-    }
-}
-
 impl Board {
-    pub fn ensure_initialized(root_path: &std::path::Path) -> anyhow::Result<()> {
+    pub fn ensure_initialized(root_path: &Path) -> anyhow::Result<()> {
         let queues_path = root_path.join("Queue");
         let tickets_path = root_path.join("Tickets");
 
@@ -225,7 +71,7 @@ impl Board {
         self.tickets_path.join(ticket_id)
     }
 
-    fn load_ticket(&self, path: &std::path::Path) -> anyhow::Result<Ticket> {
+    pub(crate) fn load_ticket(&self, path: &Path) -> anyhow::Result<Ticket> {
         let ticket_id = path
             .file_name()
             .and_then(|n| n.to_str())
@@ -293,7 +139,7 @@ impl Board {
         Ok(())
     }
 
-    fn load_queue(&self, path: &std::path::Path) -> anyhow::Result<Queue> {
+    fn load_queue(&self, path: &Path) -> anyhow::Result<Queue> {
         let queue_id = path
             .file_name()
             .and_then(|n| n.to_str())
@@ -537,7 +383,7 @@ impl Board {
 
     fn write_ticket_readme(
         &self,
-        dir: &std::path::Path,
+        dir: &Path,
         title: &str,
         created_at: &str,
         updated_at: &str,
@@ -599,6 +445,3 @@ impl Board {
         None
     }
 }
-
-#[cfg(test)]
-mod tests;

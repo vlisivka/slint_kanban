@@ -1,3 +1,9 @@
+//! main.rs
+//!
+//! Purpose: Main entry point for the Slint Kanban application. Orchestrates UI and Backend.
+//! Includes: UI event handlers, reloading logic, and type conversions.
+//! Constraints: Business logic should be in the model module, not here.
+
 mod cli;
 mod model;
 

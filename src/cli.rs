@@ -1,3 +1,9 @@
+//! cli.rs
+//!
+//! Purpose: Handles command-line argument parsing and CLI mode operations.
+//! Includes: CliArgs and Commands enums.
+//! Constraints: Should not contain UI or heavy board logic.
+
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 

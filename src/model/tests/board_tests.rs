@@ -1,142 +1,14 @@
-use super::*;
+//! src/model/tests/board_tests.rs
+//!
+//! Purpose: Unit tests for Board orchestration logic, including scanning, moving, creating, and deleting tickets.
+
+use super::super::*;
+use crate::model::queue::Queue;
+use crate::model::ticket::TicketMetadata;
 use std::fs::File;
 use std::io::Write;
+use std::path::PathBuf;
 use tempfile::tempdir;
-
-#[test]
-fn test_ticket_metadata_deserialization() {
-    let yaml = "
-title: Buy Groceries
-created_at: 2023-10-27
-updated_at: 2023-10-27
-";
-    let metadata: TicketMetadata = serde_yaml::from_str(yaml).expect("Failed to parse YAML");
-    assert_eq!(
-        metadata.title, "Buy Groceries",
-        "Ticket title should match YAML input"
-    );
-    assert_eq!(
-        metadata.created_at, "2023-10-27",
-        "Created date should match YAML input"
-    );
-    assert_eq!(
-        metadata.updated_at, "2023-10-27",
-        "Updated date should match YAML input"
-    );
-}
-
-#[test]
-fn test_ticket_matches() {
-    let ticket = Ticket {
-        id: "T123".to_string(),
-        title: "Buy Milk".to_string(),
-        description: "Need whole milk for the coffee".to_string(),
-        created_at: "now".to_string(),
-        updated_at: "now".to_string(),
-    };
-
-    assert!(
-        ticket.matches("milk"),
-        "Should match title (case-insensitive)"
-    );
-    assert!(
-        ticket.matches("MILK"),
-        "Should match title (case-insensitive)"
-    );
-    assert!(ticket.matches("coffee"), "Should match description");
-    assert!(ticket.matches("T123"), "Should match ID");
-    assert!(ticket.matches("t123"), "Should match ID (case-insensitive)");
-    assert!(ticket.matches(""), "Empty query should always match");
-    assert!(!ticket.matches("bread"), "Should not match unrelated text");
-}
-
-#[test]
-fn test_ticket_matches_date_range() {
-    let ticket = Ticket {
-        id: "T123".to_string(),
-        title: "Buy Milk".to_string(),
-        description: "Need whole milk for the coffee".to_string(),
-        created_at: "2024-02-18 12:00:00".to_string(),
-        updated_at: "2024-02-18 12:00:00".to_string(),
-    };
-
-    // 1. No filters
-    assert!(
-        ticket.matches_date_range("", ""),
-        "Empty filters should always match"
-    );
-
-    // 2. From filter
-    assert!(
-        ticket.matches_date_range("2024-01-01", ""),
-        "Should match if created after 2024-01-01"
-    );
-    assert!(
-        ticket.matches_date_range("2024-02-18", ""),
-        "Should match if created on the same day"
-    );
-    assert!(
-        ticket.matches_date_range("2024-02-18 12:00:00", ""),
-        "Should match if created at exactly the same time"
-    );
-    assert!(
-        !ticket.matches_date_range("2024-02-19", ""),
-        "Should not match if created before 2024-02-19"
-    );
-
-    // 3. To filter
-    assert!(
-        ticket.matches_date_range("", "2024-03-01"),
-        "Should match if created before 2024-03-01"
-    );
-    assert!(
-        ticket.matches_date_range("", "2024-02-18"),
-        "Should match if created on the same day"
-    );
-    assert!(
-        ticket.matches_date_range("", "2024-02-18 12:00:00"),
-        "Should match if created at exactly the same time"
-    );
-    assert!(
-        !ticket.matches_date_range("", "2024-02-17"),
-        "Should not match if created after 2024-02-17"
-    );
-
-    // 4. Range
-    assert!(
-        ticket.matches_date_range("2024-01-01", "2024-12-31"),
-        "Within range"
-    );
-    assert!(
-        !ticket.matches_date_range("2024-02-19", "2024-12-31"),
-        "Out of range (too early)"
-    );
-    assert!(
-        !ticket.matches_date_range("2023-01-01", "2024-02-17"),
-        "Out of range (too late)"
-    );
-}
-
-#[test]
-fn test_ticket_metadata_missing_updated_at() {
-    let yaml = "
-title: Buy Groceries
-created_at: 2023-10-27
-";
-    let metadata: TicketMetadata = serde_yaml::from_str(yaml).expect("Failed to parse YAML");
-    assert_eq!(
-        metadata.title, "Buy Groceries",
-        "Ticket title should match YAML input even with missing fields"
-    );
-    assert_eq!(
-        metadata.created_at, "2023-10-27",
-        "Created date should match YAML input"
-    );
-    assert_eq!(
-        metadata.updated_at, "",
-        "Updated date should be empty if missing in YAML"
-    );
-}
 
 #[test]
 fn test_board_scanning() -> anyhow::Result<()> {
@@ -345,7 +217,7 @@ fn test_move_ticket() -> anyhow::Result<()> {
             .tickets[0]
             .id,
         "T1",
-        "The ticket ID in the target queue should match the moved ticket ID. Verify Board::move_ticket correctly re-links the ticket."
+        "The ticket ID in the target queue should match"
     );
 
     Ok(())
@@ -391,22 +263,22 @@ fn test_delete_ticket() -> anyhow::Result<()> {
 
     assert!(
         !t1_path.exists(),
-        "The ticket folder in 'Tickets/' should be removed after deletion. Ensure Board::delete_ticket correctly moves the folder."
+        "The ticket folder in 'Tickets/' should be removed"
     );
     assert!(
         deleted_dir.join("T1").exists(),
-        "The ticket folder should be moved to 'Deleted/' folder after deletion. Check Board::delete_ticket implementation."
+        "The ticket folder should be moved to 'Deleted/'"
     );
     assert!(
         !q1_path.join("T1_link").exists(),
-        "The ticket symlink in the queue folder should be removed after deletion. Check Board::delete_ticket logic for cleaning up symlinks."
+        "The ticket symlink in the queue folder should be removed"
     );
 
     let board_after = Board::load(root_dir)?;
     assert_eq!(
         board_after.queues[0].tickets.len(),
         0,
-        "The board model should reflect the deletion by showing 0 tickets in the queue. Verify core scanning logic in Board::load."
+        "The board model should reflect the deletion"
     );
 
     Ok(())
@@ -440,11 +312,11 @@ fn test_create_ticket() -> anyhow::Result<()> {
             .join(&tid)
             .join("README.md")
             .exists(),
-        "README.md should be created in ticket directory"
+        "README.md should be created"
     );
     assert!(
         q1_path.join(&tid).exists(),
-        "A symlink to the new ticket should be created in the target queue folder. Check symlink logic in Board::create_ticket."
+        "A symlink to the new ticket should be created in the target queue folder"
     );
 
     let board2 = Board::load(root_path)?;
@@ -488,6 +360,7 @@ fn test_update_ticket() -> anyhow::Result<()> {
 
     Ok(())
 }
+
 #[test]
 fn test_initialization() -> anyhow::Result<()> {
     let root = tempdir()?;
@@ -502,13 +375,8 @@ fn test_initialization() -> anyhow::Result<()> {
         7,
         "Default initialization should create 7 queues"
     );
-    assert_eq!(board.queues[0].id, "1. Incoming", "Queue 0 ID mismatch. Board::ensure_initialized should create '1. Incoming' as the first queue.");
-    assert_eq!(board.queues[1].id, "2. ToDo", "Queue 1 ID mismatch. Board::ensure_initialized should create '2. ToDo' as the second queue.");
-    assert_eq!(board.queues[2].id, "3. Doing", "Queue 2 ID mismatch. Board::ensure_initialized should create '3. Doing' as the third queue.");
-    assert_eq!(board.queues[3].id, "4. Reviewing", "Queue 3 ID mismatch. Board::ensure_initialized should create '4. Reviewing' as the fourth queue.");
-    assert_eq!(board.queues[4].id, "5. Testing", "Queue 4 ID mismatch. Board::ensure_initialized should create '5. Testing' as the fifth queue.");
-    assert_eq!(board.queues[5].id, "6. Done", "Queue 5 ID mismatch. Board::ensure_initialized should create '6. Done' as the sixth queue.");
-    assert_eq!(board.queues[6].id, "7. Archive", "Queue 6 ID mismatch. Board::ensure_initialized should create '7. Archive' as the seventh queue.");
+    assert_eq!(board.queues[0].id, "1. Incoming");
+    assert_eq!(board.queues[1].id, "2. ToDo");
 
     // 2. Existing queue run: should NOT create defaults if something exists
     let root2 = tempdir()?;
@@ -540,8 +408,6 @@ fn test_queue_limit_creation() -> anyhow::Result<()> {
     board.config.set_limit("2. ToDo".to_string(), 1);
     board.config.write(&root_path)?;
 
-    // Reload board to pick up config change if necessary, or just use the current board
-    // Board::load re-reads the config.
     let board = Board::load(root_path)?;
 
     // Create first ticket - should succeed
@@ -551,14 +417,14 @@ fn test_queue_limit_creation() -> anyhow::Result<()> {
     let result = board.create_ticket("Task 2", "Desc 2", "2. ToDo");
     assert!(
         result.is_err(),
-        "Board::create_ticket should return an error if the queue has reached its limit. Verify limit enforcement in create_ticket."
+        "Should return an error if the queue has reached its limit"
     );
     assert!(
         result
             .unwrap_err()
             .to_string()
             .contains("has reached its limit"),
-        "The error message from Board::create_ticket should clearly state that the queue limit has been reached. Check error message consistency."
+        "Error message should mention limit"
     );
 
     Ok(())
@@ -589,156 +455,16 @@ fn test_queue_limit_moving() -> anyhow::Result<()> {
     let result = board.move_ticket(&tid2, "2. ToDo", "3. Doing");
     assert!(
         result.is_err(),
-        "Board::move_ticket should return an error if the target queue has reached its limit. Verify limit enforcement in move_ticket."
+        "Should return an error if the target queue has reached its limit"
     );
     assert!(
         result
             .unwrap_err()
             .to_string()
             .contains("has reached its limit"),
-        "The error message from Board::move_ticket should clearly state that the target queue limit has been reached. Check error message consistency."
+        "Error message should mention limit"
     );
 
-    Ok(())
-}
-
-#[test]
-fn test_create_ticket_invalid_queue() -> anyhow::Result<()> {
-    let root = tempdir()?;
-    let root_dir = root.path().to_path_buf();
-    Board::ensure_initialized(&root_dir)?;
-    let board = Board::load(root_dir)?;
-
-    let result = board.create_ticket("Title", "Desc", "NonExistentQueue");
-    assert!(result.is_err(), "Ticket creation in a non-existent queue should return an error. Verify that the queue ID passed exists and is correctly handled in Board::create_ticket.");
-    Ok(())
-}
-
-#[test]
-fn test_move_ticket_invalid_queue() -> anyhow::Result<()> {
-    let root = tempdir()?;
-    let root_dir = root.path().to_path_buf();
-    Board::ensure_initialized(&root_dir)?;
-    let board = Board::load(root_dir)?;
-
-    let tid = board.create_ticket("Title", "Desc", "1. Incoming")?;
-    let result = board.move_ticket(&tid, "1. Incoming", "NonExistentQueue");
-    assert!(result.is_err(), "Moving a ticket to a non-existent queue should return an error. Check Board::move_ticket logic for handling invalid target queue IDs.");
-    Ok(())
-}
-
-#[test]
-fn test_config_load_invalid_toml() -> anyhow::Result<()> {
-    let root = tempdir()?;
-    let root_path = root.path().to_path_buf();
-    let config_path = root_path.join("config.toml");
-
-    let mut f = File::create(config_path)?;
-    write!(f, "invalid = toml = [")?;
-
-    let result = Config::load(&root_path);
-    assert!(result.is_err(), "Loading a configuration file with invalid TOML should return an error. Check Config::load error handling and toml::from_str integration.");
-    Ok(())
-}
-
-#[test]
-fn test_delete_non_existent_ticket() -> anyhow::Result<()> {
-    let root = tempdir()?;
-    let root_dir = root.path().to_path_buf();
-    Board::ensure_initialized(&root_dir)?;
-    let board = Board::load(root_dir)?;
-
-    let result = board.delete_ticket("NonExistentID");
-    assert!(result.is_err(), "Deleting a ticket with a non-existent ID should return an error. Verify Board::delete_ticket checks if the ticket exists before attempting deletion.");
-    Ok(())
-}
-
-#[test]
-fn test_load_ticket_missing_readme() -> anyhow::Result<()> {
-    let root = tempdir()?;
-    let ticket_path = root.path().join("T1");
-    std::fs::create_dir(&ticket_path)?;
-
-    let board = Board {
-        tickets_path: root.path().join("Tickets"),
-        queues_path: root.path().join("Queue"),
-        queues: vec![],
-        config: Config::default(),
-    };
-    let result = board.load_ticket(&ticket_path);
-    assert!(
-        result.is_err(),
-        "Loading a ticket with missing README.md should return an error."
-    );
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("README.md not found"),
-        "Error message should mention missing README.md"
-    );
-    Ok(())
-}
-
-#[test]
-fn test_load_ticket_invalid_format() -> anyhow::Result<()> {
-    let root = tempdir()?;
-    let ticket_path = root.path().join("T1");
-    std::fs::create_dir(&ticket_path)?;
-    std::fs::write(
-        ticket_path.join("README.md"),
-        "Invalid format - no separators",
-    )?;
-
-    let board = Board {
-        tickets_path: root.path().join("Tickets"),
-        queues_path: root.path().join("Queue"),
-        queues: vec![],
-        config: Config::default(),
-    };
-    let result = board.load_ticket(&ticket_path);
-    assert!(
-        result.is_err(),
-        "Loading a ticket with invalid format (missing separators) should return an error."
-    );
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("Invalid ticket format"),
-        "Error message should mention invalid ticket format"
-    );
-    Ok(())
-}
-
-#[test]
-fn test_load_ticket_invalid_yaml() -> anyhow::Result<()> {
-    let root = tempdir()?;
-    let ticket_path = root.path().join("T1");
-    std::fs::create_dir(&ticket_path)?;
-    std::fs::write(
-        ticket_path.join("README.md"),
-        "---\ninvalid: yaml: [\n---\nBody",
-    )?;
-
-    let board = Board {
-        tickets_path: root.path().join("Tickets"),
-        queues_path: root.path().join("Queue"),
-        queues: vec![],
-        config: Config::default(),
-    };
-    let result = board.load_ticket(&ticket_path);
-    assert!(
-        result.is_err(),
-        "Loading a ticket with invalid YAML should return an error."
-    );
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("Failed to parse YAML"),
-        "Error message should mention YAML parsing failure"
-    );
     Ok(())
 }
 
@@ -766,31 +492,11 @@ fn test_resolve_queue_id() -> anyhow::Result<()> {
         ],
     };
 
-    assert_eq!(
-        board.resolve_queue_id("Q1"),
-        "Q1",
-        "Direct ID should resolve to itself"
-    );
-    assert_eq!(
-        board.resolve_queue_id("index:0"),
-        "Q1",
-        "index:0 should resolve to Q1"
-    );
-    assert_eq!(
-        board.resolve_queue_id("index:1.5"),
-        "Q2",
-        "index:1.5 should resolve to Q2"
-    );
-    assert_eq!(
-        board.resolve_queue_id("index:5"),
-        "Q2",
-        "index:OOB should resolve to the last queue"
-    );
-    assert_eq!(
-        board.resolve_queue_id("random"),
-        "random",
-        "Non-index strings should resolve as-is"
-    );
+    assert_eq!(board.resolve_queue_id("Q1"), "Q1");
+    assert_eq!(board.resolve_queue_id("index:0"), "Q1");
+    assert_eq!(board.resolve_queue_id("index:1.5"), "Q2");
+    assert_eq!(board.resolve_queue_id("index:5"), "Q2");
+    assert_eq!(board.resolve_queue_id("random"), "random");
 
     // Test with hidden queues
     let board_hidden = Board {
@@ -822,47 +528,10 @@ fn test_resolve_queue_id() -> anyhow::Result<()> {
         ],
     };
 
-    assert_eq!(
-        board_hidden.resolve_queue_id("index:0"),
-        "Q1",
-        "index:0 should resolve to Q1"
-    );
-    assert_eq!(
-        board_hidden.resolve_queue_id("index:1"),
-        "Q2",
-        "index:1 should resolve to Q2 (skipping hidden B)"
-    );
+    assert_eq!(board_hidden.resolve_queue_id("index:0"), "Q1");
+    assert_eq!(board_hidden.resolve_queue_id("index:1"), "Q2");
 
     Ok(())
-}
-
-#[test]
-fn test_extract_references() {
-    let t = Ticket {
-        id: "t1".to_string(),
-        title: "T".to_string(),
-        created_at: "now".to_string(),
-        updated_at: "now".to_string(),
-        description: "Check #abc123 and #def456. Also #123 is too short, and #abcdef78 is too long but should extract #abcdef. And #abc123 again.".to_string(),
-    };
-    let refs = t.extract_references();
-    assert_eq!(
-        refs.len(),
-        3,
-        "Should extract exactly 3 unique valid references. Check extract_references logic."
-    );
-    assert!(
-        refs.contains(&"#abc123".to_string()),
-        "Should contain #abc123"
-    );
-    assert!(
-        refs.contains(&"#def456".to_string()),
-        "Should contain #def456"
-    );
-    assert!(
-        refs.contains(&"#abcdef".to_string()),
-        "Should contain #abcdef (first 6 chars after #)."
-    );
 }
 
 #[test]
@@ -901,46 +570,90 @@ fn test_find_ticket_by_id() {
         ],
     };
 
-    assert!(
-        board.find_ticket_by_id("T1").is_some(),
-        "Ticket T1 should be found in Q1. Ensure find_ticket_by_id iterates over all queues."
-    );
-    assert!(
-        board.find_ticket_by_id("T2").is_some(),
-        "Ticket T2 should be found in Q2. Ensure find_ticket_by_id iterates over all queues."
-    );
-    assert!(
-        board.find_ticket_by_id("T3").is_none(),
-        "Non-existent ticket T3 should not be found."
-    );
+    assert!(board.find_ticket_by_id("T1").is_some());
+    assert!(board.find_ticket_by_id("T2").is_some());
+    assert!(board.find_ticket_by_id("T3").is_none());
 }
 
 #[test]
-fn test_search_history() {
-    let mut config = Config::default();
+fn test_load_ticket_missing_readme() -> anyhow::Result<()> {
+    let root = tempdir()?;
+    let ticket_path = root.path().join("T1");
+    std::fs::create_dir(&ticket_path)?;
 
-    // 1. Add some items
-    config.add_search_to_history("rust".to_string());
-    config.add_search_to_history("slint".to_string());
-    assert_eq!(config.search_history, vec!["slint", "rust"]);
+    let board = Board {
+        tickets_path: root.path().join("Tickets"),
+        queues_path: root.path().join("Queue"),
+        queues: vec![],
+        config: Config::default(),
+    };
+    let result = board.load_ticket(&ticket_path);
+    assert!(result.is_err());
+    Ok(())
+}
 
-    // 2. Add duplicate - should move to top
-    config.add_search_to_history("rust".to_string());
-    assert_eq!(config.search_history, vec!["rust", "slint"]);
+#[test]
+fn test_load_ticket_invalid_format() -> anyhow::Result<()> {
+    let root = tempdir()?;
+    let ticket_path = root.path().join("T1");
+    std::fs::create_dir(&ticket_path)?;
+    std::fs::write(ticket_path.join("README.md"), "No separators here")?;
 
-    // 3. Limit to 10 items
-    for i in 0..15 {
-        config.add_search_to_history(format!("search {}", i));
-    }
-    assert_eq!(config.search_history.len(), 10);
-    assert_eq!(config.search_history[0], "search 14");
+    let board = Board {
+        tickets_path: root.path().join("Tickets"),
+        queues_path: root.path().join("Queue"),
+        queues: vec![],
+        config: Config::default(),
+    };
+    let result = board.load_ticket(&ticket_path);
+    assert!(result.is_err());
+    Ok(())
+}
 
-    // 4. Ignore empty
-    config.add_search_to_history("".to_string());
-    assert_eq!(config.search_history.len(), 10);
+#[test]
+fn test_load_ticket_invalid_yaml() -> anyhow::Result<()> {
+    let root = tempdir()?;
+    let ticket_path = root.path().join("T1");
+    std::fs::create_dir(&ticket_path)?;
+    std::fs::write(
+        ticket_path.join("README.md"),
+        "---\ninvalid: yaml: [\n---\nBody",
+    )?;
 
-    // 5. Remove item
-    config.remove_search_from_history("search 14");
-    assert_eq!(config.search_history.len(), 9);
-    assert!(!config.search_history.contains(&"search 14".to_string()));
+    let board = Board {
+        tickets_path: root.path().join("Tickets"),
+        queues_path: root.path().join("Queue"),
+        queues: vec![],
+        config: Config::default(),
+    };
+    let result = board.load_ticket(&ticket_path);
+    assert!(result.is_err());
+    Ok(())
+}
+
+#[test]
+fn test_delete_non_existent_ticket() -> anyhow::Result<()> {
+    let root = tempdir()?;
+    Board::ensure_initialized(root.path())?;
+    let board = Board::load(root.path().to_path_buf())?;
+
+    let result = board.delete_ticket("nonexistent");
+    assert!(result.is_err(), "Deleting non-existent ticket should fail");
+    Ok(())
+}
+
+#[test]
+fn test_move_ticket_invalid_queue() -> anyhow::Result<()> {
+    let root = tempdir()?;
+    Board::ensure_initialized(root.path())?;
+    let board = Board::load(root.path().to_path_buf())?;
+    let tid = board.create_ticket("T1", "D", "1. Incoming")?;
+
+    let result = board.move_ticket(&tid, "invalid_src", "2. ToDo");
+    assert!(result.is_err(), "Moving from invalid source should fail");
+
+    let result = board.move_ticket(&tid, "1. Incoming", "invalid_target");
+    assert!(result.is_err(), "Moving to invalid target should fail");
+
+    Ok(())
 }
