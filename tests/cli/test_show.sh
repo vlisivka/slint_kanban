@@ -1,4 +1,6 @@
 #!/bin/bash
+# Tests for the 'show' CLI command.
+# Covers: displaying ticket details, invalid ID.
 source "$(dirname "$0")/lib/test_lib.sh"
 
 setup_env

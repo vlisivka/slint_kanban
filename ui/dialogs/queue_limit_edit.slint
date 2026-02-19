@@ -14,9 +14,9 @@ export component QueueLimitEdit inherits Rectangle {
     callback cancel();
     callback remove_limit(string); // id
 
-    background: #00000080; // Semi-transparent backdrop
+    background: #00000080;
 
-    // BACKDROP: Catch clicks outside to cancel
+    // Backdrop: clicks outside cancel the edit
     TouchArea {
         clicked => {
             cancel();
@@ -33,7 +33,7 @@ export component QueueLimitEdit inherits Rectangle {
         drop-shadow-blur: 16px;
         drop-shadow-color: #00000040;
 
-        TouchArea { } // Block clicks
+        TouchArea { }
 
         VerticalBox {
             padding: 24px;

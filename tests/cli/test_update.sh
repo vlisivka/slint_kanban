@@ -1,4 +1,6 @@
 #!/bin/bash
+# Tests for the 'update' CLI command.
+# Covers: title, description, assign/unassign user, invalid ID.
 source "$(dirname "$0")/lib/test_lib.sh"
 
 setup_env

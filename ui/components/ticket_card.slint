@@ -5,7 +5,7 @@ export component TicketCard inherits Rectangle {
     in property <TicketStr> ticket;
     in property <string> from_queue_id;
 
-    // Drag/Delete/Edit callbacks
+    // Callbacks
     callback start_dragging(string, string, length, length);
     callback move_dragging(length, length);
     callback drop_ticket(length);
@@ -20,7 +20,6 @@ export component TicketCard inherits Rectangle {
     drop-shadow-color: #00000020;
     animate background, border-color, drop-shadow-blur, drop-shadow-offset-y { duration: 150ms; }
 
-    // Drag-and-Drop Area
     touch-area := TouchArea {
         pointer-event(event) => {
             if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
@@ -36,8 +35,7 @@ export component TicketCard inherits Rectangle {
             }
         }
         clicked => {
-             // If not dragging, open for edit
-             edit_clicked(ticket);
+            edit_clicked(ticket);
         }
     }
 
@@ -56,7 +54,6 @@ export component TicketCard inherits Rectangle {
                 overflow: elide;
             }
 
-            // Delete Button
             Rectangle {
                 width: 24px;
                 height: 24px;

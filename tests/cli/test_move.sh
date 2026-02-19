@@ -1,4 +1,6 @@
 #!/bin/bash
+# Tests for the 'move' CLI command.
+# Covers: valid move, invalid queue, invalid ID.
 source "$(dirname "$0")/lib/test_lib.sh"
 
 setup_env
@@ -31,7 +33,6 @@ log_success "Ticket moved successfully"
 # Test 2: Unhappy Path - Invalid Target Queue
 log_info "Scenario: Invalid target queue"
 run_app move --id "$ID" --queue "invalid_queue"
-# Should fail
 assert_exit_code 1 "Exit code 1 (Application Error)"
 assert_contains "$LAST_STDERR" "queue not found" "Error message present"
 

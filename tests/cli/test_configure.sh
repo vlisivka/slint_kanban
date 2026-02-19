@@ -1,10 +1,11 @@
 #!/bin/bash
+# Tests for the 'configure' CLI command.
+# Covers: add user, set active user, toggle show_only_mine, invalid inputs.
 source "$(dirname "$0")/lib/test_lib.sh"
 
 setup_env
 
 log_info "Testing 'configure' command..."
-# Config file path: $KANBAN_HOME/config.toml
 
 # Test 1: Add user
 log_info "Scenario: Add user"
@@ -31,11 +32,10 @@ grep -q "show_only_mine = true" "$KANBAN_HOME/config.toml"
 if [ $? -ne 0 ]; then panic "show_only_mine not set to true"; fi
 log_success "show_only_mine set to true"
 
-# Unhappy path? Configure usually accepts anything that matches arg types.
-# Maybe invalid boolean?
+# Test 4: Unhappy Path - Invalid boolean value
 log_info "Scenario: Invalid boolean"
 run_app configure --show-only-mine "maybe"
-assert_exit_code 2 "Exit code 2 (Clap error)" # Should fail argument parsing
+assert_exit_code 2 "Exit code 2 (Clap error)"
 assert_contains "$LAST_STDERR" "invalid value" "Error message"
 
 cleanup_env

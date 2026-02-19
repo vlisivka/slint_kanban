@@ -1,4 +1,6 @@
 #!/bin/bash
+# Tests for the 'list' CLI command.
+# Covers: list all, filter by user/unassigned, search by keyword, filter by ID.
 source "$(dirname "$0")/lib/test_lib.sh"
 
 setup_env
@@ -48,15 +50,10 @@ run_app list --search "Findme"
 assert_exit_code 0 "Exit code 0"
 assert_contains "$LAST_STDOUT" "Task D" "Description match found"
 
-# Test 5: ID filter (if valid)
-# Need to get ID first
-ID_A=$(ls -t "$KANBAN_HOME/Tickets" | grep -v "README" | head -n 1) # Wait, ls lists folders.
-# Actually, tickets are random IDs.
-# Let's re-add a ticket and catch ID? No.
-# Just grep stdout of list all.
+# Test 5: Filter by ID
+# Parse ticket ID from list output (format: [id] Title ...)
 run_app list
 ID_B=$(echo "$LAST_STDOUT" | grep "Task B" | awk '{print $1}' | tr -d '[]')
-# Output format: [id] Title ...
 
 log_info "Scenario: Filter by ID"
 if [ -n "$ID_B" ]; then

@@ -15,9 +15,9 @@ export component TicketView inherits Rectangle {
     callback show_tooltip(string, length, length);
     callback hide_tooltip();
 
-    background: #00000080; // Semi-transparent backdrop for focus
+    background: #00000080;
 
-    // BACKDROP: Catch clicks outside the card to cancel
+    // Backdrop: clicks outside close the view
     TouchArea {
         clicked => {
             close();
@@ -25,12 +25,11 @@ export component TicketView inherits Rectangle {
     }
 
     Rectangle {
-        // Full window (fill parent)
         width: 100%;
         height: 100%;
         background: Palette.background;
 
-        TouchArea { } // Block clicks
+        TouchArea { }
 
         VerticalBox {
             padding: 40px;

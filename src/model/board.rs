@@ -9,6 +9,13 @@ use crate::model::queue::Queue;
 use crate::model::ticket::Ticket;
 use std::path::{Path, PathBuf};
 
+/// File-system–backed Kanban board.
+///
+/// Layout on disk:
+///   <root>/Tickets/<id>/README.md  — ticket data (YAML frontmatter + markdown body)
+///   <root>/Queue/<queue_name>/<id> — symlink → ../../Tickets/<id>
+///   <root>/Deleted/<id>/           — soft-deleted tickets (moved from Tickets)
+///   <root>/config.toml             — user prefs, queue limits, search history
 #[derive(Debug, Clone)]
 pub struct Board {
     pub queues: Vec<Queue>,
@@ -117,11 +124,13 @@ impl Board {
         let visible = self.config.is_visible(&queue_id);
         let mut tickets = vec![];
 
+        // Skip disk I/O for hidden queues — they still appear in the model
+        // (for the visibility toggle UI) but carry no ticket data.
         if visible {
             for entry in std::fs::read_dir(path)?.flatten() {
                 let ticket_link_path = entry.path();
 
-                // Resolve the symlink to get the actual ticket directory
+                // Resolve symlink to get the actual ticket directory
                 let resolved_result = if ticket_link_path.is_symlink() {
                     let link_target = std::fs::read_link(&ticket_link_path)?;
                     if link_target.is_relative() {
@@ -156,7 +165,6 @@ impl Board {
         }
 
         let limit = self.config.get_limit(&queue_id);
-        let visible = self.config.is_visible(&queue_id);
 
         // Sort tickets by updated_at descending (newest first)
         tickets.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
@@ -204,7 +212,8 @@ impl Board {
             }
         }
 
-        // Find the symlink in source_queue that points to the ticket
+        // Queue entries are symlinks; find the one that resolves to our ticket.
+        // We compare canonical paths because the symlink target is a relative path.
         let mut link_to_move = None;
         for entry in std::fs::read_dir(&source_path)?.flatten() {
             let path = entry.path();
@@ -239,6 +248,8 @@ impl Board {
         }
     }
 
+    /// Soft-deletes a ticket: moves its directory from Tickets/ to Deleted/,
+    /// then removes all queue symlinks that pointed to it.
     pub fn delete_ticket(&self, ticket_id: &str) -> anyhow::Result<()> {
         let ticket_path = self.ticket_path(ticket_id);
         if !ticket_path.exists() {
@@ -256,15 +267,16 @@ impl Board {
             std::fs::remove_dir_all(&dest_path)?;
         }
 
-        // Canonicalize paths for comparison (before rename)
+        // Save canonical path before rename to compare with symlink targets later.
         let abs_ticket_path = ticket_path.canonicalize()?;
 
         std::fs::rename(&ticket_path, &dest_path)?;
 
-        // Update abs_dest_path after rename
+        // After rename, symlinks may resolve to either the old or the new location
+        // depending on OS caching, so we need both paths for comparison.
         let abs_dest_path = dest_path.canonicalize()?;
 
-        // Cleanup symlinks in all queues
+        // Remove symlinks in all queues that pointed to the deleted ticket
         for entry in std::fs::read_dir(&self.queues_path)?.flatten() {
             let queue_dir = entry.path();
             if queue_dir.is_dir() {
@@ -272,15 +284,13 @@ impl Board {
                     let symlink_path = ticket_entry.path();
                     if symlink_path.is_symlink() {
                         if let Ok(target) = std::fs::read_link(&symlink_path) {
-                            // Resolve target without canonicalize if it's broken
                             let resolved = if target.is_relative() {
                                 queue_dir.join(&target)
                             } else {
                                 target.clone()
                             };
 
-                            // Check if it matches either old or new location
-                            // We use absolute paths for more reliable comparison
+                            // Match against both old and new paths (canonicalize may fail for broken links)
                             let resolved_abs = resolved.canonicalize().unwrap_or(resolved);
 
                             if resolved_abs == abs_dest_path || resolved_abs == abs_ticket_path {
@@ -337,6 +347,7 @@ impl Board {
 
         let ticket_dir = self.ticket_path(&ticket_id);
         if ticket_dir.exists() {
+            // ID collision (extremely rare) — retry with a new random ID
             return self.create_ticket(title, description, queue_id, assigned_to);
         }
         std::fs::create_dir_all(&ticket_dir)?;
@@ -352,6 +363,7 @@ impl Board {
         };
         ticket.save(&ticket_dir)?;
 
+        // Link ticket into the target queue (Queue/<name>/<id> → Tickets/<id>)
         #[cfg(unix)]
         std::os::unix::fs::symlink(&ticket_dir, queue_path.join(&ticket_id))?;
 
@@ -378,6 +390,9 @@ impl Board {
         Ok(())
     }
 
+    /// Resolves a queue identifier. If `target_id` is "index:<N>", it maps
+    /// the pixel-based column index from drag-and-drop to the Nth visible queue.
+    /// Otherwise returns the ID as-is (direct queue name from CLI).
     pub fn resolve_queue_id(&self, target_id: &str) -> String {
         if let Some(idx_str) = target_id.strip_prefix("index:") {
             if let Ok(idx_f) = idx_str.parse::<f64>() {

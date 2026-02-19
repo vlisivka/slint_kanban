@@ -49,7 +49,7 @@ impl Config {
         let config_path = root_path.join("config.toml");
 
         if !config_path.exists() {
-            // Create default config file
+            // No config file yet; use defaults
             let default_config = Self::default();
             Ok(default_config)
         } else {
@@ -86,7 +86,7 @@ impl Config {
         // Remove if exists to move to top
         self.search_history.retain(|q| q != &query);
         self.search_history.insert(0, query);
-        // Limit to 10 items
+        // Cap history at 10 entries
         if self.search_history.len() > 10 {
             self.search_history.pop();
         }

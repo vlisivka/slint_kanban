@@ -1,7 +1,8 @@
 //! main.rs
 //!
 //! Purpose: Main entry point for the Slint Kanban application. Orchestrates UI and Backend.
-//! Includes: UI event handlers, reloading logic, and type conversions.
+//! Includes: UI event handlers, CLI command dispatch, reloading logic, type conversions,
+//!           and NO_COLOR support (https://no-color.org/).
 //! Constraints: Business logic should be in the model module, not here.
 
 mod cli;
@@ -56,6 +57,8 @@ macro_rules! cprintln {
 
 slint::include_modules!();
 
+/// Converts a domain Ticket into the Slint-generated TicketStr for UI binding.
+/// `snippet` is the first line of the description, shown on the card preview.
 pub fn ticket_to_slint(ticket: &model::Ticket, board: &Board) -> TicketStr {
     let snippet = ticket.description.lines().next().unwrap_or("").to_string();
     let refs: Vec<RefStr> = ticket
@@ -85,6 +88,8 @@ pub fn ticket_to_slint(ticket: &model::Ticket, board: &Board) -> TicketStr {
     }
 }
 
+/// Pushes the full board state into the UI, applying search/date/user filters.
+/// Called on every reload (initial load, file watcher event, or filter change).
 pub fn sync_ui_with_board(
     ui: &App,
     board: &Board,
@@ -216,10 +221,6 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
     ui.on_navigate_to(move |target_id| {
         let board = Board::load(nav_root.clone())
             .unwrap_or_else(|_| Board::load(nav_root.clone()).unwrap());
-        // ...
-        // Implementation details...
-        // To stay safe, I'll paste the original logic for these specific Read-Only callbacks
-        // but updated to match the new structure if needed.
 
         let id_to_find = if target_id.starts_with('#') {
             &target_id[1..]
@@ -242,7 +243,7 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
         }
     });
 
-    // Search/Filter callbacks just trigger reload/sync
+    // Search/filter callbacks trigger board reload to apply new filters
     let c = controller.clone();
     ui.on_search_edited(move |_| {
         let _ = c.reload(); // Re-sync UI with new search query
@@ -258,7 +259,7 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
         let _ = c.reload();
     });
 
-    // Watcher
+    // File watcher: debounced reload on filesystem changes
     let c_watcher = controller.clone();
     std::thread::spawn(move || {
         let (tx, rx) = std::sync::mpsc::channel();
@@ -288,6 +289,8 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
                         continue;
                     }
 
+                    // Debounce: wait 100ms then drain any events that arrived
+                    // during the sleep, so rapid saves trigger only one reload.
                     std::thread::sleep(Duration::from_millis(100));
                     while rx.try_recv().is_ok() {}
 
@@ -335,6 +338,7 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
             let ticket = board
                 .find_ticket_by_id(&id)
                 .ok_or_else(|| anyhow::anyhow!("Ticket not found: {}", id))?;
+            // Fields not provided on CLI are preserved from the existing ticket
             let title = title.unwrap_or(ticket.title.clone());
             let description = description.unwrap_or(ticket.description.clone());
             let assign_to = if unassign {
@@ -419,7 +423,6 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
             let _ticket = board
                 .find_ticket_by_id(&id)
                 .ok_or_else(|| anyhow::anyhow!("Ticket not found: {}", id))?;
-            // We need the source queue ID
             let source_queue = board
                 .queues
                 .iter()
@@ -467,6 +470,8 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Resolves the root path and dispatches to GUI or CLI command handler.
+/// Root path priority: --root flag > KANBAN_HOME env var > ~/Kanban default.
 fn run_main(args: CliArgs) -> anyhow::Result<()> {
     let root_path = if let Some(path) = args.root {
         path
@@ -477,7 +482,7 @@ fn run_main(args: CliArgs) -> anyhow::Result<()> {
         PathBuf::from(home_dir).join("Kanban")
     };
 
-    // Ensure directory exists and default queues are created for initial run
+    // Ensure board directory and default queues exist
     Board::ensure_initialized(&root_path)?;
 
     if let Some(command) = args.command {

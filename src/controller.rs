@@ -9,6 +9,9 @@ use slint::{ComponentHandle, Model, SharedString, VecModel, Weak};
 use std::path::PathBuf;
 use std::rc::Rc;
 
+/// Mediates between the Slint UI and the file-system Board model.
+/// Each action handler re-loads the board from disk to ensure consistency
+/// (the board is the source of truth, not in-memory state).
 pub struct AppController {
     app_weak: Weak<App>,
     pub root_path: PathBuf,
@@ -39,7 +42,6 @@ impl AppController {
         let show_only_mine = user_global.get_show_only_mine();
         let active_user = user_global.get_active_user();
 
-        // Used helper function from main.rs (we might want to move it here later)
         sync_ui_with_board(
             &app,
             &board,
@@ -50,8 +52,8 @@ impl AppController {
             active_user.as_str(),
         );
 
-        // 2. Sync Users
-        // Optimized update to prevent UI flickering/reset
+        // 2. Sync Users — only update the model when the list actually changed,
+        //    because resetting VecModel resets ComboBox selection and causes flicker.
         let mut new_users: Vec<SharedString> = Vec::new();
         // Ensure <unassigned> is always available
         if !board.config.users.iter().any(|u| u == "<unassigned>") {
@@ -77,7 +79,6 @@ impl AppController {
         // 3. Sync Active User (ensure consistency)
         let new_active_user = SharedString::from(&board.config.active_user);
         if user_global.get_active_user() != new_active_user {
-            // Only update if different, although we update explicitly on user action too.
             user_global.set_active_user(new_active_user);
         }
 
@@ -107,6 +108,7 @@ impl AppController {
         };
 
         let resolved_target_id = board.resolve_queue_id(&target_id);
+        // Ignore no-op drops (same queue)
         if source_id == resolved_target_id {
             return;
         }
@@ -131,7 +133,7 @@ impl AppController {
 
         println!("Controller: Deleting ticket {}", ticket_id);
         if let Err(e) = board.delete_ticket(&ticket_id) {
-            eprintln!("Error deleting: {:?}", e); // No UI feedback for delete currently?
+            eprintln!("Error deleting: {:?}", e);
         }
     }
 
@@ -174,7 +176,6 @@ impl AppController {
         println!("Controller: Saving ticket {}", ticket_id);
         if let Err(e) = board.update_ticket(&ticket_id, &title, &description, &assigned_to) {
             eprintln!("Error saving ticket: {:?}", e);
-            // Maybe show error?
         }
     }
 
@@ -187,6 +188,7 @@ impl AppController {
             }
         };
 
+        // limit < 0 from UI means "remove limit" (the Slint side sends -1)
         if limit < 0 {
             board.config.queue_limits.remove(&queue_id);
         } else {
@@ -211,7 +213,8 @@ impl AppController {
             eprintln!("Error writing config: {:?}", e);
         }
 
-        // Immediate UI update
+        // Update UI immediately so the user doesn't see stale state while
+        // waiting for the file watcher to trigger a full reload.
         if let Some(app) = self.app_weak.upgrade() {
             app.global::<UserGlobal>()
                 .set_active_user(SharedString::from(username));
@@ -258,9 +261,7 @@ impl AppController {
         if let Err(e) = config.write(&self.root_path) {
             eprintln!("Error writing config: {:?}", e);
         }
-        // Force reload history UI? reload() will do it on file change.
-        // But for responsiveness we might want to do it here too?
-        // `reload` does it.
+        // UI history is synced on file-watcher-triggered reload
     }
 
     pub fn handle_search_history_remove(&self, query: String) {

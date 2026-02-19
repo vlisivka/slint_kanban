@@ -11,8 +11,7 @@ LAST_STDOUT=""
 LAST_STDERR=""
 LAST_EXIT_CODE=0
 
-# Colors (if needed, but objective says "uncoloured output checked")
-# We will use colors for test runner output to make it readable, but strip from app output check
+# ANSI colors for test runner output (app output uses NO_COLOR)
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -37,7 +36,7 @@ panic() {
 }
 
 setup_env() {
-    # Unique dir for each test run
+    # Create isolated temp directory for each test run
     KANBAN_HOME=$(mktemp -d -t slint_kanban_test.XXXXXX)
     export KANBAN_HOME
     export NO_COLOR=1 # Standard way to request no color
@@ -56,10 +55,6 @@ cleanup_env() {
 }
 
 run_app() {
-    # Capture output and exit code
-    # We use KANBAN_HOME env var which we added support for
-    
-    # Split stdout and stderr
     local out_file="${KANBAN_HOME}/stdout"
     local err_file="${KANBAN_HOME}/stderr"
     

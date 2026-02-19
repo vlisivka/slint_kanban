@@ -19,8 +19,8 @@ export component KanbanColumn inherits Rectangle {
     callback create_ticket(string); // queue_id
     callback edit_limit(string, string, int); // id, name, current_limit
 
-    width: 280px; // Matching AppConfig.column-width
-    horizontal-stretch: 0; // Prevent shrinking in layouts
+    width: 280px;
+    horizontal-stretch: 0;
     border-radius: 12px;
     background: Palette.alternate-background;
 
@@ -40,12 +40,12 @@ export component KanbanColumn inherits Rectangle {
                 }
             }
 
-            // Limit Indicators and Settings
+            // Limit badge and action buttons
             HorizontalLayout {
                 spacing: 8px;
                 alignment: end;
 
-                // Styled New Ticket Button first
+                // New Ticket button
                 Rectangle {
                     width: 32px;
                     height: 32px;
@@ -97,7 +97,7 @@ export component KanbanColumn inherits Rectangle {
                     }
                 }
 
-                // Gear icon if no limit, to allow setting one
+                // Gear icon to set a limit when none exists
                 if queue.limit <= 0: Rectangle {
                     width: 32px;
                     height: 32px;

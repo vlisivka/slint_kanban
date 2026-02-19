@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 pub struct TicketMetadata {
     pub title: String,
     #[serde(default)]
-    pub created_at: String, // ISO 8601 or similar
+    pub created_at: String, // "YYYY-MM-DD HH:MM:SS" format
     #[serde(default)]
     pub updated_at: String,
     #[serde(default)]
@@ -39,6 +39,8 @@ impl Ticket {
         }
     }
 
+    /// Finds ticket cross-references in the description text.
+    /// References use the format `#xxxxxx` where x is a 6-char alphanumeric ticket ID.
     pub fn extract_references(&self) -> Vec<String> {
         let mut refs = Vec::new();
         let mut start = 0;
@@ -71,6 +73,10 @@ impl Ticket {
             || self.id.to_lowercase().contains(&query_lower)
     }
 
+    /// Checks whether this ticket's created_at falls within [from, to].
+    /// Comparison is lexicographic, which works for "YYYY-MM-DD" prefixes.
+    /// The `starts_with(to)` check allows matching same-day tickets when
+    /// `to` contains only a date and `created_at` includes a time component.
     pub fn matches_date_range(&self, from: &str, to: &str) -> bool {
         if !from.is_empty() && self.created_at.as_str() < from {
             return false;
@@ -81,6 +87,16 @@ impl Ticket {
         true
     }
 
+    /// Loads a ticket from its directory. Expected format of README.md:
+    /// ```text
+    /// ---
+    /// title: ...
+    /// created_at: YYYY-MM-DD HH:MM:SS
+    /// updated_at: YYYY-MM-DD HH:MM:SS
+    /// assigned_to: "..."
+    /// ---
+    /// <markdown body>
+    /// ```
     pub fn load(path: &std::path::Path) -> anyhow::Result<Self> {
         let ticket_id = path
             .file_name()
@@ -110,6 +126,7 @@ impl Ticket {
         let mut metadata: TicketMetadata = serde_yaml::from_str(frontmatter)
             .map_err(|e| anyhow::anyhow!("Failed to parse YAML in {:?}: {}", readme_path, e))?;
 
+        // Backfill updated_at for tickets created before this field was added
         if metadata.updated_at.is_empty() && !metadata.created_at.is_empty() {
             metadata.updated_at = metadata.created_at.clone();
         }

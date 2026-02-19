@@ -111,7 +111,7 @@ export component App inherits Window {
                 padding: 10px;
                 spacing: 20px;
 
-                // Left spacer to balance if needed, or just alignment
+                // Left spacer for layout balance
                 Rectangle {
                     width: 40px;
                 }
@@ -228,7 +228,7 @@ export component App inherits Window {
         }
     }
 
-    // Initialize callback
+    // Warning dialog handler
     show_warning_dialog(msg) => {
         warning_message = msg;
         show_warning = true;
@@ -263,7 +263,7 @@ export component App inherits Window {
         remove_search_item(q);
     }
 
-    // Ghost card follows mouse
+    // Drag ghost: floating card that follows the cursor during drag
     if (is_dragging): Rectangle {
         x: mouse_x - 100px;
         y: mouse_y - 30px;
@@ -405,7 +405,7 @@ export component App inherits Window {
         border-radius: 4px;
         drop-shadow-blur: 4px;
         drop-shadow-color: #00000040;
-        z: 100; // Ensure it's on top
+        z: 100;
 
         tooltip_label := Text {
             text: tooltip_text;
