@@ -27,6 +27,7 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 - [x] Handle "drop" events in Rust.
 - [x] Implement `move_ticket` function to move directories on disk.
 - [x] Error handling for failed moves.
+- [x] Fix: Correct drag-and-drop target calculation when some queues are hidden.
 
 ## Phase 4: Deleting Tickets
 - [x] Add a "Delete" button/icon to `TicketCard`.

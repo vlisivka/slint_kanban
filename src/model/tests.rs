@@ -774,12 +774,12 @@ fn test_resolve_queue_id() -> anyhow::Result<()> {
     assert_eq!(
         board.resolve_queue_id("index:0"),
         "Q1",
-        "index:0 should resolve to the first queue"
+        "index:0 should resolve to Q1"
     );
     assert_eq!(
-        board.resolve_queue_id("index:1"),
+        board.resolve_queue_id("index:1.5"),
         "Q2",
-        "index:1 should resolve to the second queue"
+        "index:1.5 should resolve to Q2"
     );
     assert_eq!(
         board.resolve_queue_id("index:5"),
@@ -790,6 +790,47 @@ fn test_resolve_queue_id() -> anyhow::Result<()> {
         board.resolve_queue_id("random"),
         "random",
         "Non-index strings should resolve as-is"
+    );
+
+    // Test with hidden queues
+    let board_hidden = Board {
+        tickets_path: PathBuf::new(),
+        queues_path: PathBuf::new(),
+        config: Config::default(),
+        queues: vec![
+            Queue {
+                id: "Q1".to_string(),
+                name: "Q1".to_string(),
+                tickets: vec![],
+                limit: None,
+                visible: true,
+            },
+            Queue {
+                id: "B".to_string(),
+                name: "B".to_string(),
+                tickets: vec![],
+                limit: None,
+                visible: false, // HIDDEN
+            },
+            Queue {
+                id: "Q2".to_string(),
+                name: "Q2".to_string(),
+                tickets: vec![],
+                limit: None,
+                visible: true,
+            },
+        ],
+    };
+
+    assert_eq!(
+        board_hidden.resolve_queue_id("index:0"),
+        "Q1",
+        "index:0 should resolve to Q1"
+    );
+    assert_eq!(
+        board_hidden.resolve_queue_id("index:1"),
+        "Q2",
+        "index:1 should resolve to Q2 (skipping hidden B)"
     );
 
     Ok(())

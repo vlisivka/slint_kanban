@@ -579,10 +579,10 @@ impl Board {
         if let Some(idx_str) = target_id.strip_prefix("index:") {
             if let Ok(idx_f) = idx_str.parse::<f64>() {
                 let idx = idx_f.floor() as usize;
-                return self
-                    .queues
+                let visible_queues: Vec<_> = self.queues.iter().filter(|q| q.visible).collect();
+                return visible_queues
                     .get(idx)
-                    .or(self.queues.last())
+                    .or(visible_queues.last())
                     .map(|q| q.id.clone())
                     .unwrap_or_else(|| target_id.to_string());
             }
