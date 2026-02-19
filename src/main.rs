@@ -5,21 +5,21 @@
 //! Constraints: Business logic should be in the model module, not here.
 
 mod cli;
+mod controller;
 mod model;
 
 use cli::{CliArgs, Commands};
-use model::{Board, Config};
+use controller::AppController;
+use model::Board;
 use notify::{RecursiveMode, Watcher};
-use slint::{ComponentHandle, Model, SharedString, VecModel};
-use std::path::{Path, PathBuf};
+use slint::{ComponentHandle, SharedString, VecModel};
+use std::path::PathBuf;
 use std::rc::Rc;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 
 slint::include_modules!();
 
-static RELOAD_COUNT: AtomicU64 = AtomicU64::new(0);
-
-fn ticket_to_slint(ticket: &model::Ticket, board: &Board) -> TicketStr {
+pub fn ticket_to_slint(ticket: &model::Ticket, board: &Board) -> TicketStr {
     let snippet = ticket.description.lines().next().unwrap_or("").to_string();
     let refs: Vec<RefStr> = ticket
         .extract_references()
@@ -48,7 +48,7 @@ fn ticket_to_slint(ticket: &model::Ticket, board: &Board) -> TicketStr {
     }
 }
 
-fn sync_ui_with_board(
+pub fn sync_ui_with_board(
     ui: &App,
     board: &Board,
     query: &str,
@@ -63,7 +63,7 @@ fn sync_ui_with_board(
         let slint_tickets: Vec<TicketStr> = queue
             .tickets
             .iter()
-            .filter(|t| {
+            .filter(|t: &&model::Ticket| {
                 let matches_search = t.matches(query);
                 let matches_date = t.matches_date_range(date_from, date_to);
                 let matches_user = if show_only_mine {
@@ -100,127 +100,129 @@ fn sync_ui_with_board(
     ui.set_board_queues(queues_model.into());
 }
 
-fn reload_board(ui: &App, root_path: &Path) -> anyhow::Result<()> {
-    let count = RELOAD_COUNT.fetch_add(1, Ordering::SeqCst);
-    println!("Reloading board #{}...", count + 1);
-
-    let board = Board::load(root_path.to_path_buf())?;
-    let user_global = ui.global::<UserGlobal>();
-    let show_only_mine = user_global.get_show_only_mine();
-    let active_user = user_global.get_active_user();
-
-    let query = ui.get_search_query();
-    let date_from = ui.get_date_from();
-    let date_to = ui.get_date_to();
-
-    sync_ui_with_board(
-        ui,
-        &board,
-        query.as_str(),
-        date_from.as_str(),
-        date_to.as_str(),
-        show_only_mine,
-        active_user.as_str(),
-    );
-
-    let new_users: Vec<SharedString> = board
-        .config
-        .users
-        .iter()
-        .map(|s| SharedString::from(s))
-        .collect();
-
-    let current_users_model = user_global.get_users();
-    let users_changed = if current_users_model.row_count() != new_users.len() {
-        true
-    } else {
-        current_users_model
-            .iter()
-            .zip(new_users.iter())
-            .any(|(a, b)| a != *b)
-    };
-
-    if users_changed {
-        println!("Updating users list in UI...");
-        user_global.set_users(Rc::new(VecModel::from(new_users)).into());
-    }
-
-    // Always ensure active user is consistent
-    let new_active_user = SharedString::from(&board.config.active_user);
-    if user_global.get_active_user() != new_active_user {
-        user_global.set_active_user(new_active_user);
-    }
-    user_global.set_show_only_mine(board.config.show_only_mine);
-
-    let history: Vec<SharedString> = board
-        .config
-        .search_history
-        .iter()
-        .map(|s| SharedString::from(s))
-        .collect();
-    ui.set_search_history(Rc::new(VecModel::from(history)).into());
-
-    Ok(())
-}
-
 fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
     let ui = App::new()?;
+    let controller = Arc::new(AppController::new(ui.as_weak(), root_path.clone()));
 
     println!("Using Kanban root: {:?}", root_path);
 
     // Initial load
-    reload_board(&ui, &root_path)?;
+    controller.reload()?;
 
-    let ui_handle = ui.as_weak();
     let watcher_root = root_path.clone();
 
     // Set up callbacks
-    let move_root = root_path.clone();
-    let move_ui_handle = ui.as_weak();
-
+    let c = controller.clone();
     ui.on_move_ticket(move |ticket_id, source_id, target_id| {
-        let board = match Board::load(move_root.clone()) {
-            Ok(b) => b,
-            Err(e) => {
-                eprintln!("Error loading board for move: {:?}", e);
-                return;
-            }
-        };
-
-        let resolved_target_id = board.resolve_queue_id(&target_id);
-
-        if source_id == resolved_target_id {
-            return;
-        }
-
-        println!(
-            "Moving ticket {} from {} to {}",
-            ticket_id, source_id, resolved_target_id
-        );
-        if let Err(e) = board.move_ticket(&ticket_id, &source_id, &resolved_target_id) {
-            eprintln!("Error moving ticket: {:?}", e);
-            if let Some(ui) = move_ui_handle.upgrade() {
-                ui.invoke_show_warning_dialog(SharedString::from(e.to_string()));
-            }
-        }
+        c.handle_move(ticket_id.into(), source_id.into(), target_id.into());
     });
 
-    let delete_root = root_path.clone();
+    let c = controller.clone();
     ui.on_delete_ticket(move |ticket_id| {
-        let board = match Board::load(delete_root.clone()) {
-            Ok(b) => b,
-            Err(e) => {
-                eprintln!("Error loading board for delete: {:?}", e);
-                return;
-            }
+        c.handle_delete(ticket_id.into());
+    });
+
+    let c = controller.clone();
+    ui.on_request_create_ticket(move |queue_id, title, description, assigned_to| {
+        c.handle_create(
+            queue_id.into(),
+            title.into(),
+            description.into(),
+            assigned_to.into(),
+        );
+    });
+
+    let c = controller.clone();
+    ui.on_save_ticket(move |ticket_id, title, description, assigned_to| {
+        c.handle_save(
+            ticket_id.into(),
+            title.into(),
+            description.into(),
+            assigned_to.into(),
+        );
+    });
+
+    let c = controller.clone();
+    ui.on_request_change_limit(move |queue_id, limit| {
+        c.handle_change_limit(queue_id.into(), limit);
+    });
+
+    let c = controller.clone();
+    ui.global::<UserGlobal>()
+        .on_change_active_user(move |username| {
+            c.handle_user_change(username.into());
+        });
+
+    let c = controller.clone();
+    ui.global::<UserGlobal>()
+        .on_toggle_show_only_mine(move |enabled| {
+            c.handle_toggle_mine(enabled);
+        });
+
+    let c = controller.clone();
+    ui.on_toggle_queue_visibility(move |queue_id, visible| {
+        c.handle_queue_visibility(queue_id.into(), visible);
+    });
+
+    let c = controller.clone();
+    ui.on_accept_search(move |query| {
+        c.handle_search_history_add(query.into());
+    });
+
+    let c = controller.clone();
+    ui.on_remove_search_item(move |query| {
+        c.handle_search_history_remove(query.into());
+    });
+
+    let nav_root = root_path.clone(); // use local var
+    let nav_ui = ui.as_weak();
+    ui.on_navigate_to(move |target_id| {
+        let board = Board::load(nav_root.clone())
+            .unwrap_or_else(|_| Board::load(nav_root.clone()).unwrap());
+        // ...
+        // Implementation details...
+        // To stay safe, I'll paste the original logic for these specific Read-Only callbacks
+        // but updated to match the new structure if needed.
+
+        let id_to_find = if target_id.starts_with('#') {
+            &target_id[1..]
+        } else {
+            &target_id
         };
 
-        println!("Deleting ticket {}", ticket_id);
-        if let Err(e) = board.delete_ticket(&ticket_id) {
-            eprintln!("Error deleting ticket: {:?}", e);
+        if let Some(ticket) = board.find_ticket_by_id(id_to_find) {
+            if let Some(ui) = nav_ui.upgrade() {
+                ui.set_active_ticket(ticket_to_slint(ticket, &board));
+                ui.set_is_viewing_ticket(true);
+            }
+        } else {
+            if let Some(ui) = nav_ui.upgrade() {
+                ui.invoke_show_warning_dialog(SharedString::from(format!(
+                    "Ticket NOT FOUND: {}",
+                    target_id
+                )));
+            }
         }
     });
 
+    // Search/Filter callbacks just trigger reload/sync
+    let c = controller.clone();
+    ui.on_search_edited(move |_| {
+        let _ = c.reload(); // Re-sync UI with new search query
+    });
+
+    let c = controller.clone();
+    ui.on_date_filter_changed(move || {
+        let _ = c.reload();
+    });
+
+    let c = controller.clone();
+    ui.on_select_history_item(move |_| {
+        let _ = c.reload();
+    });
+
+    // Watcher
+    let c_watcher = controller.clone();
     std::thread::spawn(move || {
         let (tx, rx) = std::sync::mpsc::channel();
         let mut watcher = notify::recommended_watcher(tx).unwrap();
@@ -236,8 +238,6 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
             match rx.recv() {
                 Ok(Ok(event)) => {
                     use notify::EventKind;
-
-                    // Only reload on significant changes. Ignore Access, Metadata, etc.
                     let should_reload = match event.kind {
                         EventKind::Create(_) | EventKind::Remove(_) => true,
                         EventKind::Modify(m) => matches!(
@@ -251,307 +251,22 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
                         continue;
                     }
 
-                    // Fixed-window debounce: wait a bit and then drain everything
                     std::thread::sleep(Duration::from_millis(100));
-                    while rx.try_recv().is_ok() {
-                        // Drainage loop
-                    }
+                    while rx.try_recv().is_ok() {}
 
-                    let ui_handle = ui_handle.clone();
-                    let root = watcher_root.clone();
-
+                    let c = c_watcher.clone();
                     let _ = slint::invoke_from_event_loop(move || {
-                        if let Some(ui) = ui_handle.upgrade() {
-                            if let Err(e) = reload_board(&ui, &root) {
-                                eprintln!("Error reloading board: {:?}", e);
-                            }
+                        if let Err(e) = c.reload() {
+                            eprintln!("Error reloading board: {:?}", e);
                         }
                     });
                 }
-                Ok(Err(e)) => {
-                    eprintln!("Watch error: {:?}", e);
-                }
+                Ok(Err(e)) => eprintln!("Watch error: {:?}", e),
                 Err(e) => {
                     eprintln!("Channel error: {:?}", e);
                     break;
                 }
             }
-        }
-    });
-
-    let user_root = root_path.clone();
-    let user_ui_handle = ui.as_weak();
-    ui.global::<UserGlobal>()
-        .on_change_active_user(move |username: SharedString| {
-            let mut config = match Config::load(&user_root) {
-                Ok(c) => c,
-                Err(e) => {
-                    eprintln!("Error loading config for user change: {:?}", e);
-                    return;
-                }
-            };
-            config.active_user = username.to_string();
-            if let Err(e) = config.write(&user_root) {
-                eprintln!("Error writing config for user change: {:?}", e);
-            }
-            // Update UI immediately for responsiveness to prevent dropdown flicker
-            if let Some(ui) = user_ui_handle.upgrade() {
-                ui.global::<UserGlobal>().set_active_user(username);
-            }
-            // No manual reload here - rely on file watcher
-        });
-
-    let mine_root = root_path.clone();
-    ui.global::<UserGlobal>()
-        .on_toggle_show_only_mine(move |enabled| {
-            let mut config = match Config::load(&mine_root) {
-                Ok(c) => c,
-                Err(e) => {
-                    eprintln!("Error loading config for filter change: {:?}", e);
-                    return;
-                }
-            };
-            config.show_only_mine = enabled;
-            if let Err(e) = config.write(&mine_root) {
-                eprintln!("Error writing config for filter change: {:?}", e);
-            }
-            // No manual reload here - rely on file watcher
-        });
-
-    let save_root = root_path.clone();
-    ui.on_save_ticket(move |ticket_id, title, description, assigned_to| {
-        let board = match Board::load(save_root.clone()) {
-            Ok(b) => b,
-            Err(e) => {
-                eprintln!("Error loading board for save: {:?}", e);
-                return;
-            }
-        };
-
-        println!("Saving ticket {}", ticket_id);
-        if let Err(e) = board.update_ticket(&ticket_id, &title, &description, &assigned_to) {
-            eprintln!("Error saving ticket: {:?}", e);
-        }
-    });
-
-    let nav_root = root_path.clone();
-    let nav_ui_handle = ui.as_weak();
-    ui.on_navigate_to(move |target_id| {
-        let board = match Board::load(nav_root.clone()) {
-            Ok(b) => b,
-            Err(e) => {
-                eprintln!("Error loading board for navigation: {:?}", e);
-                return;
-            }
-        };
-
-        // If target_id starts with #, strip it for search
-        let id_to_find = if target_id.starts_with('#') {
-            &target_id[1..]
-        } else {
-            &target_id
-        };
-
-        if let Some(ticket) = board.find_ticket_by_id(id_to_find) {
-            if let Some(ui) = nav_ui_handle.upgrade() {
-                ui.set_active_ticket(ticket_to_slint(ticket, &board));
-                ui.set_is_viewing_ticket(true);
-            }
-        } else {
-            if let Some(ui) = nav_ui_handle.upgrade() {
-                ui.invoke_show_warning_dialog(SharedString::from(format!(
-                    "Ticket NOT FOUND: {}",
-                    target_id
-                )));
-            }
-        }
-    });
-
-    let search_root = root_path.clone();
-    let search_ui_handle = ui.as_weak();
-    ui.on_search_edited(move |query| {
-        let board = match Board::load(search_root.clone()) {
-            Ok(b) => b,
-            Err(e) => {
-                eprintln!("Error loading board for search: {:?}", e);
-                return;
-            }
-        };
-        if let Some(ui) = search_ui_handle.upgrade() {
-            let date_from = ui.get_date_from();
-            let date_to = ui.get_date_to();
-            let user_global = ui.global::<UserGlobal>();
-            sync_ui_with_board(
-                &ui,
-                &board,
-                query.as_str(),
-                date_from.as_str(),
-                date_to.as_str(),
-                user_global.get_show_only_mine(),
-                user_global.get_active_user().as_str(),
-            );
-        }
-    });
-
-    let accept_root = root_path.clone();
-    let accept_ui_handle = ui.as_weak();
-    ui.on_accept_search(move |query| {
-        let mut config = match Config::load(&accept_root) {
-            Ok(c) => c,
-            Err(e) => {
-                eprintln!("Error loading config for history: {:?}", e);
-                return;
-            }
-        };
-        config.add_search_to_history(query.to_string());
-        if let Err(e) = config.write(&accept_root) {
-            eprintln!("Error writing config with history: {:?}", e);
-        }
-        // Reload history in UI
-        if let Some(ui) = accept_ui_handle.upgrade() {
-            let history: Vec<SharedString> = config
-                .search_history
-                .iter()
-                .map(|s| SharedString::from(s))
-                .collect();
-            ui.set_search_history(Rc::new(VecModel::from(history)).into());
-        }
-    });
-
-    let select_root = root_path.clone();
-    let select_ui_handle = ui.as_weak();
-    ui.on_select_history_item(move |query| {
-        let board = match Board::load(select_root.clone()) {
-            Ok(b) => b,
-            Err(e) => {
-                eprintln!("Error loading board for history selection: {:?}", e);
-                return;
-            }
-        };
-        if let Some(ui) = select_ui_handle.upgrade() {
-            let date_from = ui.get_date_from();
-            let date_to = ui.get_date_to();
-            let user_global = ui.global::<UserGlobal>();
-            sync_ui_with_board(
-                &ui,
-                &board,
-                query.as_str(),
-                date_from.as_str(),
-                date_to.as_str(),
-                user_global.get_show_only_mine(),
-                user_global.get_active_user().as_str(),
-            );
-        }
-    });
-
-    let remove_root = root_path.clone();
-    let remove_ui_handle = ui.as_weak();
-    ui.on_remove_search_item(move |query| {
-        let mut config = match Config::load(&remove_root) {
-            Ok(c) => c,
-            Err(e) => {
-                eprintln!("Error loading config for history removal: {:?}", e);
-                return;
-            }
-        };
-        config.remove_search_from_history(&query);
-        if let Err(e) = config.write(&remove_root) {
-            eprintln!("Error writing config after history removal: {:?}", e);
-        }
-        // Reload history in UI
-        if let Some(ui) = remove_ui_handle.upgrade() {
-            let history: Vec<SharedString> = config
-                .search_history
-                .iter()
-                .map(|s| SharedString::from(s))
-                .collect();
-            ui.set_search_history(Rc::new(VecModel::from(history)).into());
-        }
-    });
-
-    let date_root = root_path.clone();
-    let date_ui_handle = ui.as_weak();
-    ui.on_date_filter_changed(move || {
-        let board = match Board::load(date_root.clone()) {
-            Ok(b) => b,
-            Err(e) => {
-                eprintln!("Error loading board for date filter: {:?}", e);
-                return;
-            }
-        };
-        if let Some(ui) = date_ui_handle.upgrade() {
-            let query = ui.get_search_query();
-            let date_from = ui.get_date_from();
-            let date_to = ui.get_date_to();
-            let user_global = ui.global::<UserGlobal>();
-            sync_ui_with_board(
-                &ui,
-                &board,
-                query.as_str(),
-                date_from.as_str(),
-                date_to.as_str(),
-                user_global.get_show_only_mine(),
-                user_global.get_active_user().as_str(),
-            );
-        }
-    });
-
-    let toggle_root = root_path.clone();
-    ui.on_toggle_queue_visibility(move |queue_id, visible| {
-        let mut config = match Config::load(&toggle_root) {
-            Ok(c) => c,
-            Err(e) => {
-                eprintln!("Error loading config for toggle: {:?}", e);
-                return;
-            }
-        };
-
-        config.set_visible(queue_id.to_string(), visible);
-        if let Err(e) = config.write(&toggle_root) {
-            eprintln!("Error writing config: {:?}", e);
-        }
-        // No manual reload here - rely on file watcher
-    });
-
-    let create_root = root_path.clone();
-    let create_ui_handle = ui.as_weak();
-    ui.on_request_create_ticket(move |queue_id, title, description, assigned_to| {
-        let board = match Board::load(create_root.clone()) {
-            Ok(b) => b,
-            Err(e) => {
-                eprintln!("Error loading board for create: {:?}", e);
-                return;
-            }
-        };
-
-        println!("Creating ticket in queue {}", queue_id);
-        if let Err(e) = board.create_ticket(&title, &description, &queue_id, &assigned_to) {
-            eprintln!("Error creating ticket: {:?}", e);
-            if let Some(ui) = create_ui_handle.upgrade() {
-                ui.invoke_show_warning_dialog(SharedString::from(e.to_string()));
-            }
-        }
-    });
-
-    let limit_root = root_path.clone();
-    ui.on_request_change_limit(move |queue_id, limit| {
-        let mut board = match Board::load(limit_root.clone()) {
-            Ok(b) => b,
-            Err(e) => {
-                eprintln!("Error loading board for limit change: {:?}", e);
-                return;
-            }
-        };
-
-        println!("Changing limit for queue {} to {}", queue_id, limit);
-        if limit < 0 {
-            board.config.queue_limits.remove(&queue_id.to_string());
-        } else {
-            board.config.set_limit(queue_id.to_string(), limit as usize);
-        }
-
-        if let Err(e) = board.config.write(&limit_root) {
-            eprintln!("Error saving config: {:?}", e);
         }
     });
 
@@ -605,10 +320,10 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
             let date_to_str = date_to.unwrap_or_default();
 
             for queue in &board.queues {
-                let filtered_tickets: Vec<_> = queue
+                let filtered_tickets: Vec<&model::Ticket> = queue
                     .tickets
                     .iter()
-                    .filter(|t| {
+                    .filter(|t: &&model::Ticket| {
                         let matches_search = t.matches(&query);
                         let matches_date = t.matches_date_range(&date_from_str, &date_to_str);
                         let matches_id = if let Some(ref target_id) = id {

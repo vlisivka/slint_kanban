@@ -6,7 +6,7 @@
 
 use crate::model::config::Config;
 use crate::model::queue::Queue;
-use crate::model::ticket::{Ticket, TicketMetadata};
+use crate::model::ticket::Ticket;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
@@ -72,39 +72,7 @@ impl Board {
     }
 
     pub(crate) fn load_ticket(&self, path: &Path) -> anyhow::Result<Ticket> {
-        let ticket_id = path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .ok_or_else(|| anyhow::anyhow!("Invalid ticket path: {:?}", path))?
-            .to_string();
-
-        let readme_path = path.join("README.md");
-        if !readme_path.exists() {
-            return Err(anyhow::anyhow!("README.md not found in {:?}", path));
-        }
-
-        let content = std::fs::read_to_string(&readme_path)
-            .map_err(|e| anyhow::anyhow!("Failed to read README.md in {:?}: {}", path, e))?;
-
-        let parts: Vec<&str> = content.splitn(3, "---").collect();
-        if parts.len() < 3 {
-            return Err(anyhow::anyhow!(
-                "Invalid ticket format in {:?}",
-                readme_path
-            ));
-        }
-
-        let frontmatter = parts[1];
-        let body = parts[2].trim().to_string();
-
-        let mut metadata: TicketMetadata = serde_yaml::from_str(frontmatter)
-            .map_err(|e| anyhow::anyhow!("Failed to parse YAML in {:?}: {}", readme_path, e))?;
-
-        if metadata.updated_at.is_empty() && !metadata.created_at.is_empty() {
-            metadata.updated_at = metadata.created_at.clone();
-        }
-
-        Ok(Ticket::from_metadata(ticket_id, metadata, body))
+        Ticket::load(path)
     }
 
     pub fn load(root_path: PathBuf) -> anyhow::Result<Self> {
@@ -374,32 +342,20 @@ impl Board {
         std::fs::create_dir_all(&ticket_dir)?;
 
         let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        self.write_ticket_readme(&ticket_dir, title, &now, &now, description, assigned_to)?;
+        let ticket = Ticket {
+            id: ticket_id.clone(),
+            title: title.to_string(),
+            created_at: now.clone(),
+            updated_at: now.clone(),
+            description: description.to_string(),
+            assigned_to: assigned_to.to_string(),
+        };
+        ticket.save(&ticket_dir)?;
 
         #[cfg(unix)]
         std::os::unix::fs::symlink(&ticket_dir, queue_path.join(&ticket_id))?;
 
         Ok(ticket_id)
-    }
-
-    fn write_ticket_readme(
-        &self,
-        dir: &Path,
-        title: &str,
-        created_at: &str,
-        updated_at: &str,
-        description: &str,
-        assigned_to: &str,
-    ) -> anyhow::Result<()> {
-        let readme_path = dir.join("README.md");
-        let mut f = std::fs::File::create(&readme_path)?;
-        use std::io::Write;
-        write!(
-            f,
-            "---\ntitle: {}\ncreated_at: {}\nupdated_at: {}\nassigned_to: {}\n---\n{}",
-            title, created_at, updated_at, assigned_to, description
-        )?;
-        Ok(())
     }
 
     pub fn update_ticket(
@@ -410,17 +366,14 @@ impl Board {
         assigned_to: &str,
     ) -> anyhow::Result<()> {
         let ticket_dir = self.ticket_path(ticket_id);
-        let ticket = self.load_ticket(&ticket_dir)?;
+        let mut ticket = self.load_ticket(&ticket_dir)?;
 
-        let updated_at = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        self.write_ticket_readme(
-            &ticket_dir,
-            title,
-            &ticket.created_at,
-            &updated_at,
-            description,
-            assigned_to,
-        )?;
+        ticket.updated_at = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        ticket.title = title.to_string();
+        ticket.description = description.to_string();
+        ticket.assigned_to = assigned_to.to_string();
+
+        ticket.save(&ticket_dir)?;
 
         Ok(())
     }

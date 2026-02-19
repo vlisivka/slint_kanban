@@ -80,4 +80,55 @@ impl Ticket {
         }
         true
     }
+
+    pub fn load(path: &std::path::Path) -> anyhow::Result<Self> {
+        let ticket_id = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(|| anyhow::anyhow!("Invalid ticket path: {:?}", path))?
+            .to_string();
+
+        let readme_path = path.join("README.md");
+        if !readme_path.exists() {
+            return Err(anyhow::anyhow!("README.md not found in {:?}", path));
+        }
+
+        let content = std::fs::read_to_string(&readme_path)
+            .map_err(|e| anyhow::anyhow!("Failed to read README.md in {:?}: {}", path, e))?;
+
+        let parts: Vec<&str> = content.splitn(3, "---").collect();
+        if parts.len() < 3 {
+            return Err(anyhow::anyhow!(
+                "Invalid ticket format in {:?}",
+                readme_path
+            ));
+        }
+
+        let frontmatter = parts[1];
+        let body = parts[2].trim().to_string();
+
+        let mut metadata: TicketMetadata = serde_yaml::from_str(frontmatter)
+            .map_err(|e| anyhow::anyhow!("Failed to parse YAML in {:?}: {}", readme_path, e))?;
+
+        if metadata.updated_at.is_empty() && !metadata.created_at.is_empty() {
+            metadata.updated_at = metadata.created_at.clone();
+        }
+
+        Ok(Ticket::from_metadata(ticket_id, metadata, body))
+    }
+
+    pub fn save(&self, path: &std::path::Path) -> anyhow::Result<()> {
+        if !path.exists() {
+            std::fs::create_dir_all(path)?;
+        }
+        let readme_path = path.join("README.md");
+        let mut f = std::fs::File::create(&readme_path)?;
+        use std::io::Write;
+        write!(
+            f,
+            "---\ntitle: {}\ncreated_at: {}\nupdated_at: {}\nassigned_to: {}\n---\n{}",
+            self.title, self.created_at, self.updated_at, self.assigned_to, self.description
+        )?;
+        Ok(())
+    }
 }
