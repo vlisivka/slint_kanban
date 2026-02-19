@@ -73,6 +73,33 @@ fn test_ui() -> anyhow::Result<()> {
         .expect("Delete callback should be triggered");
     assert_eq!(deleted_id, "T-DELETE", "The ID passed to the delete callback should match the requested ID. Check how test_trigger_delete_ticket invokes the callback.");
 
+    // 6. Test search history callbacks
+    let (tx_hist, rx_hist) = std::sync::mpsc::channel();
+    let tx_remove = tx_hist.clone();
+
+    ui.on_select_history_item(move |query| {
+        tx_hist.send(format!("select:{}", query)).unwrap();
+    });
+    ui.on_remove_search_item(move |query| {
+        tx_remove.send(format!("remove:{}", query)).unwrap();
+    });
+
+    let history = Rc::new(VecModel::from(vec![SharedString::from("query1")]));
+    ui.set_search_history(history.into());
+    assert_eq!(ui.get_search_history().row_count(), 1);
+
+    ui.invoke_test_trigger_select_history(SharedString::from("query1"));
+    let select_msg = rx_hist
+        .recv_timeout(std::time::Duration::from_millis(100))
+        .unwrap();
+    assert_eq!(select_msg, "select:query1");
+
+    ui.invoke_test_trigger_remove_history(SharedString::from("query1"));
+    let remove_msg = rx_hist
+        .recv_timeout(std::time::Duration::from_millis(100))
+        .unwrap();
+    assert_eq!(remove_msg, "remove:query1");
+
     Ok(())
 }
 

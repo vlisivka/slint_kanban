@@ -83,10 +83,10 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Add search input field to UI
   - [x] Full-text search across ticket titles and descriptions
   - [x] Filter by queue
-  - [ ] Filter by date range
+  - [x] Filter by date range
   - [ ] Highlight search results
-  - [ ] Search history
-  - [ ] Order tickets in queues by time of last update.
+  - [x] Search history
+  - [x] Order tickets in queues by time of last update.
 
 ### Keyboard Shortcuts
 - [ ] Implement keyboard navigation

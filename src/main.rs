@@ -77,7 +77,24 @@ fn reload_board(ui: &App, root_path: &Path) -> anyhow::Result<()> {
 
     let board = Board::load(root_path.to_path_buf())?;
     let query = ui.get_search_query();
-    sync_ui_with_board(ui, &board, query.as_str(), "", "");
+    let date_from = ui.get_date_from();
+    let date_to = ui.get_date_to();
+    sync_ui_with_board(
+        ui,
+        &board,
+        query.as_str(),
+        date_from.as_str(),
+        date_to.as_str(),
+    );
+
+    let history: Vec<SharedString> = board
+        .config
+        .search_history
+        .iter()
+        .map(|s| SharedString::from(s))
+        .collect();
+    ui.set_search_history(Rc::new(VecModel::from(history)).into());
+
     Ok(())
 }
 
@@ -266,6 +283,79 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
                 date_from.as_str(),
                 date_to.as_str(),
             );
+        }
+    });
+
+    let accept_root = root_path.clone();
+    let accept_ui_handle = ui.as_weak();
+    ui.on_accept_search(move |query| {
+        let mut config = match Config::load(&accept_root) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("Error loading config for history: {:?}", e);
+                return;
+            }
+        };
+        config.add_search_to_history(query.to_string());
+        if let Err(e) = config.write(&accept_root) {
+            eprintln!("Error writing config with history: {:?}", e);
+        }
+        // Reload history in UI
+        if let Some(ui) = accept_ui_handle.upgrade() {
+            let history: Vec<SharedString> = config
+                .search_history
+                .iter()
+                .map(|s| SharedString::from(s))
+                .collect();
+            ui.set_search_history(Rc::new(VecModel::from(history)).into());
+        }
+    });
+
+    let select_root = root_path.clone();
+    let select_ui_handle = ui.as_weak();
+    ui.on_select_history_item(move |query| {
+        let board = match Board::load(select_root.clone()) {
+            Ok(b) => b,
+            Err(e) => {
+                eprintln!("Error loading board for history selection: {:?}", e);
+                return;
+            }
+        };
+        if let Some(ui) = select_ui_handle.upgrade() {
+            let date_from = ui.get_date_from();
+            let date_to = ui.get_date_to();
+            sync_ui_with_board(
+                &ui,
+                &board,
+                query.as_str(),
+                date_from.as_str(),
+                date_to.as_str(),
+            );
+        }
+    });
+
+    let remove_root = root_path.clone();
+    let remove_ui_handle = ui.as_weak();
+    ui.on_remove_search_item(move |query| {
+        let mut config = match Config::load(&remove_root) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("Error loading config for history removal: {:?}", e);
+                return;
+            }
+        };
+        config.remove_search_from_history(&query);
+        if let Err(e) = config.write(&remove_root) {
+            eprintln!("Error writing config after history removal: {:?}", e);
+        }
+        // Reload history in UI
+        if let Some(ui) = remove_ui_handle.upgrade() {
+            let history: Vec<SharedString> = config
+                .search_history
+                .iter()
+                .map(|s| SharedString::from(s))
+                .collect();
+            ui.set_search_history(Rc::new(VecModel::from(history)).into());
         }
     });
 

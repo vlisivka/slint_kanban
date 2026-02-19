@@ -635,6 +635,101 @@ component FilterMenu inherits Rectangle {
     }
 }
 
+component SearchHistoryMenu inherits Rectangle {
+    in property <[string]> history;
+    callback select_search(string);
+    callback remove_search(string);
+    callback close();
+
+    background: Palette.background;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: Palette.border;
+    drop-shadow-blur: 15px;
+    drop-shadow-color: #00000040;
+
+    height: self.preferred-height;
+
+    VerticalBox {
+        padding: 16px;
+        spacing: 12px;
+
+        Text {
+            text: "Recent Searches";
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        VerticalLayout {
+            spacing: 4px;
+            for item in history: Rectangle {
+                height: 32px;
+                background: touch.has-hover ? Palette.alternate-background : transparent;
+                border-radius: 4px;
+
+                touch := TouchArea {
+                    clicked => {
+                        select_search(item);
+                    }
+                }
+
+                HorizontalLayout {
+                    padding-left: 12px;
+                    padding-right: 8px;
+                    spacing: 8px;
+
+                    Text {
+                        text: item;
+                        vertical-alignment: center;
+                        font-size: 14px;
+                        overflow: elide;
+                        horizontal-stretch: 1;
+                    }
+
+                    // Delete button for history item
+                    Rectangle {
+                        width: 20px;
+                        height: 20px;
+                        background: touch-del.pressed ? #eb1abaff : (touch-del.has-hover ? #ff0048ff : transparent);
+                        border-radius: 4px;
+                        vertical-stretch: 0;
+                        horizontal-stretch: 0;
+
+                        Text {
+                            text: "×";
+                            font-size: 14px;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+
+                        touch-del := TouchArea {
+                            clicked => {
+                                remove_search(item);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (history.length == 0): Text {
+            text: "No history yet";
+            font-italic: true;
+            opacity: 0.5;
+        }
+
+        HorizontalLayout {
+            alignment: end;
+            Button {
+                text: "Close";
+                clicked => {
+                    close();
+                }
+            }
+        }
+    }
+}
+
 component KanbanColumn inherits Rectangle {
     in property <QueueStr> queue;
 
@@ -780,8 +875,13 @@ export component App inherits Window {
     in-out property <string> search_query: "";
     in-out property <string> date_from: "";
     in-out property <string> date_to: "";
+    in-out property <[string]> search_history: [];
+    in-out property <bool> show_search_history: false;
     in-out property <bool> show_filter_menu: false;
     callback search_edited(string);
+    callback accept_search(string);
+    callback select_history_item(string);
+    callback remove_search_item(string);
     callback date_filter_changed();
     callback toggle_queue_visibility(string, bool);
     callback move_ticket(string, string, string); // ticket_id, from_queue, index:...
@@ -795,6 +895,8 @@ export component App inherits Window {
     callback test_trigger_close_view(); // for testing
     callback test_trigger_cancel_edit(); // for testing
     callback test_trigger_delete_ticket(string); // for testing
+    callback test_trigger_select_history(string); // for testing
+    callback test_trigger_remove_history(string); // for testing
     // Tooltip state
     property <string> tooltip_text: "";
     property <bool> tooltip_visible: false;
@@ -871,6 +973,16 @@ export component App inherits Window {
                         width: 400px;
                         edited(text) => {
                             search_edited(text);
+                        }
+                        accepted(text) => {
+                            accept_search(text);
+                        }
+                    }
+
+                    Button {
+                        text: "History";
+                        clicked => {
+                            show_search_history = !show_search_history;
                         }
                     }
 
@@ -982,6 +1094,14 @@ export component App inherits Window {
         delete_ticket(tid);
     }
 
+    test_trigger_select_history(q) => {
+        select_history_item(q);
+    }
+
+    test_trigger_remove_history(q) => {
+        remove_search_item(q);
+    }
+
     // Ghost card follows mouse
     if (is_dragging): Rectangle {
         x: mouse_x - 100px;
@@ -1089,6 +1209,25 @@ export component App inherits Window {
         }
         date_filter_changed => {
             root.date_filter_changed();
+        }
+    }
+
+    // Search History Menu Overlay
+    if (show_search_history): SearchHistoryMenu {
+        x: (parent.width - self.width) / 2;
+        y: 70px; // Below header
+        width: 400px;
+        history: search_history;
+        select_search(query) => {
+            show_search_history = false;
+            search_query = query;
+            select_history_item(query);
+        }
+        remove_search(query) => {
+            remove_search_item(query);
+        }
+        close => {
+            show_search_history = false;
         }
     }
 

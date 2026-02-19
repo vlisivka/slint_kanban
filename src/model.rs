@@ -8,6 +8,8 @@ pub struct Config {
     pub queue_limits: HashMap<String, usize>,
     #[serde(default)]
     pub hidden_queues: Vec<String>,
+    #[serde(default)]
+    pub search_history: Vec<String>,
 }
 
 impl Default for Config {
@@ -15,6 +17,7 @@ impl Default for Config {
         Self {
             queue_limits: HashMap::new(),
             hidden_queues: Vec::new(),
+            search_history: Vec::new(),
         }
     }
 }
@@ -52,6 +55,23 @@ impl Config {
         } else if !self.hidden_queues.contains(&queue_id) {
             self.hidden_queues.push(queue_id);
         }
+    }
+
+    pub fn add_search_to_history(&mut self, query: String) {
+        if query.trim().is_empty() {
+            return;
+        }
+        // Remove if exists to move to top
+        self.search_history.retain(|q| q != &query);
+        self.search_history.insert(0, query);
+        // Limit to 10 items
+        if self.search_history.len() > 10 {
+            self.search_history.pop();
+        }
+    }
+
+    pub fn remove_search_from_history(&mut self, query: &str) {
+        self.search_history.retain(|q| q != query);
     }
 
     pub fn write(&self, root_path: &std::path::Path) -> anyhow::Result<()> {
@@ -323,6 +343,10 @@ impl Board {
 
         let limit = self.config.get_limit(&queue_id);
         let visible = self.config.is_visible(&queue_id);
+
+        // Sort tickets by updated_at descending (newest first)
+        tickets.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
+
         Ok(Queue {
             id: queue_id.clone(),
             name: queue_id,
