@@ -1,0 +1,106 @@
+import { Button, CheckBox, LineEdit, Palette } from "std-widgets.slint";
+import { QueueStr } from "../common.slint";
+
+export component FilterMenu inherits Rectangle {
+    in-out property <[QueueStr]> queues;
+    in-out property <string> date_from;
+    in-out property <string> date_to;
+    callback toggle_visibility(string, bool);
+    callback date_filter_changed();
+    callback close();
+
+    background: Palette.background;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: Palette.border;
+    drop-shadow-blur: 15px;
+    drop-shadow-color: #00000040;
+
+    height: self.preferred-height;
+
+    VerticalLayout {
+        padding: 20px;
+        spacing: 15px;
+
+        HorizontalLayout {
+            alignment: space-between;
+            Text {
+                text: "Visible Queues";
+                font-size: 16px;
+                font-weight: 700;
+            }
+        }
+
+        VerticalLayout {
+            spacing: 10px;
+            for q in queues: HorizontalLayout {
+                spacing: 10px;
+                CheckBox {
+                    text: q.name;
+                    checked: q.visible;
+                    toggled => {
+                        toggle_visibility(q.id, self.checked);
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            height: 1px;
+            background: Palette.border;
+        }
+
+        Text {
+            text: "Filter by Date Range";
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        VerticalLayout {
+            spacing: 8px;
+            HorizontalLayout {
+                spacing: 10px;
+                Text {
+                    text: "From:";
+                    vertical-alignment: center;
+                    width: 40px;
+                }
+
+                LineEdit {
+                    text <=> date_from;
+                    placeholder-text: "YYYY-MM-DD";
+                    edited => {
+                        date_filter_changed();
+                    }
+                }
+            }
+
+            HorizontalLayout {
+                spacing: 10px;
+                Text {
+                    text: "To:";
+                    vertical-alignment: center;
+                    width: 40px;
+                }
+
+                LineEdit {
+                    text <=> date_to;
+                    placeholder-text: "YYYY-MM-DD";
+                    edited => {
+                        date_filter_changed();
+                    }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            alignment: end;
+            Button {
+                text: "Close";
+                clicked => {
+                    close();
+                }
+            }
+        }
+    }
+}

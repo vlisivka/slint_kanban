@@ -1,0 +1,113 @@
+import { VerticalBox, HorizontalBox } from "std-widgets.slint";
+import { TicketStr } from "../common.slint";
+
+export component TicketCard inherits Rectangle {
+    in property <TicketStr> ticket;
+    in property <string> from_queue_id;
+
+    // Drag/Delete/Edit callbacks
+    callback start_dragging(string, string, length, length);
+    callback move_dragging(length, length);
+    callback drop_ticket(length);
+    callback delete_clicked(string);
+    callback edit_clicked(TicketStr);
+
+    border-radius: 8px;
+    border-width: 1px;
+    height: 140px;
+    drop-shadow-blur: touch-area.has-hover ? 8px : 2px;
+    drop-shadow-offset-y: touch-area.has-hover ? 4px : 1px;
+    drop-shadow-color: #00000020;
+    animate background, border-color, drop-shadow-blur, drop-shadow-offset-y { duration: 150ms; }
+
+    // Drag-and-Drop Area
+    touch-area := TouchArea {
+        pointer-event(event) => {
+            if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
+                start_dragging(ticket.id, from_queue_id, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+            }
+            if (event.kind == PointerEventKind.up) {
+                drop_ticket(self.absolute-position.x + self.mouse-x);
+            }
+        }
+        moved => {
+            if (self.pressed) {
+                move_dragging(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+            }
+        }
+        clicked => {
+             // If not dragging, open for edit
+             edit_clicked(ticket);
+        }
+    }
+
+    VerticalBox {
+        padding: 12px;
+        spacing: 8px;
+
+        HorizontalBox {
+            padding: 0px;
+            alignment: space-between;
+
+            Text {
+                text: ticket.title;
+                font-weight: 700;
+                font-size: 15px;
+                overflow: elide;
+            }
+
+            // Delete Button
+            Rectangle {
+                width: 24px;
+                height: 24px;
+                background: touch-del.pressed ? #eb1abaff : (touch-del.has-hover ? #ff0048ff : transparent);
+                border-radius: 4px;
+
+                Text {
+                    text: "×";
+                    font-size: 18px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+
+                touch-del := TouchArea {
+                    clicked => {
+                        delete_clicked(ticket.id);
+                    }
+                }
+            }
+        }
+
+        Text {
+            text: ticket.snippet;
+            font-size: 13px;
+            wrap: no-wrap;
+            overflow: elide;
+        }
+
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: space-between;
+            Text {
+                text: "#" + ticket.id;
+                font-size: 11px;
+                font-weight: 700;
+                color: #5e6c84;
+                opacity: 0.6;
+            }
+
+            VerticalLayout {
+                spacing: 2px;
+                Text {
+                    text: "C: " + ticket.created_at;
+                    font-size: 9px;
+                }
+
+                Text {
+                    text: "U: " + ticket.updated_at;
+                    font-size: 9px;
+                }
+            }
+        }
+    }
+}

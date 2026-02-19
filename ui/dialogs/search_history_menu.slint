@@ -1,0 +1,96 @@
+import { Button, VerticalBox, Palette } from "std-widgets.slint";
+
+export component SearchHistoryMenu inherits Rectangle {
+    in property <[string]> history;
+    callback select_search(string);
+    callback remove_search(string);
+    callback close();
+
+    background: Palette.background;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: Palette.border;
+    drop-shadow-blur: 15px;
+    drop-shadow-color: #00000040;
+
+    height: self.preferred-height;
+
+    VerticalBox {
+        padding: 16px;
+        spacing: 12px;
+
+        Text {
+            text: "Recent Searches";
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        VerticalLayout {
+            spacing: 4px;
+            for item in history: Rectangle {
+                height: 32px;
+                background: touch.has-hover ? Palette.alternate-background : transparent;
+                border-radius: 4px;
+
+                touch := TouchArea {
+                    clicked => {
+                        select_search(item);
+                    }
+                }
+
+                HorizontalLayout {
+                    padding-left: 12px;
+                    padding-right: 8px;
+                    spacing: 8px;
+
+                    Text {
+                        text: item;
+                        vertical-alignment: center;
+                        font-size: 14px;
+                        overflow: elide;
+                        horizontal-stretch: 1;
+                    }
+
+                    // Delete button for history item
+                    Rectangle {
+                        width: 20px;
+                        height: 20px;
+                        background: touch-del.pressed ? #eb1abaff : (touch-del.has-hover ? #ff0048ff : transparent);
+                        border-radius: 4px;
+                        vertical-stretch: 0;
+                        horizontal-stretch: 0;
+
+                        Text {
+                            text: "×";
+                            font-size: 14px;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+
+                        touch-del := TouchArea {
+                            clicked => {
+                                remove_search(item);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (history.length == 0): Text {
+            text: "No history yet";
+            font-italic: true;
+            opacity: 0.5;
+        }
+
+        HorizontalLayout {
+            alignment: end;
+            Button {
+                text: "Close";
+                clicked => {
+                    close();
+                }
+            }
+        }
+    }
+}

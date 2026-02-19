@@ -1,0 +1,126 @@
+import {
+    Button,
+    ScrollView,
+    VerticalBox,
+    HorizontalBox,
+    Palette,
+} from "std-widgets.slint";
+import { TicketStr } from "../common.slint";
+
+export component TicketView inherits Rectangle {
+    in property <TicketStr> ticket;
+    callback close();
+    callback edit();
+    callback navigate_to(string);
+    callback show_tooltip(string, length, length);
+    callback hide_tooltip();
+
+    background: #00000080; // Semi-transparent backdrop for focus
+
+    // BACKDROP: Catch clicks outside the card to cancel
+    TouchArea {
+        clicked => {
+            close();
+        }
+    }
+
+    Rectangle {
+        // Full window (fill parent)
+        width: 100%;
+        height: 100%;
+        background: Palette.background;
+
+        TouchArea { } // Block clicks
+
+        VerticalBox {
+            padding: 40px;
+            spacing: 24px;
+
+            HorizontalLayout {
+                padding: 0px;
+                alignment: space-between;
+
+                Button {
+                    text: "Edit";
+                    width: 100px;
+                    height: 40px;
+                    clicked => {
+                        edit();
+                    }
+                }
+
+                // Title as header (centered)
+                Text {
+                    text: ticket.title;
+                    font-size: 32px;
+                    font-weight: 800;
+                    wrap: word-wrap;
+                    horizontal-alignment: center;
+                    // Centering logic: this text fills the space between buttons
+                }
+
+                Button {
+                    text: "Close";
+                    width: 100px;
+                    height: 40px;
+                    clicked => {
+                        close();
+                    }
+                }
+            }
+
+            ScrollView {
+                VerticalBox {
+                    padding: 20px;
+                    spacing: 20px;
+                    Text {
+                        text: ticket.description;
+                        font-size: 18px;
+                        wrap: word-wrap;
+                        horizontal-alignment: left;
+                    }
+
+                    if ticket.references.length > 0: VerticalLayout {
+                        spacing: 12px;
+                        Text {
+                            text: "Related Tickets:";
+                            font-size: 16px;
+                            font-weight: 800;
+                            opacity: 0.7;
+                        }
+
+                        HorizontalBox {
+                            padding: 0px;
+                            alignment: start;
+                            for ref in ticket.references: Rectangle {
+                                width: ref_label.preferred-width + 20px;
+                                height: 32px;
+                                border-radius: 4px;
+                                background: Palette.alternate-background;
+
+                                ref_label := Text {
+                                    text: ref.id;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+
+                                TouchArea {
+                                    clicked => {
+                                        navigate_to(ref.id);
+                                    }
+                                    changed has-hover => {
+                                        if (self.has-hover) {
+                                            show_tooltip(ref.title, self.absolute-position.x, self.absolute-position.y - 30px);
+                                        } else {
+                                            hide_tooltip();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

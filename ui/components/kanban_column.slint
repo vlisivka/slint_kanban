@@ -1,0 +1,148 @@
+import {
+    ScrollView,
+    VerticalBox,
+    HorizontalBox,
+    Palette,
+} from "std-widgets.slint";
+import { QueueStr, TicketStr } from "../common.slint";
+import { TicketCard } from "./ticket_card.slint";
+
+export component KanbanColumn inherits Rectangle {
+    in property <QueueStr> queue;
+
+    // Drag/Drop/Delete/Edit callbacks
+    callback start_dragging(string, string, length, length);
+    callback move_dragging(length, length);
+    callback drop_ticket(length);
+    callback delete_ticket(string);
+    callback edit_ticket(TicketStr);
+    callback create_ticket(string); // queue_id
+    callback edit_limit(string, string, int); // id, name, current_limit
+
+    width: 280px; // Matching AppConfig.column-width
+    horizontal-stretch: 0; // Prevent shrinking in layouts
+    border-radius: 12px;
+    background: Palette.alternate-background;
+
+    VerticalBox {
+        padding: 16px;
+        spacing: 12px;
+
+        HorizontalBox {
+            padding: 0px;
+            alignment: space-between;
+
+            VerticalLayout {
+                Text {
+                    text: queue.name;
+                    font-weight: 800;
+                    font-size: 16px;
+                }
+            }
+
+            // Limit Indicators and Settings
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: end;
+
+                // Styled New Ticket Button first
+                Rectangle {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 16px;
+
+                    Text {
+                        text: "+";
+                        font-size: 20px;
+                        font-weight: 800;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    touch-add := TouchArea {
+                        clicked => {
+                            create_ticket(queue.id);
+                        }
+                    }
+                }
+
+                // Limit Badge (clickable)
+                if queue.limit > 0: TouchArea {
+                    clicked => {
+                        edit_limit(queue.id, queue.name, queue.limit);
+                    }
+
+                    Rectangle {
+                        height: 24px;
+                        min-width: 50px;
+                        border-radius: 12px;
+                        background: {
+                            if queue.ticket_count >= queue.limit {
+                                #ff4444  // Red when at limit
+                            } else if queue.ticket_count >= queue.limit * 80 / 100 {
+                                #ff9800  // Orange when >= 80%
+                            } else {
+                                #4caf50  // Green when normal
+                            }
+                        };
+
+                        Text {
+                            text: queue.ticket_count + "/" + queue.limit;
+                            font-size: 12px;
+                            font-weight: 700;
+                            color: white;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+
+                // Gear icon if no limit, to allow setting one
+                if queue.limit <= 0: Rectangle {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 16px;
+                    opacity: touch-limit-none.has-hover ? 1.0 : 0.3;
+
+                    Text {
+                        text: "⚙";
+                        font-size: 16px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    touch-limit-none := TouchArea {
+                        clicked => {
+                            edit_limit(queue.id, queue.name, -1);
+                        }
+                    }
+                }
+            }
+        }
+
+        ScrollView {
+            VerticalLayout {
+                spacing: 10px;
+                for ticket in queue.tickets: TicketCard {
+                    ticket: ticket;
+                    from_queue_id: queue.id;
+                    start_dragging(tid, qid, mx, my) => {
+                        start_dragging(tid, qid, mx, my);
+                    }
+                    move_dragging(mx, my) => {
+                        move_dragging(mx, my);
+                    }
+                    drop_ticket(mx) => {
+                        drop_ticket(mx);
+                    }
+                    delete_clicked(tid) => {
+                        delete_ticket(tid);
+                    }
+                    edit_clicked(t) => {
+                        edit_ticket(t);
+                    }
+                }
+            }
+        }
+    }
+}

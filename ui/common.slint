@@ -1,0 +1,30 @@
+export struct RefStr {
+    id: string,
+    title: string,
+}
+
+export struct TicketStr {
+    id: string,
+    title: string,
+    description: string,
+    snippet: string,
+    created_at: string,
+    updated_at: string,
+    references: [RefStr],
+}
+
+export struct QueueStr {
+    id: string,
+    name: string,
+    tickets: [TicketStr],
+    limit: int,           // -1 means no limit
+    ticket_count: int,
+    visible: bool,
+}
+
+export component AppConfig {
+    out property <length> column-width: 280px;
+    out property <length> column-spacing: 16px;
+    out property <length> board-padding: 16px;
+    out property <length> card-height: 140px;
+}
