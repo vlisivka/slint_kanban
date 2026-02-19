@@ -10,7 +10,7 @@ mod model;
 use cli::{CliArgs, Commands};
 use model::{Board, Config};
 use notify::{RecursiveMode, Watcher};
-use slint::{ComponentHandle, SharedString, VecModel};
+use slint::{ComponentHandle, Model, SharedString, VecModel};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -123,18 +123,33 @@ fn reload_board(ui: &App, root_path: &Path) -> anyhow::Result<()> {
         active_user.as_str(),
     );
 
-    user_global.set_users(
-        Rc::new(VecModel::from(
-            board
-                .config
-                .users
-                .iter()
-                .map(|s| SharedString::from(s))
-                .collect::<Vec<_>>(),
-        ))
-        .into(),
-    );
-    user_global.set_active_user(SharedString::from(&board.config.active_user));
+    let new_users: Vec<SharedString> = board
+        .config
+        .users
+        .iter()
+        .map(|s| SharedString::from(s))
+        .collect();
+
+    let current_users_model = user_global.get_users();
+    let users_changed = if current_users_model.row_count() != new_users.len() {
+        true
+    } else {
+        current_users_model
+            .iter()
+            .zip(new_users.iter())
+            .any(|(a, b)| a != *b)
+    };
+
+    if users_changed {
+        println!("Updating users list in UI...");
+        user_global.set_users(Rc::new(VecModel::from(new_users)).into());
+    }
+
+    // Always ensure active user is consistent
+    let new_active_user = SharedString::from(&board.config.active_user);
+    if user_global.get_active_user() != new_active_user {
+        user_global.set_active_user(new_active_user);
+    }
     user_global.set_show_only_mine(board.config.show_only_mine);
 
     let history: Vec<SharedString> = board
@@ -279,13 +294,14 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
             if let Err(e) = config.write(&user_root) {
                 eprintln!("Error writing config for user change: {:?}", e);
             }
+            // Update UI immediately for responsiveness to prevent dropdown flicker
             if let Some(ui) = user_ui_handle.upgrade() {
-                let _ = reload_board(&ui, &user_root);
+                ui.global::<UserGlobal>().set_active_user(username);
             }
+            // No manual reload here - rely on file watcher
         });
 
     let mine_root = root_path.clone();
-    let mine_ui_handle = ui.as_weak();
     ui.global::<UserGlobal>()
         .on_toggle_show_only_mine(move |enabled| {
             let mut config = match Config::load(&mine_root) {
@@ -299,9 +315,7 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
             if let Err(e) = config.write(&mine_root) {
                 eprintln!("Error writing config for filter change: {:?}", e);
             }
-            if let Some(ui) = mine_ui_handle.upgrade() {
-                let _ = reload_board(&ui, &mine_root);
-            }
+            // No manual reload here - rely on file watcher
         });
 
     let save_root = root_path.clone();

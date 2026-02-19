@@ -213,7 +213,7 @@ export component App inherits Window {
                         editing_id = "";
                         editing_title = "New Ticket";
                         editing_desc = "";
-                        editing_assigned_to = "";
+                        editing_assigned_to = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
                         target_queue_for_new = qid;
                         is_editing = true;
                     }

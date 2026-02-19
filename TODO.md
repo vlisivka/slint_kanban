@@ -134,3 +134,6 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [ ] Create styled text rendering component
   - [ ] Support for headings, lists, code blocks
   - [ ] Support for links and images
+
+## Bugs
+- [x] Fix double board reload (and freeze) when changing user settings.
