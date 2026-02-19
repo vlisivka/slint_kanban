@@ -76,6 +76,9 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
     - [x] `update`: update ticket attributes by ID.
     - [x] `move`: move ticket between queues by ID.
     - [x] `remove`: delete ticket by ID.
+    - [x] `list`: list tickets with filtering options.
+    - [x] `show`: show detailed ticket information.
+    - [x] `configure`: manage application settings via CLI.
 - [x] Implement `open PATH` command to control GUI from command line.
 - [x] Add automated tests for all CLI commands.
 
@@ -114,6 +117,15 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [ ] Trend visualization
   - [ ] Burndown charts
   - [ ] Export statistics to CSV
+
+### Multi-user Support
+- [x] Implement multi-user support
+  - [x] Update `Config` model with `users`, `active_user`, and `show_only_mine`
+  - [x] Add `assigned_to` field to `Ticket` and `TicketMetadata`
+  - [x] Implement user selection and filtering toggle in global UI
+  - [x] Add user assignment selector in `TicketEdit` and `TicketView`
+  - [x] Update CLI commands to handle `--assigned-to`
+  - [x] Add unit tests for user-based filtering and config
 
 ### Markdown Rendering
 - [/] Implement Markdown rendering in ticket detail view using Servo

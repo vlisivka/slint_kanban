@@ -7,9 +7,18 @@ import {
     TextEdit,
     Palette,
     CheckBox,
+    ComboBox,
 } from "std-widgets.slint";
 
-import { RefStr, TicketStr, QueueStr, AppConfig } from "common.slint";
+import {
+    RefStr,
+    TicketStr,
+    QueueStr,
+    AppConfig,
+    UserGlobal,
+} from "common.slint";
+
+export { UserGlobal }
 import { TicketView } from "dialogs/ticket_view.slint";
 import { TicketEdit } from "dialogs/ticket_edit.slint";
 import { WarningDialog } from "dialogs/warning_dialog.slint";
@@ -35,8 +44,8 @@ export component App inherits Window {
     callback toggle_queue_visibility(string, bool);
     callback move_ticket(string, string, string); // ticket_id, from_queue, index:...
     callback delete_ticket(string);
-    callback save_ticket(string, string, string); // id, title, desc
-    callback request_create_ticket(string, string, string); // queue_id, title, desc
+    callback save_ticket(string, string, string, string); // id, title, desc, assigned_to
+    callback request_create_ticket(string, string, string, string); // queue_id, title, desc, assigned_to
     callback request_change_limit(string, int); // queue_id, limit
     callback show_warning_dialog(string); // message
     callback navigate_to(string); // for cross-references
@@ -68,6 +77,7 @@ export component App inherits Window {
     out property <string> editing_id: "";
     out property <string> editing_title: "";
     out property <string> editing_desc: "";
+    out property <string> editing_assigned_to: "";
     out property <string> target_queue_for_new: "";
 
     // Warning dialog state
@@ -203,6 +213,7 @@ export component App inherits Window {
                         editing_id = "";
                         editing_title = "New Ticket";
                         editing_desc = "";
+                        editing_assigned_to = "";
                         target_queue_for_new = qid;
                         is_editing = true;
                     }
@@ -227,6 +238,7 @@ export component App inherits Window {
         editing_id = "";
         editing_title = "New Ticket";
         editing_desc = "";
+        editing_assigned_to = "";
         target_queue_for_new = qid;
         is_editing = true;
     }
@@ -279,6 +291,7 @@ export component App inherits Window {
             editing_id = active_ticket.id;
             editing_title = active_ticket.title;
             editing_desc = active_ticket.description;
+            editing_assigned_to = active_ticket.assigned_to;
             is_editing = true;
         }
         navigate_to(target) => {
@@ -300,16 +313,18 @@ export component App inherits Window {
         ticket_id: editing_id;
         title_text: editing_title;
         description_text: editing_desc;
+        assigned_to: editing_assigned_to;
+        users: UserGlobal.users;
 
         cancel => {
             is_editing = false;
         }
-        save(id, title, desc) => {
+        save(id, title, desc, assigned) => {
             is_editing = false;
             if (id == "") {
-                request_create_ticket(target_queue_for_new, title, desc);
+                request_create_ticket(target_queue_for_new, title, desc, assigned);
             } else {
-                save_ticket(id, title, desc);
+                save_ticket(id, title, desc, assigned);
             }
         }
     }

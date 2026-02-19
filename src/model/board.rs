@@ -332,6 +332,7 @@ impl Board {
         title: &str,
         description: &str,
         queue_id: &str,
+        assigned_to: &str,
     ) -> anyhow::Result<String> {
         use rand::Rng;
 
@@ -368,12 +369,12 @@ impl Board {
 
         let ticket_dir = self.ticket_path(&ticket_id);
         if ticket_dir.exists() {
-            return self.create_ticket(title, description, queue_id);
+            return self.create_ticket(title, description, queue_id, assigned_to);
         }
         std::fs::create_dir_all(&ticket_dir)?;
 
         let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        self.write_ticket_readme(&ticket_dir, title, &now, &now, description)?;
+        self.write_ticket_readme(&ticket_dir, title, &now, &now, description, assigned_to)?;
 
         #[cfg(unix)]
         std::os::unix::fs::symlink(&ticket_dir, queue_path.join(&ticket_id))?;
@@ -388,14 +389,15 @@ impl Board {
         created_at: &str,
         updated_at: &str,
         description: &str,
+        assigned_to: &str,
     ) -> anyhow::Result<()> {
         let readme_path = dir.join("README.md");
         let mut f = std::fs::File::create(&readme_path)?;
         use std::io::Write;
         write!(
             f,
-            "---\ntitle: {}\ncreated_at: {}\nupdated_at: {}\n---\n{}",
-            title, created_at, updated_at, description
+            "---\ntitle: {}\ncreated_at: {}\nupdated_at: {}\nassigned_to: {}\n---\n{}",
+            title, created_at, updated_at, assigned_to, description
         )?;
         Ok(())
     }
@@ -405,6 +407,7 @@ impl Board {
         ticket_id: &str,
         title: &str,
         description: &str,
+        assigned_to: &str,
     ) -> anyhow::Result<()> {
         let ticket_dir = self.ticket_path(ticket_id);
         let ticket = self.load_ticket(&ticket_dir)?;
@@ -416,6 +419,7 @@ impl Board {
             &ticket.created_at,
             &updated_at,
             description,
+            assigned_to,
         )?;
 
         Ok(())

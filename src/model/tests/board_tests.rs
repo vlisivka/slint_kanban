@@ -4,7 +4,6 @@
 
 use super::super::*;
 use crate::model::queue::Queue;
-use crate::model::ticket::TicketMetadata;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
@@ -294,7 +293,7 @@ fn test_create_ticket() -> anyhow::Result<()> {
     std::fs::create_dir_all(&q1_path)?;
 
     let board = Board::load(root_path.clone())?;
-    let tid = board.create_ticket("My New Task", "My Description", "Q1")?;
+    let tid = board.create_ticket("My New Task", "My Description", "Q1", "")?;
 
     assert_eq!(tid.len(), 6, "New ticket ID should be 6 characters long");
     assert!(
@@ -346,9 +345,9 @@ fn test_update_ticket() -> anyhow::Result<()> {
     std::fs::create_dir_all(root_path.join("Queue").join("Q1"))?;
 
     let board = Board::load(root_path.clone())?;
-    let tid = board.create_ticket("Original", "Original Description", "Q1")?;
+    let tid = board.create_ticket("Original", "Original Description", "Q1", "")?;
 
-    board.update_ticket(&tid, "Updated Title", "Updated Description")?;
+    board.update_ticket(&tid, "Updated Title", "Updated Description", "")?;
 
     let board2 = Board::load(root_path)?;
     let t = &board2.queues[0].tickets[0];
@@ -411,10 +410,10 @@ fn test_queue_limit_creation() -> anyhow::Result<()> {
     let board = Board::load(root_path)?;
 
     // Create first ticket - should succeed
-    board.create_ticket("Task 1", "Desc 1", "2. ToDo")?;
+    board.create_ticket("Task 1", "Desc 1", "2. ToDo", "")?;
 
     // Create second ticket - should fail
-    let result = board.create_ticket("Task 2", "Desc 2", "2. ToDo");
+    let result = board.create_ticket("Task 2", "Desc 2", "2. ToDo", "");
     assert!(
         result.is_err(),
         "Should return an error if the queue has reached its limit"
@@ -445,8 +444,8 @@ fn test_queue_limit_moving() -> anyhow::Result<()> {
     let board = Board::load(root_path)?;
 
     // Create two tickets in ToDo
-    let tid1 = board.create_ticket("Task 1", "Desc 1", "2. ToDo")?;
-    let tid2 = board.create_ticket("Task 2", "Desc 2", "2. ToDo")?;
+    let tid1 = board.create_ticket("Task 1", "Desc 1", "2. ToDo", "")?;
+    let tid2 = board.create_ticket("Task 2", "Desc 2", "2. ToDo", "")?;
 
     // Move first ticket to Doing - should succeed
     board.move_ticket(&tid1, "2. ToDo", "3. Doing")?;
@@ -550,6 +549,7 @@ fn test_find_ticket_by_id() {
                     created_at: "".to_string(),
                     updated_at: "".to_string(),
                     description: "".to_string(),
+                    assigned_to: "".to_string(),
                 }],
                 limit: None,
                 visible: true,
@@ -563,6 +563,7 @@ fn test_find_ticket_by_id() {
                     created_at: "".to_string(),
                     updated_at: "".to_string(),
                     description: "".to_string(),
+                    assigned_to: "".to_string(),
                 }],
                 limit: None,
                 visible: true,
@@ -647,7 +648,7 @@ fn test_move_ticket_invalid_queue() -> anyhow::Result<()> {
     let root = tempdir()?;
     Board::ensure_initialized(root.path())?;
     let board = Board::load(root.path().to_path_buf())?;
-    let tid = board.create_ticket("T1", "D", "1. Incoming")?;
+    let tid = board.create_ticket("T1", "D", "1. Incoming", "")?;
 
     let result = board.move_ticket(&tid, "invalid_src", "2. ToDo");
     assert!(result.is_err(), "Moving from invalid source should fail");

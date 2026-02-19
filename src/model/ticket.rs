@@ -13,6 +13,8 @@ pub struct TicketMetadata {
     pub created_at: String, // ISO 8601 or similar
     #[serde(default)]
     pub updated_at: String,
+    #[serde(default)]
+    pub assigned_to: String,
 }
 
 #[derive(Debug, Clone)]
@@ -22,6 +24,7 @@ pub struct Ticket {
     pub created_at: String,
     pub updated_at: String,
     pub description: String,
+    pub assigned_to: String,
 }
 
 impl Ticket {
@@ -32,6 +35,7 @@ impl Ticket {
             created_at: metadata.created_at,
             updated_at: metadata.updated_at,
             description,
+            assigned_to: metadata.assigned_to,
         }
     }
 

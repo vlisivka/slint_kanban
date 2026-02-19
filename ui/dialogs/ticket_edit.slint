@@ -2,6 +2,7 @@ import {
     Button,
     LineEdit,
     TextEdit,
+    ComboBox,
     VerticalBox,
     HorizontalBox,
     Palette,
@@ -10,9 +11,11 @@ import {
 export component TicketEdit inherits Rectangle {
     in-out property <string> title_text;
     in-out property <string> description_text;
+    in-out property <string> assigned_to;
+    in property <[string]> users;
     in property <string> ticket_id;
 
-    callback save(string, string, string); // id, title, desc
+    callback save(string, string, string, string); // id, title, desc, assigned_to
     callback cancel();
 
     background: #00000080; // Semi-transparent backdrop for focus
@@ -64,7 +67,56 @@ export component TicketEdit inherits Rectangle {
                     width: 120px;
                     height: 40px;
                     clicked => {
-                        save(ticket_id, title_text, description_text);
+                        save(ticket_id, title_text, description_text, assigned_to);
+                    }
+                }
+            }
+
+            HorizontalBox {
+                padding: 0px;
+                alignment: start;
+                VerticalLayout {
+                    spacing: 8px;
+                    width: 200px;
+                    Text {
+                        text: "Assigned To";
+                        font-size: 11px;
+                        font-weight: 800;
+                        opacity: 0.6;
+                    }
+
+                    HorizontalLayout {
+                        spacing: 8px;
+                        ComboBox {
+                            model: users;
+                            current-value: assigned_to == "" ? "<unassigned>" : assigned_to;
+                            height: 40px;
+                            width: 180px;
+                            selected(val) => {
+                                assigned_to = (val == "<unassigned>") ? "" : val;
+                            }
+                        }
+
+                        if assigned_to != "": Rectangle {
+                            width: 32px;
+                            height: 32px;
+                            background: touch-unassign.pressed ? #eb1abaff : (touch-unassign.has-hover ? #ff0048ff : transparent);
+                            border-radius: 4px;
+
+                            Text {
+                                text: "×";
+                                font-size: 20px;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                                color: touch-unassign.has-hover ? white : Palette.foreground;
+                            }
+
+                            touch-unassign := TouchArea {
+                                clicked => {
+                                    assigned_to = "";
+                                }
+                            }
+                        }
                     }
                 }
             }

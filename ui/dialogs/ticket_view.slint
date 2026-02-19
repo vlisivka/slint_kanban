@@ -49,14 +49,24 @@ export component TicketView inherits Rectangle {
                     }
                 }
 
-                // Title as header (centered)
-                Text {
-                    text: ticket.title;
-                    font-size: 32px;
-                    font-weight: 800;
-                    wrap: word-wrap;
-                    horizontal-alignment: center;
-                    // Centering logic: this text fills the space between buttons
+                VerticalBox {
+                    padding: 0px;
+                    spacing: 4px;
+                    Text {
+                        text: ticket.title;
+                        font-size: 32px;
+                        font-weight: 800;
+                        wrap: word-wrap;
+                        horizontal-alignment: center;
+                    }
+
+                    if ticket.assigned_to != "": Text {
+                        text: "Assigned to: " + ticket.assigned_to;
+                        font-size: 14px;
+                        font-weight: 400;
+                        horizontal-alignment: center;
+                        opacity: 0.6;
+                    }
                 }
 
                 Button {

@@ -56,6 +56,7 @@ fn test_ui() -> anyhow::Result<()> {
         snippet: "Desc 1".into(),
         created_at: "now".into(),
         updated_at: "now".into(),
+        assigned_to: "bob".into(),
         references: Rc::new(VecModel::from(vec![])).into(),
     });
     ui.set_is_viewing_ticket(true);
@@ -118,6 +119,7 @@ fn test_cli_add() -> anyhow::Result<()> {
             title: "Test Ticket".to_string(),
             description: "Test Description".to_string(),
             queue: "1. Incoming".to_string(),
+            assign_to: "".to_string(),
         }),
     };
 
@@ -147,6 +149,7 @@ fn test_cli_update() -> anyhow::Result<()> {
             title: "Old Title".to_string(),
             description: "Old Desc".to_string(),
             queue: "1. Incoming".to_string(),
+            assign_to: "".to_string(),
         }),
     })?;
 
@@ -160,6 +163,8 @@ fn test_cli_update() -> anyhow::Result<()> {
             id: id.clone(),
             title: Some("New Title".to_string()),
             description: None,
+            assign_to: None,
+            unassign: false,
         }),
     })?;
 
@@ -183,6 +188,7 @@ fn test_cli_move() -> anyhow::Result<()> {
             title: "Move Me".to_string(),
             description: "".to_string(),
             queue: "1. Incoming".to_string(),
+            assign_to: "".to_string(),
         }),
     })?;
 
@@ -220,6 +226,7 @@ fn test_cli_remove() -> anyhow::Result<()> {
             title: "Delete Me".to_string(),
             description: "".to_string(),
             queue: "1. Incoming".to_string(),
+            assign_to: "".to_string(),
         }),
     })?;
 

@@ -15,6 +15,20 @@ pub struct Config {
     pub hidden_queues: Vec<String>,
     #[serde(default)]
     pub search_history: Vec<String>,
+    #[serde(default = "default_users")]
+    pub users: Vec<String>,
+    #[serde(default = "default_user")]
+    pub active_user: String,
+    #[serde(default)]
+    pub show_only_mine: bool,
+}
+
+fn default_users() -> Vec<String> {
+    vec!["<unassigned>".to_string(), "user".to_string()]
+}
+
+fn default_user() -> String {
+    "user".to_string()
 }
 
 impl Default for Config {
@@ -23,6 +37,9 @@ impl Default for Config {
             queue_limits: HashMap::new(),
             hidden_queues: Vec::new(),
             search_history: Vec::new(),
+            users: default_users(),
+            active_user: default_user(),
+            show_only_mine: false,
         }
     }
 }

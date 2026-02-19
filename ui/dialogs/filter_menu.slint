@@ -1,5 +1,11 @@
-import { Button, CheckBox, LineEdit, Palette } from "std-widgets.slint";
-import { QueueStr } from "../common.slint";
+import {
+    Button,
+    CheckBox,
+    LineEdit,
+    Palette,
+    ComboBox,
+} from "std-widgets.slint";
+import { QueueStr, UserGlobal } from "../common.slint";
 
 export component FilterMenu inherits Rectangle {
     in-out property <[QueueStr]> queues;
@@ -21,6 +27,42 @@ export component FilterMenu inherits Rectangle {
     VerticalLayout {
         padding: 20px;
         spacing: 15px;
+
+        Text {
+            text: "User Settings";
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        VerticalLayout {
+            spacing: 8px;
+            Text {
+                text: "Active User:";
+                font-size: 14px;
+                opacity: 0.7;
+            }
+
+            ComboBox {
+                model: UserGlobal.users;
+                current-value: UserGlobal.active-user;
+                selected(val) => {
+                    UserGlobal.change-active-user(val);
+                }
+            }
+        }
+
+        CheckBox {
+            text: "Show only my tickets";
+            checked <=> UserGlobal.show-only-mine;
+            toggled => {
+                UserGlobal.toggle-show-only-mine(self.checked);
+            }
+        }
+
+        Rectangle {
+            height: 1px;
+            background: Palette.border;
+        }
 
         HorizontalLayout {
             alignment: space-between;

@@ -43,18 +43,41 @@ fn ticket_to_slint(ticket: &model::Ticket, board: &Board) -> TicketStr {
         snippet: SharedString::from(snippet),
         created_at: SharedString::from(&ticket.created_at),
         updated_at: SharedString::from(&ticket.updated_at),
+        assigned_to: SharedString::from(&ticket.assigned_to),
         references: Rc::new(VecModel::from(refs)).into(),
     }
 }
 
-fn sync_ui_with_board(ui: &App, board: &Board, query: &str, date_from: &str, date_to: &str) {
+fn sync_ui_with_board(
+    ui: &App,
+    board: &Board,
+    query: &str,
+    date_from: &str,
+    date_to: &str,
+    show_only_mine: bool,
+    active_user: &str,
+) {
     let mut slint_queues: Vec<QueueStr> = vec![];
 
     for queue in &board.queues {
         let slint_tickets: Vec<TicketStr> = queue
             .tickets
             .iter()
-            .filter(|t| t.matches(query) && t.matches_date_range(date_from, date_to))
+            .filter(|t| {
+                let matches_search = t.matches(query);
+                let matches_date = t.matches_date_range(date_from, date_to);
+                let matches_user = if show_only_mine {
+                    let target_user = if active_user == "<unassigned>" {
+                        ""
+                    } else {
+                        active_user
+                    };
+                    t.assigned_to == target_user
+                } else {
+                    true
+                };
+                matches_search && matches_date && matches_user
+            })
             .map(|t| ticket_to_slint(t, board))
             .collect();
 
@@ -82,16 +105,37 @@ fn reload_board(ui: &App, root_path: &Path) -> anyhow::Result<()> {
     println!("Reloading board #{}...", count + 1);
 
     let board = Board::load(root_path.to_path_buf())?;
+    let user_global = ui.global::<UserGlobal>();
+    let show_only_mine = user_global.get_show_only_mine();
+    let active_user = user_global.get_active_user();
+
     let query = ui.get_search_query();
     let date_from = ui.get_date_from();
     let date_to = ui.get_date_to();
+
     sync_ui_with_board(
         ui,
         &board,
         query.as_str(),
         date_from.as_str(),
         date_to.as_str(),
+        show_only_mine,
+        active_user.as_str(),
     );
+
+    user_global.set_users(
+        Rc::new(VecModel::from(
+            board
+                .config
+                .users
+                .iter()
+                .map(|s| SharedString::from(s))
+                .collect::<Vec<_>>(),
+        ))
+        .into(),
+    );
+    user_global.set_active_user(SharedString::from(&board.config.active_user));
+    user_global.set_show_only_mine(board.config.show_only_mine);
 
     let history: Vec<SharedString> = board
         .config
@@ -220,8 +264,48 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
         }
     });
 
+    let user_root = root_path.clone();
+    let user_ui_handle = ui.as_weak();
+    ui.global::<UserGlobal>()
+        .on_change_active_user(move |username: SharedString| {
+            let mut config = match Config::load(&user_root) {
+                Ok(c) => c,
+                Err(e) => {
+                    eprintln!("Error loading config for user change: {:?}", e);
+                    return;
+                }
+            };
+            config.active_user = username.to_string();
+            if let Err(e) = config.write(&user_root) {
+                eprintln!("Error writing config for user change: {:?}", e);
+            }
+            if let Some(ui) = user_ui_handle.upgrade() {
+                let _ = reload_board(&ui, &user_root);
+            }
+        });
+
+    let mine_root = root_path.clone();
+    let mine_ui_handle = ui.as_weak();
+    ui.global::<UserGlobal>()
+        .on_toggle_show_only_mine(move |enabled| {
+            let mut config = match Config::load(&mine_root) {
+                Ok(c) => c,
+                Err(e) => {
+                    eprintln!("Error loading config for filter change: {:?}", e);
+                    return;
+                }
+            };
+            config.show_only_mine = enabled;
+            if let Err(e) = config.write(&mine_root) {
+                eprintln!("Error writing config for filter change: {:?}", e);
+            }
+            if let Some(ui) = mine_ui_handle.upgrade() {
+                let _ = reload_board(&ui, &mine_root);
+            }
+        });
+
     let save_root = root_path.clone();
-    ui.on_save_ticket(move |ticket_id, title, description| {
+    ui.on_save_ticket(move |ticket_id, title, description, assigned_to| {
         let board = match Board::load(save_root.clone()) {
             Ok(b) => b,
             Err(e) => {
@@ -231,7 +315,7 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
         };
 
         println!("Saving ticket {}", ticket_id);
-        if let Err(e) = board.update_ticket(&ticket_id, &title, &description) {
+        if let Err(e) = board.update_ticket(&ticket_id, &title, &description, &assigned_to) {
             eprintln!("Error saving ticket: {:?}", e);
         }
     });
@@ -282,12 +366,15 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
         if let Some(ui) = search_ui_handle.upgrade() {
             let date_from = ui.get_date_from();
             let date_to = ui.get_date_to();
+            let user_global = ui.global::<UserGlobal>();
             sync_ui_with_board(
                 &ui,
                 &board,
                 query.as_str(),
                 date_from.as_str(),
                 date_to.as_str(),
+                user_global.get_show_only_mine(),
+                user_global.get_active_user().as_str(),
             );
         }
     });
@@ -330,12 +417,15 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
         if let Some(ui) = select_ui_handle.upgrade() {
             let date_from = ui.get_date_from();
             let date_to = ui.get_date_to();
+            let user_global = ui.global::<UserGlobal>();
             sync_ui_with_board(
                 &ui,
                 &board,
                 query.as_str(),
                 date_from.as_str(),
                 date_to.as_str(),
+                user_global.get_show_only_mine(),
+                user_global.get_active_user().as_str(),
             );
         }
     });
@@ -379,12 +469,15 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
             let query = ui.get_search_query();
             let date_from = ui.get_date_from();
             let date_to = ui.get_date_to();
+            let user_global = ui.global::<UserGlobal>();
             sync_ui_with_board(
                 &ui,
                 &board,
                 query.as_str(),
                 date_from.as_str(),
                 date_to.as_str(),
+                user_global.get_show_only_mine(),
+                user_global.get_active_user().as_str(),
             );
         }
     });
@@ -408,7 +501,7 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
 
     let create_root = root_path.clone();
     let create_ui_handle = ui.as_weak();
-    ui.on_request_create_ticket(move |queue_id, title, description| {
+    ui.on_request_create_ticket(move |queue_id, title, description, assigned_to| {
         let board = match Board::load(create_root.clone()) {
             Ok(b) => b,
             Err(e) => {
@@ -418,7 +511,7 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
         };
 
         println!("Creating ticket in queue {}", queue_id);
-        if let Err(e) = board.create_ticket(&title, &description, &queue_id) {
+        if let Err(e) = board.create_ticket(&title, &description, &queue_id, &assigned_to) {
             eprintln!("Error creating ticket: {:?}", e);
             if let Some(ui) = create_ui_handle.upgrade() {
                 ui.invoke_show_warning_dialog(SharedString::from(e.to_string()));
@@ -453,21 +546,24 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
 }
 
 fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
-    let board = Board::load(root_path)?;
+    let board = Board::load(root_path.clone())?;
 
     match command {
         Commands::Add {
             title,
             description,
             queue,
+            assign_to,
         } => {
             println!("Adding ticket: {} to queue: {}", title, queue);
-            board.create_ticket(&title, &description, &queue)?;
+            board.create_ticket(&title, &description, &queue, &assign_to)?;
         }
         Commands::Update {
             id,
             title,
             description,
+            assign_to,
+            unassign,
         } => {
             println!("Updating ticket: {}", id);
             let ticket = board
@@ -475,7 +571,82 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
                 .ok_or_else(|| anyhow::anyhow!("Ticket not found: {}", id))?;
             let title = title.unwrap_or(ticket.title.clone());
             let description = description.unwrap_or(ticket.description.clone());
-            board.update_ticket(&id, &title, &description)?;
+            let assign_to = if unassign {
+                "".to_string()
+            } else {
+                assign_to.unwrap_or(ticket.assigned_to.clone())
+            };
+            board.update_ticket(&id, &title, &description, &assign_to)?;
+        }
+        Commands::List {
+            assigned_to_user,
+            unassigned,
+            search,
+            id,
+            date_from,
+            date_to,
+        } => {
+            let query = search.unwrap_or_default();
+            let date_from_str = date_from.unwrap_or_default();
+            let date_to_str = date_to.unwrap_or_default();
+
+            for queue in &board.queues {
+                let filtered_tickets: Vec<_> = queue
+                    .tickets
+                    .iter()
+                    .filter(|t| {
+                        let matches_search = t.matches(&query);
+                        let matches_date = t.matches_date_range(&date_from_str, &date_to_str);
+                        let matches_id = if let Some(ref target_id) = id {
+                            t.id == *target_id
+                        } else {
+                            true
+                        };
+                        let matches_user = if unassigned {
+                            t.assigned_to.is_empty()
+                        } else if let Some(ref user) = assigned_to_user {
+                            t.assigned_to == *user
+                        } else {
+                            true
+                        };
+                        matches_search && matches_date && matches_id && matches_user
+                    })
+                    .collect();
+
+                if !filtered_tickets.is_empty() {
+                    println!("\n=== {} ===", queue.name);
+                    for t in filtered_tickets {
+                        let user_display = if t.assigned_to.is_empty() {
+                            "<unassigned>".to_string()
+                        } else {
+                            t.assigned_to.clone()
+                        };
+                        println!("[{}] {} (Assigned: {})", t.id, t.title, user_display);
+                    }
+                }
+            }
+        }
+        Commands::Configure {
+            active_user,
+            show_only_mine,
+            add_user,
+        } => {
+            let mut config = board.config.clone();
+            if let Some(user) = active_user {
+                println!("Setting active user to: {}", user);
+                config.active_user = user;
+            }
+            if let Some(mine) = show_only_mine {
+                println!("Setting show_only_mine to: {}", mine);
+                config.show_only_mine = mine;
+            }
+            if let Some(user) = add_user {
+                if !config.users.contains(&user) {
+                    println!("Adding user: {}", user);
+                    config.users.push(user);
+                }
+            }
+            config.write(&root_path)?;
         }
         Commands::Move { id, queue } => {
             println!("Moving ticket: {} to queue: {}", id, queue);
@@ -497,6 +668,33 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
         Commands::Open { path } => {
             println!("Opening GUI for path: {:?}", path);
             run_gui(path)?;
+        }
+        Commands::Show { id } => {
+            let ticket = board
+                .find_ticket_by_id(&id)
+                .ok_or_else(|| anyhow::anyhow!("Ticket not found: {}", id))?;
+
+            let queue_name = board
+                .queues
+                .iter()
+                .find(|q| q.tickets.iter().any(|t| t.id == id))
+                .map(|q| q.name.as_str())
+                .unwrap_or("Unknown");
+
+            println!("ID:          {}", ticket.id);
+            println!("Title:       {}", ticket.title);
+            println!("Status:      {}", queue_name);
+            println!(
+                "Assigned to: {}",
+                if ticket.assigned_to.is_empty() {
+                    "<unassigned>"
+                } else {
+                    &ticket.assigned_to
+                }
+            );
+            println!("Created at:  {}", ticket.created_at);
+            println!("Updated at:  {}", ticket.updated_at);
+            println!("\nDescription:\n{}", ticket.description);
         }
     }
 

@@ -33,6 +33,10 @@ pub enum Commands {
         /// Target queue ID (e.g., "1. Incoming")
         #[arg(short, long)]
         queue: String,
+
+        /// Assigned user
+        #[arg(short, long, default_value = "")]
+        assign_to: String,
     },
 
     /// Update an existing ticket
@@ -48,6 +52,56 @@ pub enum Commands {
         /// New ticket description
         #[arg(short, long)]
         description: Option<String>,
+
+        /// New assigned user
+        #[arg(short, long)]
+        assign_to: Option<String>,
+
+        /// Unassign user
+        #[arg(short, long)]
+        unassign: bool,
+    },
+
+    /// List tickets
+    List {
+        /// Filter by assigned user
+        #[arg(long)]
+        assigned_to_user: Option<String>,
+
+        /// Show only unassigned tickets
+        #[arg(long)]
+        unassigned: bool,
+
+        /// Search query (matches title, description or ID)
+        #[arg(short, long)]
+        search: Option<String>,
+
+        /// Show only specified ticket ID
+        #[arg(long)]
+        id: Option<String>,
+
+        /// Filter by date from (YYYY-MM-DD)
+        #[arg(long)]
+        date_from: Option<String>,
+
+        /// Filter by date to (YYYY-MM-DD)
+        #[arg(long)]
+        date_to: Option<String>,
+    },
+
+    /// Change configuration
+    Configure {
+        /// Set active user
+        #[arg(long)]
+        active_user: Option<String>,
+
+        /// Set show only mine tickets (true/false)
+        #[arg(long)]
+        show_only_mine: Option<bool>,
+
+        /// Add a new user to the list
+        #[arg(long)]
+        add_user: Option<String>,
     },
 
     /// Move a ticket to another queue
@@ -72,5 +126,12 @@ pub enum Commands {
     Open {
         /// Path to open
         path: PathBuf,
+    },
+
+    /// Show ticket details
+    Show {
+        /// Ticket ID (short ID)
+        #[arg(short, long)]
+        id: String,
     },
 }

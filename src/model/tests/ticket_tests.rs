@@ -27,6 +27,23 @@ updated_at: 2023-10-27
 }
 
 #[test]
+fn test_ticket_metadata_assigned_to() {
+    let yaml = "
+title: Assigned Task
+assigned_to: alice
+";
+    let metadata: TicketMetadata = serde_yaml::from_str(yaml).expect("Failed to parse YAML");
+    assert_eq!(metadata.assigned_to, "alice");
+
+    let yaml_empty = "
+title: Unassigned Task
+";
+    let metadata_empty: TicketMetadata =
+        serde_yaml::from_str(yaml_empty).expect("Failed to parse YAML");
+    assert_eq!(metadata_empty.assigned_to, "");
+}
+
+#[test]
 fn test_ticket_matches() {
     let ticket = Ticket {
         id: "T123".to_string(),
@@ -34,6 +51,7 @@ fn test_ticket_matches() {
         description: "Need whole milk for the coffee".to_string(),
         created_at: "now".to_string(),
         updated_at: "now".to_string(),
+        assigned_to: "".to_string(),
     };
 
     assert!(
@@ -59,6 +77,7 @@ fn test_ticket_matches_date_range() {
         description: "Need whole milk for the coffee".to_string(),
         created_at: "2024-02-18 12:00:00".to_string(),
         updated_at: "2024-02-18 12:00:00".to_string(),
+        assigned_to: "".to_string(),
     };
 
     // 1. No filters
@@ -146,6 +165,7 @@ fn test_extract_references() {
         title: "T".to_string(),
         created_at: "now".to_string(),
         updated_at: "now".to_string(),
+        assigned_to: "".to_string(),
         description: "Check #abc123 and #def456. Also #123 is too short, and #abcdef78 is too long but should extract #abcdef. And #abc123 again.".to_string(),
     };
     let refs = t.extract_references();

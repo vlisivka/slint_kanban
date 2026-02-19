@@ -58,20 +58,36 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
     -  ToDo queue - no more than 21 item (configurable).
     -  Doing queue - no more than 5 items (configurable).
 
-7.  **Command Line Interface (CLI)**:
+7.  **Multi-user Support**:
+    -   **Configurable Users**: A list of users is defined in `config.toml`. Defaults to `["<unassigned>", "user"]`.
+    -   **Active User Selection**: Users can select their current identity via UI settings or CLI `configure`.
+    -   **Ticket Assignment**: Each ticket has an `assigned_to` field. Can be set to a specific user or cleared (unassigned).
+    -   **Filtering**: Support for toggling between viewing all tickets and only those assigned to the current active user.
+    -   **Collaboration**: Designed for decentralized collaboration where files are synchronized via Git, Dropbox, or similar services.
+
+8.  **Command Line Interface (CLI)**:
     -   Non-interactive interface controlled via arguments and options.
     -   **Commands**:
-        -   `add`: Create a new ticket (options: `--title`/`-t`, `--description`/`-d`, `--queue`/`-q`).
-        -   `update`: Update existing ticket (options: `--id`/`-i`, `--title`/`-t`, `--description`/`-d`).
+        -   `add`: Create a new ticket (options: `--title`/`-t`, `--description`/`-d`, `--queue`/`-q`, `--assign-to`).
+        -   `update`: Update existing ticket (options: `--id`/`-i`, `--title`/`-t`, `--description`/`-d`, `--assign-to`, `--unassign`).
         -   `move`: Move ticket to another queue (options: `--id`/`-i`, `--queue`/`-q`).
         -   `remove`: Delete ticket (options: `--id`/`-i`).
+        -   `list`: List tickets with filters (options: `--assigned-to-user`, `--unassigned`, `--search`, `--id`, `--date-from`, `--date-to`).
+        -   `show`: Show detailed ticket info (options: `--id`/`-i`).
+        -   `configure`: Change settings (options: `--active-user`, `--show-only-mine`, `--add-user`).
         -   `open PATH`: Open specified directory in the GUI.
     -   **Testability**: Core logic must be decoupled from the `main` function to allow automated CLI testing.
 
 ## Data Models
 -   **Ticket ID Generation**: Short hash/ID (up to 6 chars, lowercase latin letters + numbers) derived from Title + Creation Date. Id is the name of ticket directory in `~/Kanban/Tickets` directory.
--   **Ticket metainfo**: is stored in README.md file in YAML format. 
-
+-   **Ticket metainfo**: is stored in README.md file in YAML format. Contains `title`, `created_at`, `updated_at`, and `assigned_to`.
+-   **Configuration**: `config.toml` stores:
+    - `users`: List of strings (default: `["user"]`).
+    - `active_user`: Currently selected local user.
+    - `show_only_mine`: Flag to filter by `active_user`.
+    - `queue_limits`: Mapping of queue names to WIP limits.
+    - `hidden_queues`: List of queues to hide from the board.
+    - `search_history`: List of recent search queries.
 ## Non-Functional Requirements
 - **Performance**: Efficient file system monitoring to reflect external changes.
 - **Compatibility**: Optimized for Alma Linux 10.

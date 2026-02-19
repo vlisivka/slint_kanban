@@ -10,6 +10,7 @@ export struct TicketStr {
     snippet: string,
     created_at: string,
     updated_at: string,
+    assigned_to: string,
     references: [RefStr],
 }
 
@@ -27,4 +28,12 @@ export component AppConfig {
     out property <length> column-spacing: 16px;
     out property <length> board-padding: 16px;
     out property <length> card-height: 140px;
+}
+
+export global UserGlobal {
+    in-out property <[string]> users: ["user"];
+    in-out property <string> active-user: "user";
+    in-out property <bool> show-only-mine: false;
+    callback change-active-user(string);
+    callback toggle-show-only-mine(bool);
 }
