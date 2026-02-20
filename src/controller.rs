@@ -154,7 +154,8 @@ impl AppController {
         };
 
         println!("Controller: Creating ticket in {}", queue_id);
-        if let Err(e) = board.create_ticket(&title, &description, &queue_id, &assigned_to) {
+        let author = board.config.active_user();
+        if let Err(e) = board.create_ticket(&title, &description, &queue_id, &assigned_to, author) {
             self.show_error(&e.to_string());
         }
     }

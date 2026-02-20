@@ -84,6 +84,7 @@ pub fn ticket_to_slint(ticket: &model::Ticket, board: &Board) -> TicketStr {
         created_at: SharedString::from(&ticket.created_at),
         updated_at: SharedString::from(&ticket.updated_at),
         assigned_to: SharedString::from(&ticket.assigned_to),
+        author: SharedString::from(&ticket.author),
         references: Rc::new(VecModel::from(refs)).into(),
     }
 }
@@ -349,7 +350,8 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
             assign_to,
         } => {
             cprintln!("Adding ticket: {} to queue: {}", title, queue);
-            board.create_ticket(&title, &description, &queue, &assign_to)?;
+            let author = board.config.active_user();
+            board.create_ticket(&title, &description, &queue, &assign_to, author)?;
         }
         Commands::Update {
             id,
@@ -485,6 +487,7 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
                     &ticket.assigned_to
                 }
             );
+            cprintln!("Author:      {}", ticket.author);
             cprintln!("Created at:  {}", ticket.created_at);
             cprintln!("Updated at:  {}", ticket.updated_at);
             cprintln!("\nDescription:\n{}", ticket.description);

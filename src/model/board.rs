@@ -311,6 +311,7 @@ impl Board {
         description: &str,
         queue_id: &str,
         assigned_to: &str,
+        author: &str,
     ) -> anyhow::Result<String> {
         use rand::Rng;
 
@@ -348,7 +349,7 @@ impl Board {
         let ticket_dir = self.ticket_path(&ticket_id);
         if ticket_dir.exists() {
             // ID collision (extremely rare) — retry with a new random ID
-            return self.create_ticket(title, description, queue_id, assigned_to);
+            return self.create_ticket(title, description, queue_id, assigned_to, author);
         }
         std::fs::create_dir_all(&ticket_dir)?;
 
@@ -360,6 +361,7 @@ impl Board {
             updated_at: now.clone(),
             description: description.to_string(),
             assigned_to: assigned_to.to_string(),
+            author: author.to_string(),
         };
         ticket.save(&ticket_dir)?;
 

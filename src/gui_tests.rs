@@ -11,10 +11,10 @@ fn setup_test_app() -> (App, Arc<AppController>, PathBuf, tempfile::TempDir) {
     Board::ensure_initialized(&root_path).unwrap();
     let board = Board::load(root_path.clone()).unwrap();
     board
-        .create_ticket("Ticket 1", "Desc 1", "2. ToDo", "user1")
+        .create_ticket("Ticket 1", "Desc 1", "2. ToDo", "user1", "author")
         .unwrap();
     board
-        .create_ticket("Ticket 2", "Desc 2", "6. Done", "user2")
+        .create_ticket("Ticket 2", "Desc 2", "6. Done", "user2", "author")
         .unwrap();
 
     let ui = App::new().unwrap();

@@ -135,6 +135,7 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Add user assignment selector in `TicketEdit` and `TicketView`
   - [x] Update CLI commands to handle `--assigned-to`
   - [x] Add unit tests for user-based filtering and config
+  - [x] Add `author` field to `Ticket` and `TicketMetadata` (automatically set to active user on creation)
 
 ### Markdown Rendering
 - [/] Implement Markdown rendering in ticket detail view using Servo

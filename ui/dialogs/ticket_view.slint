@@ -66,6 +66,15 @@ export component TicketView inherits Rectangle {
                         horizontal-alignment: center;
                         opacity: 0.6;
                     }
+
+                    if ticket.author != "": Text {
+                        text: "Author: " + ticket.author;
+                        font-size: 12px;
+                        font-weight: 300;
+                        horizontal-alignment: center;
+                        color: #d33682;
+                        opacity: 0.8;
+                    }
                 }
 
                 close-btn := Button {

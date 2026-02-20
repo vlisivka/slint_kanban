@@ -66,6 +66,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
     -   **Configurable Users**: A list of users is defined in `config.toml`. Defaults to `["<unassigned>", "user"]`.
     -   **Active User Selection**: Users can select their current identity via UI settings or CLI `configure`.
     -   **Ticket Assignment**: Each ticket has an `assigned_to` field. Can be set to a specific user or cleared (unassigned).
+    -   **Ticket Author**: Each ticket MUST have an `author` field. The author is automatically set to the currently active user when the ticket is created.
     -   **Filtering**: Support for toggling between viewing all tickets and only those assigned to the current active user.
     -   **Collaboration**: Designed for decentralized collaboration where files are synchronized via Git, Dropbox, or similar services.
 
@@ -84,7 +85,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 
 ## Data Models
 -   **Ticket ID Generation**: Short hash/ID (up to 6 chars, lowercase latin letters + numbers) derived from Title + Creation Date. Id is the name of ticket directory in `~/Kanban/Tickets` directory.
--   **Ticket metainfo**: is stored in README.md file in YAML format. Contains `title`, `created_at`, `updated_at`, and `assigned_to`.
+-   **Ticket metainfo**: is stored in README.md file in YAML format. Contains `title`, `created_at`, `updated_at`, `assigned_to`, and `author`.
 - **Configuration Architecture**: Configuration is split into two files to separate shared board settings from local user preferences:
     - **Kanban Settings (`~/Kanban/config.toml`)**: Shared settings that should be synchronized (e.g., via Git).
         - `users`: List of shared user identities.

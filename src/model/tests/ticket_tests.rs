@@ -75,6 +75,7 @@ fn test_ticket_matches() {
         created_at: "now".to_string(),
         updated_at: "now".to_string(),
         assigned_to: "".to_string(),
+        author: "me".to_string(),
     };
 
     assert!(
@@ -101,6 +102,7 @@ fn test_ticket_matches_date_range() {
         created_at: "2024-02-18 12:00:00".to_string(),
         updated_at: "2024-02-18 12:00:00".to_string(),
         assigned_to: "".to_string(),
+        author: "me".to_string(),
     };
 
     // 1. No filters
@@ -189,6 +191,7 @@ fn test_extract_references() {
         created_at: "now".to_string(),
         updated_at: "now".to_string(),
         assigned_to: "".to_string(),
+        author: "me".to_string(),
         description: "Check #abc123 and #def456. Also #123 is too short, and #abcdef78 is too long but should extract #abcdef. And #abc123 again.".to_string(),
     };
     let refs = t.extract_references();
@@ -220,6 +223,7 @@ fn test_update_ticket_unassign() {
         updated_at: "now".to_string(),
         description: "Desc".to_string(),
         assigned_to: "Alice".to_string(),
+        author: "Bob".to_string(),
     };
     ticket.save(&ticket_path).unwrap();
 

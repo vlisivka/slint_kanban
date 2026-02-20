@@ -14,6 +14,7 @@ export component TicketEdit inherits Rectangle {
     in-out property <string> assigned_to;
     in property <[string]> users;
     in property <string> ticket_id;
+    in property <string> author;
 
     callback save(string, string, string, string); // id, title, desc, assigned_to
     callback cancel();
@@ -70,12 +71,29 @@ export component TicketEdit inherits Rectangle {
                 }
             }
 
-            HorizontalBox {
-                padding: 0px;
+            HorizontalLayout {
+                spacing: 24px;
                 alignment: start;
+                if author != "": VerticalLayout {
+                    spacing: 8px;
+                    Text {
+                        text: "Author";
+                        font-size: 11px;
+                        font-weight: 800;
+                        opacity: 0.6;
+                    }
+
+                    Text {
+                        text: author;
+                        font-size: 14px;
+                        height: 40px;
+                        vertical-alignment: center;
+                        color: #d33682;
+                    }
+                }
+
                 VerticalLayout {
                     spacing: 8px;
-                    width: 200px;
                     Text {
                         text: "Assigned To";
                         font-size: 11px;
@@ -89,7 +107,7 @@ export component TicketEdit inherits Rectangle {
                             model: users;
                             current-value: assigned_to == "" ? "<unassigned>" : assigned_to;
                             height: 40px;
-                            width: 180px;
+                            width: 200px;
                             selected(val) => {
                                 assigned_to = (val == "<unassigned>") ? "" : val;
                             }

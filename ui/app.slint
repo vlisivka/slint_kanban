@@ -80,6 +80,7 @@ export component App inherits Window {
     in-out property <string> editing_title: "";
     in-out property <string> editing_desc: "";
     in-out property <string> editing_assigned_to: "";
+    in-out property <string> editing_author: "";
     in-out property <string> target_queue_for_new: "";
 
     // Warning dialog state
@@ -303,6 +304,7 @@ export component App inherits Window {
                             editing_title = "New Ticket";
                             editing_desc = "";
                             editing_assigned_to = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
+                            editing_author = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
                             target_queue_for_new = qid;
                             is_editing = true;
                         }
@@ -329,6 +331,7 @@ export component App inherits Window {
         editing_title = "New Ticket";
         editing_desc = "";
         editing_assigned_to = "";
+        editing_author = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
         target_queue_for_new = qid;
         is_editing = true;
     }
@@ -383,6 +386,7 @@ export component App inherits Window {
             editing_title = active_ticket.title;
             editing_desc = active_ticket.description;
             editing_assigned_to = active_ticket.assigned_to;
+            editing_author = active_ticket.author;
             is_editing = true;
         }
         navigate_to(target) => {
@@ -405,6 +409,7 @@ export component App inherits Window {
         title_text: editing_title;
         description_text: editing_desc;
         assigned_to: editing_assigned_to;
+        author: editing_author;
         users: UserGlobal.users;
 
         cancel => {
