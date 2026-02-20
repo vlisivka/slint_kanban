@@ -260,7 +260,7 @@ export component App inherits Window {
             }
 
             ScrollView {
-                HorizontalLayout {
+                columns-row := HorizontalLayout {
                     padding: config.board-padding;
                     spacing: config.column-spacing;
                     alignment: start;
@@ -284,8 +284,9 @@ export component App inherits Window {
                         drop_ticket(mx) => {
                             if (is_dragging) {
                                 is_dragging = false;
-                                if (mx > config.board-padding) {
-                                    let idx = (mx - config.board-padding) / (config.column-width + config.column-spacing);
+                                let relative_x = mx - columns-row.absolute-position.x;
+                                if (relative_x > config.board-padding) {
+                                    let idx = (relative_x - config.board-padding) / (config.column-width + config.column-spacing);
                                     move_ticket(dragging_ticket_id, dragging_from_queue_id, "index:" + idx);
                                 }
                                 dragging_ticket_id = "";
