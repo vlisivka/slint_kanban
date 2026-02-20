@@ -39,8 +39,9 @@ impl AppController {
         let date_from = app.get_date_from();
         let date_to = app.get_date_to();
         let user_global = app.global::<UserGlobal>();
-        let show_only_mine = user_global.get_show_only_mine();
-        let active_user = user_global.get_active_user();
+
+        let show_only_mine = board.config.show_only_mine();
+        let active_user = board.config.active_user();
 
         sync_ui_with_board(
             &app,
@@ -49,7 +50,7 @@ impl AppController {
             date_from.as_str(),
             date_to.as_str(),
             show_only_mine,
-            active_user.as_str(),
+            active_user,
         );
 
         // 2. Sync Users — only update the model when the list actually changed,
@@ -233,6 +234,13 @@ impl AppController {
         if let Err(e) = config.write(&self.root_path) {
             eprintln!("Error writing config: {:?}", e);
         }
+
+        // Update UI immediately so the user doesn't see stale state while
+        // waiting for the file watcher to trigger a full reload.
+        if let Some(app) = self.app_weak.upgrade() {
+            app.global::<UserGlobal>().set_show_only_mine(enabled);
+            let _ = self.reload();
+        }
     }
 
     pub fn handle_queue_visibility(&self, queue_id: String, visible: bool) {
@@ -279,6 +287,35 @@ impl AppController {
     }
 
     // --- Helpers ---
+    pub fn handle_focus_search(&self) {
+        if let Some(_app) = self.app_weak.upgrade() {
+            // Logic to clear search history flag if it's open,
+            // but primarily focuses the search field via Slint logic.
+            // We can also trigger a reload if needed.
+            let _ = self.reload();
+        }
+    }
+
+    pub fn handle_shortcut_create_ticket(&self) {
+        if let Some(app) = self.app_weak.upgrade() {
+            let queues = app.get_board_queues();
+            for i in 0..queues.row_count() {
+                if let Some(q) = queues.row_data(i) {
+                    if q.visible {
+                        app.invoke_test_trigger_add_ticket(q.id.clone());
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn handle_select_history_item(&self) {
+        if let Some(app) = self.app_weak.upgrade() {
+            app.set_show_search_history(false);
+            let _ = self.reload();
+        }
+    }
 
     fn show_error(&self, msg: &str) {
         if let Some(app) = self.app_weak.upgrade() {

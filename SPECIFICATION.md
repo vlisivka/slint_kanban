@@ -125,9 +125,11 @@ The following features are planned for future releases:
    - Quick search with keyboard shortcuts
 
 5. **Keyboard Shortcuts**: 
-   - Navigation between queues and tickets
-   - Quick ticket creation and editing
-   - Customizable key bindings
+   - `Ctrl+F`: Focus search input.
+   - `Ctrl+N`: Create new ticket in the first visible queue.
+   - `Ctrl+M`: Toggle between viewing only assigned tickets and all tickets.
+   - `Esc`: Close dialogs or clear and unfocus the search field.
+   - `Down Arrow` (in search field): Select from search history.
 
 6. **Theme Customization**:
    - Dark/light/system mode support

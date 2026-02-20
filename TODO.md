@@ -102,12 +102,12 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Order tickets in queues by time of last update.
 
 ### Keyboard Shortcuts
-- [ ] Implement keyboard navigation
-  - [ ] Arrow keys for navigation between tickets
-  - [ ] Shortcuts for creating new tickets (Ctrl+N)
-  - [ ] Shortcuts for editing (Ctrl+E)
-  - [ ] Shortcuts for deleting (Delete key)
-  - [ ] Quick search (Ctrl+F)
+- [x] Implement essential keyboard shortcuts
+  - [x] Quick search (Ctrl+F) focus
+  - [x] Create new ticket in first visible queue (Ctrl+N)
+  - [x] Toggle "Show only mine" (Ctrl+M)
+  - [x] Close dialogs or clear search (Esc)
+  - [x] Select from search history with Down Arrow
 
 ### Export Functionality
 - [ ] Implement export features

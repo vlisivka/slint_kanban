@@ -270,6 +270,16 @@ pub(crate) fn init_callbacks(ui: &App, controller: Arc<AppController>) {
         });
 
     let c = controller.clone();
+    ui.on_focus_search(move || {
+        c.handle_focus_search();
+    });
+
+    let c = controller.clone();
+    ui.on_shortcut_create_ticket(move || {
+        c.handle_shortcut_create_ticket();
+    });
+
+    let c = controller.clone();
     ui.on_toggle_queue_visibility(move |queue_id, visible| {
         c.handle_queue_visibility(queue_id.into(), visible);
     });
@@ -324,7 +334,7 @@ pub(crate) fn init_callbacks(ui: &App, controller: Arc<AppController>) {
 
     let c = controller.clone();
     ui.on_select_history_item(move |_| {
-        let _ = c.reload();
+        c.handle_select_history_item();
     });
 }
 
