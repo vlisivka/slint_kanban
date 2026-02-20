@@ -41,6 +41,11 @@ setup_env() {
     export KANBAN_HOME
     export NO_COLOR=1 # Standard way to request no color
     
+    # Isolate user-specific config
+    mkdir -p "${KANBAN_HOME}/home"
+    export HOME="${KANBAN_HOME}/home"
+    export XDG_CONFIG_HOME="${KANBAN_HOME}/home/.config"
+    
     # Ensure binary exists
     if [ ! -f "$BIN_PATH" ]; then
         log_info "Building binary..."

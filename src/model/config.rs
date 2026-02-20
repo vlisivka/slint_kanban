@@ -8,19 +8,33 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Config {
+pub struct KanbanConfig {
     #[serde(default)]
     pub queue_limits: HashMap<String, usize>,
-    #[serde(default)]
-    pub hidden_queues: Vec<String>,
-    #[serde(default)]
-    pub search_history: Vec<String>,
     #[serde(default = "default_users")]
     pub users: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserConfig {
     #[serde(default = "default_user")]
     pub active_user: String,
     #[serde(default)]
     pub show_only_mine: bool,
+    #[serde(default)]
+    pub hidden_queues: Vec<String>,
+    #[serde(default)]
+    pub search_history: Vec<String>,
+    #[serde(default)]
+    pub date_from: String,
+    #[serde(default)]
+    pub date_to: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct Config {
+    pub kanban: KanbanConfig,
+    pub user: UserConfig,
 }
 
 fn default_users() -> Vec<String> {
@@ -31,51 +45,105 @@ fn default_user() -> String {
     "user".to_string()
 }
 
-impl Default for Config {
+impl Default for KanbanConfig {
     fn default() -> Self {
         Self {
             queue_limits: HashMap::new(),
-            hidden_queues: Vec::new(),
-            search_history: Vec::new(),
             users: default_users(),
+        }
+    }
+}
+
+impl Default for UserConfig {
+    fn default() -> Self {
+        Self {
             active_user: default_user(),
             show_only_mine: false,
+            hidden_queues: Vec::new(),
+            search_history: Vec::new(),
+            date_from: "".to_string(),
+            date_to: "".to_string(),
+        }
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            kanban: KanbanConfig::default(),
+            user: UserConfig::default(),
         }
     }
 }
 
 impl Config {
     pub fn load(root_path: &std::path::Path) -> anyhow::Result<Self> {
-        let config_path = root_path.join("config.toml");
-
-        if !config_path.exists() {
-            // No config file yet; use defaults
-            let default_config = Self::default();
-            Ok(default_config)
+        // 1. Load Kanban Config (Board root)
+        let kanban_path = root_path.join("config.toml");
+        let kanban: KanbanConfig = if kanban_path.exists() {
+            let content = std::fs::read_to_string(&kanban_path)?;
+            toml::from_str(&content).unwrap_or_default()
         } else {
-            let content = std::fs::read_to_string(&config_path)?;
-            let config: Config = toml::from_str(&content)?;
-            Ok(config)
-        }
+            KanbanConfig::default()
+        };
+
+        // 2. Load User Config (~/.config/slint-kanban/user.toml)
+        let user_path = Self::user_config_path();
+        let user: UserConfig = if let Some(path) = user_path {
+            if path.exists() {
+                let content = std::fs::read_to_string(&path)?;
+                toml::from_str(&content).unwrap_or_default()
+            } else {
+                UserConfig::default()
+            }
+        } else {
+            UserConfig::default()
+        };
+
+        Ok(Config { kanban, user })
+    }
+
+    pub fn user_config_path() -> Option<std::path::PathBuf> {
+        dirs::config_dir().map(|p| p.join("slint-kanban").join("user.toml"))
+    }
+
+    // Facade methods for backward compatibility
+    pub fn queue_limits(&self) -> &HashMap<String, usize> {
+        &self.kanban.queue_limits
+    }
+    pub fn users(&self) -> &Vec<String> {
+        &self.kanban.users
+    }
+    pub fn active_user(&self) -> &str {
+        &self.user.active_user
+    }
+    pub fn show_only_mine(&self) -> bool {
+        self.user.show_only_mine
+    }
+    pub fn hidden_queues(&self) -> &Vec<String> {
+        &self.user.hidden_queues
+    }
+    pub fn search_history(&self) -> &Vec<String> {
+        &self.user.search_history
     }
 
     pub fn get_limit(&self, queue_id: &str) -> Option<usize> {
-        self.queue_limits.get(queue_id).copied()
+        self.kanban.queue_limits.get(queue_id).copied()
     }
 
     pub fn set_limit(&mut self, queue_id: String, limit: usize) {
-        self.queue_limits.insert(queue_id, limit);
+        self.kanban.queue_limits.insert(queue_id, limit);
     }
 
     pub fn is_visible(&self, queue_id: &str) -> bool {
-        !self.hidden_queues.contains(&queue_id.to_string())
+        !self.user.hidden_queues.contains(&queue_id.to_string())
     }
 
     pub fn set_visible(&mut self, queue_id: String, visible: bool) {
         if visible {
-            self.hidden_queues.retain(|id| id != &queue_id);
-        } else if !self.hidden_queues.contains(&queue_id) {
-            self.hidden_queues.push(queue_id);
+            self.user.hidden_queues.retain(|id| id != &queue_id);
+        } else if !self.user.hidden_queues.contains(&queue_id) {
+            self.user.hidden_queues.push(queue_id);
         }
     }
 
@@ -83,23 +151,32 @@ impl Config {
         if query.trim().is_empty() {
             return;
         }
-        // Remove if exists to move to top
-        self.search_history.retain(|q| q != &query);
-        self.search_history.insert(0, query);
-        // Cap history at 10 entries
-        if self.search_history.len() > 10 {
-            self.search_history.pop();
+        self.user.search_history.retain(|q| q != &query);
+        self.user.search_history.insert(0, query);
+        if self.user.search_history.len() > 10 {
+            self.user.search_history.pop();
         }
     }
 
     pub fn remove_search_from_history(&mut self, query: &str) {
-        self.search_history.retain(|q| q != query);
+        self.user.search_history.retain(|q| q != query);
     }
 
     pub fn write(&self, root_path: &std::path::Path) -> anyhow::Result<()> {
-        let config_path = root_path.join("config.toml");
-        let content = toml::to_string_pretty(self)?;
-        std::fs::write(&config_path, content)?;
+        // Write Kanban config
+        let kanban_path = root_path.join("config.toml");
+        let kanban_content = toml::to_string_pretty(&self.kanban)?;
+        std::fs::write(&kanban_path, kanban_content)?;
+
+        // Write User config
+        if let Some(user_path) = Self::user_config_path() {
+            if let Some(parent) = user_path.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            let user_content = toml::to_string_pretty(&self.user)?;
+            std::fs::write(&user_path, user_content)?;
+        }
+
         Ok(())
     }
 }

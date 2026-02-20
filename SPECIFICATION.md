@@ -85,13 +85,16 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 ## Data Models
 -   **Ticket ID Generation**: Short hash/ID (up to 6 chars, lowercase latin letters + numbers) derived from Title + Creation Date. Id is the name of ticket directory in `~/Kanban/Tickets` directory.
 -   **Ticket metainfo**: is stored in README.md file in YAML format. Contains `title`, `created_at`, `updated_at`, and `assigned_to`.
--   **Configuration**: `config.toml` stores:
-    - `users`: List of strings (default: `["user"]`).
-    - `active_user`: Currently selected local user.
-    - `show_only_mine`: Flag to filter by `active_user`.
-    - `queue_limits`: Mapping of queue names to WIP limits.
-    - `hidden_queues`: List of queues to hide from the board.
-    - `search_history`: List of recent search queries.
+- **Configuration Architecture**: Configuration is split into two files to separate shared board settings from local user preferences:
+    - **Kanban Settings (`~/Kanban/config.toml`)**: Shared settings that should be synchronized (e.g., via Git).
+        - `users`: List of shared user identities.
+        - `queue_limits`: Mapping of queue names to WIP limits.
+    - **User Settings (`~/.config/APP_NAME/user.toml`)**: Local preferences unique to each user/machine.
+        - `active_user`: Currently selected local user identity.
+        - `show_only_mine`: Flag to filter by `active_user`.
+        - `hidden_queues`: List of queues to hide from the board.
+        - `search_history`: List of recent search queries.
+        - `date_range`: Last used date filter range (from/to).
 ## Non-Functional Requirements
 - **Performance**: Efficient file system monitoring to reflect external changes.
 - **Compatibility**: Optimized for Alma Linux 10.

@@ -82,6 +82,15 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 - [x] Implement `open PATH` command to control GUI from command line.
 - [x] Add automated tests for all CLI commands.
 
+### Configuration Refinement
+- [x] Split configuration into board-wide and user-specific files
+  - [x] Define `KanbanConfig` and `UserConfig` structs
+  - [x] Update `Config` to manage both files (merging/splitting logic)
+  - [x] Implement path resolution (Board root for `config.toml`, `~/.config` for `user.toml`)
+  - [x] Update UI and CLI to read/write from appropriate files
+  - [x] Migrate existing combined `config.toml` if it exists
+  - [x] Add unit tests for split config loading and saving
+
 ### Search and Filter
 - [x] Implement search functionality
   - [x] Add search input field to UI

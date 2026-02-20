@@ -46,11 +46,14 @@ A modern, file-system-based Kanban board application built with Rust and Slint U
 │   ├── 4. Done/
 │   └── 5. Archive/
 ├── Tickets/            # Actual ticket storage
-│   ├── T-abc123/
+│   ├── abc123/         # Ticket directory (short ID)
 │   │   └── README.md   # Ticket content with YAML frontmatter
-│   └── T-def456/
+│   └── def456/
 │       └── README.md
-└── Deleted/            # Soft-deleted tickets
+├── Deleted/            # Soft-deleted tickets
+└── config.toml         # Shared board settings (users, WIP limits)
+~/.config/slint-kanban/
+└── user.toml           # Local user settings (active user, search history, hidden queues)
 ```
 
 ### Ticket Format

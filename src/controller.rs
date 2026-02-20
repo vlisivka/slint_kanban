@@ -56,10 +56,10 @@ impl AppController {
         //    because resetting VecModel resets ComboBox selection and causes flicker.
         let mut new_users: Vec<SharedString> = Vec::new();
         // Ensure <unassigned> is always available
-        if !board.config.users.iter().any(|u| u == "<unassigned>") {
+        if !board.config.users().iter().any(|u| u == "<unassigned>") {
             new_users.push(SharedString::from("<unassigned>"));
         }
-        new_users.extend(board.config.users.iter().map(|s| SharedString::from(s)));
+        new_users.extend(board.config.users().iter().map(|s| SharedString::from(s)));
 
         let current_users_model = user_global.get_users();
         let users_changed = if current_users_model.row_count() != new_users.len() {
@@ -77,17 +77,17 @@ impl AppController {
         }
 
         // 3. Sync Active User (ensure consistency)
-        let new_active_user = SharedString::from(&board.config.active_user);
+        let new_active_user = SharedString::from(board.config.active_user());
         if user_global.get_active_user() != new_active_user {
             user_global.set_active_user(new_active_user);
         }
 
         // 4. Sync Other Config
-        user_global.set_show_only_mine(board.config.show_only_mine);
+        user_global.set_show_only_mine(board.config.show_only_mine());
 
         let history: Vec<SharedString> = board
             .config
-            .search_history
+            .search_history()
             .iter()
             .map(|s| SharedString::from(s))
             .collect();
@@ -188,9 +188,9 @@ impl AppController {
             }
         };
 
-        // limit < 0 from UI means "remove limit" (the Slint side sends -1)
+        // limit < 0 from UI means "remove limit" (the Slint sends -1)
         if limit < 0 {
-            board.config.queue_limits.remove(&queue_id);
+            board.config.kanban.queue_limits.remove(&queue_id);
         } else {
             board.config.set_limit(queue_id, limit as usize);
         }
@@ -208,7 +208,7 @@ impl AppController {
                 return;
             }
         };
-        config.active_user = username.clone();
+        config.user.active_user = username.clone();
         if let Err(e) = config.write(&self.root_path) {
             eprintln!("Error writing config: {:?}", e);
         }
@@ -229,7 +229,7 @@ impl AppController {
                 return;
             }
         };
-        config.show_only_mine = enabled;
+        config.user.show_only_mine = enabled;
         if let Err(e) = config.write(&self.root_path) {
             eprintln!("Error writing config: {:?}", e);
         }

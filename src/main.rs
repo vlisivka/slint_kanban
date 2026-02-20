@@ -166,6 +166,16 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
             return;
         }
 
+        // Also watch user config file if possible
+        if let Some(user_path) = model::Config::user_config_path() {
+            if let Some(parent) = user_path.parent() {
+                let _ = std::fs::create_dir_all(parent);
+                if let Err(e) = watcher.watch(parent, RecursiveMode::NonRecursive) {
+                    eprintln!("Warning: Failed to watch user config directory: {:?}", e);
+                }
+            }
+        }
+
         use std::time::Duration;
 
         loop {
@@ -408,16 +418,16 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
             let mut config = board.config.clone();
             if let Some(user) = active_user {
                 cprintln!("Setting active user to: {}", user);
-                config.active_user = user;
+                config.user.active_user = user;
             }
             if let Some(mine) = show_only_mine {
                 cprintln!("Setting show_only_mine to: {}", mine);
-                config.show_only_mine = mine;
+                config.user.show_only_mine = mine;
             }
             if let Some(user) = add_user {
-                if !config.users.contains(&user) {
+                if !config.kanban.users.contains(&user) {
                     cprintln!("Adding user: {}", user);
-                    config.users.push(user);
+                    config.kanban.users.push(user);
                 }
             }
             config.write(&root_path)?;
