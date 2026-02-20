@@ -14,7 +14,7 @@ export component KanbanColumn inherits Rectangle {
     callback start_dragging(string, string, length, length);
     callback move_dragging(length, length);
     callback drop_ticket(length);
-    callback delete_ticket(string);
+    callback delete_ticket(TicketStr);
     callback edit_ticket(TicketStr);
     callback create_ticket(string); // queue_id
     callback edit_limit(string, string, int); // id, name, current_limit
@@ -135,8 +135,8 @@ export component KanbanColumn inherits Rectangle {
                     drop_ticket(mx) => {
                         drop_ticket(mx);
                     }
-                    delete_clicked(tid) => {
-                        delete_ticket(tid);
+                    delete_clicked(t) => {
+                        delete_ticket(t);
                     }
                     edit_clicked(t) => {
                         edit_ticket(t);

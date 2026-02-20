@@ -1,0 +1,112 @@
+import {
+    Button,
+    VerticalBox,
+    HorizontalBox,
+    Palette,
+} from "std-widgets.slint";
+
+export component DeleteConfirmDialog inherits Rectangle {
+    in property <string> ticket_id;
+    in property <string> ticket_title;
+    callback confirm();
+    callback cancel();
+
+    background: #00000080;
+
+    // Backdrop
+    TouchArea {
+        clicked => {
+            cancel();
+        }
+    }
+
+    Rectangle {
+        width: 450px;
+        height: 250px;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        background: Palette.background;
+        border-radius: 12px;
+        drop-shadow-blur: 16px;
+        drop-shadow-color: #00000040;
+
+        TouchArea { } // Prevent clicks through to background
+
+        VerticalBox {
+            padding: 24px;
+            spacing: 20px;
+
+            HorizontalLayout {
+                spacing: 12px;
+                alignment: center;
+
+                Rectangle {
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 24px;
+                    background: #ff4444;
+
+                    Text {
+                        text: "🗑";
+                        font-size: 28px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+
+                Text {
+                    text: "Delete Ticket";
+                    font-size: 20px;
+                    font-weight: 700;
+                    vertical-alignment: center;
+                }
+            }
+
+            VerticalLayout {
+                spacing: 8px;
+                Text {
+                    text: "Are you sure you want to delete ticket #" + ticket_id + "?";
+                    font-size: 15px;
+                    font-weight: 600;
+                    horizontal-alignment: center;
+                    wrap: word-wrap;
+                }
+
+                Text {
+                    text: "\"" + ticket_title + "\"";
+                    font-size: 14px;
+                    font-italic: true;
+                    horizontal-alignment: center;
+                    wrap: word-wrap;
+                }
+
+                Text {
+                    text: "The ticket will be moved to the recycle bin.";
+                    font-size: 14px;
+                    color: Palette.foreground.darker(20%);
+                    horizontal-alignment: center;
+                    wrap: word-wrap;
+                }
+            }
+
+            HorizontalBox {
+                spacing: 16px;
+                alignment: center;
+                Button {
+                    text: "Cancel";
+                    clicked => {
+                        cancel();
+                    }
+                }
+
+                Button {
+                    text: "Delete";
+                    primary: true;
+                    clicked => {
+                        confirm();
+                    }
+                }
+            }
+        }
+    }
+}

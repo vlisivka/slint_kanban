@@ -9,7 +9,7 @@ export component TicketCard inherits Rectangle {
     callback start_dragging(string, string, length, length);
     callback move_dragging(length, length);
     callback drop_ticket(length);
-    callback delete_clicked(string);
+    callback delete_clicked(TicketStr);
     callback edit_clicked(TicketStr);
 
     border-radius: 8px;
@@ -69,7 +69,7 @@ export component TicketCard inherits Rectangle {
 
                 touch-del := TouchArea {
                     clicked => {
-                        delete_clicked(ticket.id);
+                        delete_clicked(ticket);
                     }
                 }
             }

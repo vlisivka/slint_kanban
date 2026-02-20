@@ -27,6 +27,7 @@ import { FilterMenu } from "dialogs/filter_menu.slint";
 import { SearchHistoryMenu } from "dialogs/search_history_menu.slint";
 import { TicketCard } from "components/ticket_card.slint";
 import { KanbanColumn } from "components/kanban_column.slint";
+import { DeleteConfirmDialog } from "dialogs/delete_confirm_dialog.slint";
 
 export component App inherits Window {
     in-out property <[QueueStr]> board_queues;
@@ -93,6 +94,11 @@ export component App inherits Window {
     property <string> editing_limit_id: "";
     property <string> editing_limit_name: "";
     property <string> editing_limit_text: "";
+    
+    // Deletion state
+    in-out property <bool> show_delete_confirm: false;
+    in-out property <string> deleting_id: "";
+    in-out property <string> deleting_title: "";
 
     preferred-width: 1024px;
     preferred-height: 768px;
@@ -148,6 +154,10 @@ export component App inherits Window {
                 }
                 if (show_filter_menu) {
                     show_filter_menu = false;
+                    return accept;
+                }
+                if (show_delete_confirm) {
+                    show_delete_confirm = false;
                     return accept;
                 }
                 if (search_query != "") {
@@ -301,8 +311,10 @@ export component App inherits Window {
                                 dragging_from_queue_id = "";
                             }
                         }
-                        delete_ticket(tid) => {
-                            delete_ticket(tid);
+                        delete_ticket(t) => {
+                            deleting_id = t.id;
+                            deleting_title = t.title;
+                            show_delete_confirm = true;
                         }
                         edit_ticket(t) => {
                             active_ticket = t;
@@ -478,6 +490,19 @@ export component App inherits Window {
         }
         date_filter_changed => {
             root.date_filter_changed();
+        }
+    }
+
+    // Delete Confirmation Overlay
+    if (show_delete_confirm): DeleteConfirmDialog {
+        ticket_id: deleting_id;
+        ticket_title: deleting_title;
+        cancel => {
+            show_delete_confirm = false;
+        }
+        confirm => {
+            show_delete_confirm = false;
+            root.delete_ticket(deleting_id);
         }
     }
 
