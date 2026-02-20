@@ -191,16 +191,8 @@ impl Board {
                 let ticket_link_path = entry.path();
 
                 // Resolve symlink to get the actual ticket directory
-                let resolved_result = if ticket_link_path.is_symlink() {
-                    let link_target = std::fs::read_link(&ticket_link_path)?;
-                    if link_target.is_relative() {
-                        path.join(&link_target).canonicalize()
-                    } else {
-                        link_target.canonicalize()
-                    }
-                } else {
-                    ticket_link_path.canonicalize()
-                };
+                let resolved_result =
+                    Self::resolve_symlink(path, &ticket_link_path).and_then(|p| p.canonicalize());
 
                 match resolved_result {
                     Ok(resolved_path) => {
@@ -257,36 +249,14 @@ impl Board {
         }
 
         // Check if target queue has reached its limit
-        if let Some(limit) = self.config.get_limit(target_queue_id) {
-            let current_count = std::fs::read_dir(&target_path)?
-                .flatten()
-                .filter(|e| e.path().is_symlink() || e.path().is_dir())
-                .count();
-
-            if current_count >= limit {
-                return Err(anyhow::anyhow!(
-                    "Queue '{}' has reached its limit of {} tickets",
-                    target_queue_id,
-                    limit
-                ));
-            }
-        }
+        self.check_queue_limit(target_queue_id)?;
 
         // Queue entries are symlinks; find the one that resolves to our ticket.
         // We compare canonical paths because the symlink target is a relative path.
         let mut link_to_move = None;
         for entry in std::fs::read_dir(&source_path)?.flatten() {
             let path = entry.path();
-            let resolved = if path.is_symlink() {
-                let target = std::fs::read_link(&path)?;
-                if target.is_relative() {
-                    source_path.join(&target).canonicalize()?
-                } else {
-                    target.canonicalize()?
-                }
-            } else {
-                path.canonicalize()?
-            };
+            let resolved = Self::resolve_symlink(&source_path, &path)?.canonicalize()?;
 
             if resolved == ticket_dir {
                 link_to_move = Some(path);
@@ -343,13 +313,7 @@ impl Board {
                 for ticket_entry in std::fs::read_dir(&queue_dir)?.flatten() {
                     let symlink_path = ticket_entry.path();
                     if symlink_path.is_symlink() {
-                        if let Ok(target) = std::fs::read_link(&symlink_path) {
-                            let resolved = if target.is_relative() {
-                                queue_dir.join(&target)
-                            } else {
-                                target.clone()
-                            };
-
+                        if let Ok(resolved) = Self::resolve_symlink(&queue_dir, &symlink_path) {
                             // Match against both old and new paths (canonicalize may fail for broken links)
                             let resolved_abs = resolved.canonicalize().unwrap_or(resolved);
 
@@ -380,20 +344,7 @@ impl Board {
             return Err(anyhow::anyhow!("Queue {} not found", queue_id));
         }
 
-        if let Some(limit) = self.config.get_limit(queue_id) {
-            let current_count = std::fs::read_dir(&queue_path)?
-                .flatten()
-                .filter(|e| e.path().is_symlink() || e.path().is_dir())
-                .count();
-
-            if current_count >= limit {
-                return Err(anyhow::anyhow!(
-                    "Queue '{}' has reached its limit of {} tickets",
-                    queue_id,
-                    limit
-                ));
-            }
-        }
+        self.check_queue_limit(queue_id)?;
 
         // Generate unique ID
         let id: String = std::iter::repeat(())
@@ -477,5 +428,40 @@ impl Board {
             }
         }
         None
+    }
+
+    pub fn check_queue_limit(&self, queue_id: &str) -> anyhow::Result<()> {
+        if let Some(limit) = self.config.get_limit(queue_id) {
+            let queue_path = self.queue_path(queue_id);
+            if !queue_path.exists() {
+                return Ok(());
+            }
+            let current_count = std::fs::read_dir(&queue_path)?
+                .flatten()
+                .filter(|e| e.path().is_symlink() || e.path().is_dir())
+                .count();
+
+            if current_count >= limit {
+                return Err(anyhow::anyhow!(
+                    "Queue '{}' has reached its limit of {} tickets",
+                    queue_id,
+                    limit
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    pub fn resolve_symlink(base_dir: &Path, link_path: &Path) -> std::io::Result<PathBuf> {
+        if link_path.is_symlink() {
+            let target = std::fs::read_link(link_path)?;
+            if target.is_relative() {
+                Ok(base_dir.join(&target))
+            } else {
+                Ok(target)
+            }
+        } else {
+            Ok(link_path.to_path_buf())
+        }
     }
 }

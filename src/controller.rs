@@ -97,15 +97,39 @@ impl AppController {
         Ok(())
     }
 
+    fn load_board(&self, action: &str) -> Option<Board> {
+        match Board::load(self.root_path.clone()) {
+            Ok(b) => Some(b),
+            Err(e) => {
+                eprintln!("Error loading board for {}: {:?}", action, e);
+                None
+            }
+        }
+    }
+
+    fn modify_config<F>(&self, action: &str, f: F)
+    where
+        F: FnOnce(&mut Config),
+    {
+        let mut config = match Config::load(&self.root_path) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("Error loading config for {}: {:?}", action, e);
+                return;
+            }
+        };
+        f(&mut config);
+        if let Err(e) = config.write(&self.root_path) {
+            eprintln!("Error writing config for {}: {:?}", action, e);
+        }
+    }
+
     // --- Action Handlers ---
 
     pub fn handle_move(&self, ticket_id: String, source_id: String, target_id: String) {
-        let board = match Board::load(self.root_path.clone()) {
-            Ok(b) => b,
-            Err(e) => {
-                eprintln!("Error loading board for move: {:?}", e);
-                return;
-            }
+        let board = match self.load_board("move") {
+            Some(b) => b,
+            None => return,
         };
 
         let resolved_target_id = board.resolve_queue_id(&target_id);
@@ -152,12 +176,9 @@ impl AppController {
     }
 
     pub fn handle_delete(&self, ticket_id: String) {
-        let board = match Board::load(self.root_path.clone()) {
-            Ok(b) => b,
-            Err(e) => {
-                eprintln!("Error loading board for delete: {:?}", e);
-                return;
-            }
+        let board = match self.load_board("delete") {
+            Some(b) => b,
+            None => return,
         };
 
         println!("Controller: Deleting ticket {}", ticket_id);
@@ -173,12 +194,9 @@ impl AppController {
         description: String,
         assigned_to: String,
     ) {
-        let board = match Board::load(self.root_path.clone()) {
-            Ok(b) => b,
-            Err(e) => {
-                eprintln!("Error loading board for create: {:?}", e);
-                return;
-            }
+        let board = match self.load_board("create") {
+            Some(b) => b,
+            None => return,
         };
 
         println!("Controller: Creating ticket in {}", queue_id);
@@ -195,12 +213,9 @@ impl AppController {
         description: String,
         assigned_to: String,
     ) {
-        let board = match Board::load(self.root_path.clone()) {
-            Ok(b) => b,
-            Err(e) => {
-                eprintln!("Error loading board for save: {:?}", e);
-                return;
-            }
+        let board = match self.load_board("save") {
+            Some(b) => b,
+            None => return,
         };
 
         println!("Controller: Saving ticket {}", ticket_id);
@@ -210,12 +225,9 @@ impl AppController {
     }
 
     pub fn handle_change_limit(&self, queue_id: String, limit: i32) {
-        let mut board = match Board::load(self.root_path.clone()) {
-            Ok(b) => b,
-            Err(e) => {
-                eprintln!("Error loading board for limit: {:?}", e);
-                return;
-            }
+        let mut board = match self.load_board("limit") {
+            Some(b) => b,
+            None => return,
         };
 
         // limit < 0 from UI means "remove limit" (the Slint sends -1)
@@ -231,17 +243,7 @@ impl AppController {
     }
 
     pub fn handle_user_change(&self, username: String) {
-        let mut config = match Config::load(&self.root_path) {
-            Ok(c) => c,
-            Err(e) => {
-                eprintln!("Error loading config for user change: {:?}", e);
-                return;
-            }
-        };
-        config.user.active_user = username.clone();
-        if let Err(e) = config.write(&self.root_path) {
-            eprintln!("Error writing config: {:?}", e);
-        }
+        self.modify_config("user change", |c| c.user.active_user = username.clone());
 
         // Update UI immediately so the user doesn't see stale state while
         // waiting for the file watcher to trigger a full reload.
@@ -252,17 +254,7 @@ impl AppController {
     }
 
     pub fn handle_toggle_mine(&self, enabled: bool) {
-        let mut config = match Config::load(&self.root_path) {
-            Ok(c) => c,
-            Err(e) => {
-                eprintln!("Error loading config: {:?}", e);
-                return;
-            }
-        };
-        config.user.show_only_mine = enabled;
-        if let Err(e) = config.write(&self.root_path) {
-            eprintln!("Error writing config: {:?}", e);
-        }
+        self.modify_config("toggle mine", |c| c.user.show_only_mine = enabled);
 
         // Update UI immediately so the user doesn't see stale state while
         // waiting for the file watcher to trigger a full reload.
@@ -273,46 +265,18 @@ impl AppController {
     }
 
     pub fn handle_queue_visibility(&self, queue_id: String, visible: bool) {
-        let mut config = match Config::load(&self.root_path) {
-            Ok(c) => c,
-            Err(e) => {
-                eprintln!("Error loading config: {:?}", e);
-                return;
-            }
-        };
-        config.set_visible(queue_id, visible);
-        if let Err(e) = config.write(&self.root_path) {
-            eprintln!("Error writing config: {:?}", e);
-        }
+        self.modify_config("queue visibility", |c| c.set_visible(queue_id, visible));
     }
 
     pub fn handle_search_history_add(&self, query: String) {
-        let mut config = match Config::load(&self.root_path) {
-            Ok(c) => c,
-            Err(e) => {
-                eprintln!("Error config: {:?}", e);
-                return;
-            }
-        };
-        config.add_search_to_history(query);
-        if let Err(e) = config.write(&self.root_path) {
-            eprintln!("Error writing config: {:?}", e);
-        }
+        self.modify_config("search history add", |c| c.add_search_to_history(query));
         // UI history is synced on file-watcher-triggered reload
     }
 
     pub fn handle_search_history_remove(&self, query: String) {
-        let mut config = match Config::load(&self.root_path) {
-            Ok(c) => c,
-            Err(e) => {
-                eprintln!("Error config: {:?}", e);
-                return;
-            }
-        };
-        config.remove_search_from_history(&query);
-        if let Err(e) = config.write(&self.root_path) {
-            eprintln!("Error writing config: {:?}", e);
-        }
+        self.modify_config("search history remove", |c| {
+            c.remove_search_from_history(&query)
+        });
     }
 
     // --- Helpers ---
