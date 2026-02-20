@@ -26,10 +26,14 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 ## Architecture
 -   **Data Storage**: File-system based.
     -   **Root Directory**: Default is `~/Kanban`. Can be overridden by the first command-line argument.
+    -   **Board Overview**: A `README.md` file in the root directory (`~/Kanban/README.md`) that documents the purpose of the board, definitions for each queue, and the development process/rules.
     -   **Tickets directory**: `~/Kanban/Ticket`
     - **Queues**: Sub-directories within `~/Kanban/Queue`. Sorted alphabetically by directory name. Names should start with a number and a dot (e.g., `1. Incoming`, `2. ToDo`) to ensure predictable ordering.
     -   **Tickets**: Symlinks from a queue directory to `~/Kanban/Tickets`.
-    -   **Ticket Content**: `README.md` file inside the ticket directory.
+    -   **Ticket Content**: A directory containing:
+        -   `README.md`: The main ticket file (metadata + description).
+        -   `tc<NNN><UID>.md`: Comment files.
+        -   `attachment/`: A sub-directory containing all files attached to either the ticket itself or its comments.
 -   **Ticket Format**:
     -   **Header**: YAML frontmatter (Pandoc compatible) containing ticket metadata.
     -   **Body**: Markdown content describing the task.
@@ -42,18 +46,21 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
     - Show date of last modification.
     - Show **only the first line** of the ticket's `README.md` body.
     - Text must not overflow the card boundaries (use ellipsis or clipping).
+    - **Copyable ID**: The short ID must be easy to copy to the clipboard (e.g., via click or a copy button) to facilitate cross-referencing.
 
 ## Functional Requirements
 1.  **Kanban Board UI**: Visualize queues and tickets in columns.
+    -   **Board Documentation**: A dedicated button at the top of the window to open and view the root `README.md` (Board Overview) in a Markdown viewer.
 2.  **Drag-and-Drop**: Move tickets between queues (directories) using drag-and-drop.
 3.  **CRUD Operations**:
     -   Create new tickets.
     -   Read ticket content: Clicking on a ticket opens a full-window read-only view with Markdown rendering.
     -   Update ticket content: Editing is triggered by a dedicated "Edit" button. Allows editing raw text/YAML.
-    -   Delete tickets (move them from `~/Kanban/Ticket` to `~/Kanban/Deleted` directory).
+    -   **Delete tickets**: Move tickets from `~/Kanban/Ticket` to `~/Kanban/Deleted` directory (the recycle bin). A confirmation dialog must be shown before this action, explicitly stating that the ticket is being moved to the recycle bin.
 4.  **Ticket Interaction**:
     -   **Click**: Opens read-only details view with Markdown support.
     -   **Edit Button**: Opens the editor for raw `README.md` content.
+    -   **ID Interaction**: In both `TicketView` and `TicketEdit`, the ticket ID (prefixed with `#` for convenience) must be easily copyable to the clipboard for linking.
 5.  **Cross-Referencing**:
     -   Generate short IDs based on ticket title and creation date.
     -   Support linking between tickets using these IDs (e.g., `#abc123`).
@@ -68,6 +75,17 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
     -   **Ticket Assignment**: Each ticket has an `assigned_to` field. Can be set to a specific user or cleared (unassigned).
     -   **Ticket Author**: Each ticket MUST have an `author` field. The author is automatically set to the currently active user when the ticket is created.
     -   **Filtering**: Support for toggling between viewing all tickets and only those assigned to the current active user.
+    -   **Comments**: Support for adding comments to tickets.
+        -   Each comment is stored in a separate file within the ticket directory using the `tc<NNN><UID>.md` format.
+        -   Comment files contain YAML frontmatter with `author`, `created_at`, `updated_at`, and optionally a list of `attachments`.
+        -   Comments are sorted by `created_at` (ascending).
+        -   If a comment mentions another ticket (e.g., `#abc123`), those references are displayed in a row below the comment content.
+    -   **Attachments**: Support for attaching files to tickets or specific comments.
+        -   Files are copied into the `attachment/` sub-directory of the ticket.
+        -   Filename collisions are handled by appending a sequence number (e.g., `file (1).png`).
+        -   The UI provides an "Attach..." button which opens a file selection dialog.
+        -   Attachments are listed under the content they are associated with (the ticket description or the specific comment).
+        -   Clicking an attachment offers options to "Open File" (using the system default viewer) or "Open Directory".
     -   **Collaboration**: Designed for decentralized collaboration where files are synchronized via Git, Dropbox, or similar services.
 
 8.  **Command Line Interface (CLI)**:
@@ -81,11 +99,22 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
         -   `show`: Show detailed ticket info (options: `--id`/`-i`).
         -   `configure`: Change settings (options: `--active-user`, `--show-only-mine`, `--add-user`).
         -   `open PATH`: Open specified directory in the GUI.
+    -   **Recycle Bin Management**:
+        -   A "Clear Recycle Bin" button must be available in the application settings/configuration UI.
+        -   This button must display the current count of tickets in the recycle bin awaiting deletion.
+        -   The action permanently deletes all content from the `~/Kanban/Deleted` directory.
     -   **Testability**: Core logic must be decoupled from the `main` function to allow automated CLI testing.
 
 ## Data Models
 -   **Ticket ID Generation**: Short hash/ID (up to 6 chars, lowercase latin letters + numbers) derived from Title + Creation Date. Id is the name of ticket directory in `~/Kanban/Tickets` directory.
--   **Ticket metainfo**: is stored in README.md file in YAML format. Contains `title`, `created_at`, `updated_at`, `assigned_to`, and `author`.
+-   **Ticket metainfo**: is stored in `README.md` file in YAML format. Contains `title`, `created_at`, `updated_at`, `assigned_to`, and `author`.
+-   **Ticket references**: Found in both the ticket description (`README.md`) and comments (`tc*.md`). They are extracted and displayed as clickable links in a row directly below the respective content (the description or the individual comment).
+-   **Ticket Comments**: Stored in separate files inside the ticket directory.
+    -   **Filename**: `tc<NNN><UID>.md`. `NNN` is a 3-digit sequence (001, 002, etc.), and `UID` is a unique ID to avoid collisions.
+    -   **Metadata**: stored in YAML frontmatter. Contains `author`, `created_at`, `updated_at`, and a list of `attachments`.
+    -   **Content**: Markdown text.
+-   **Attachments**: Files stored in the `attachment/` sub-directory.
+    -   Associated via the `attachments` field in the frontmatter of `README.md` (for ticket-level attachments) or `tc*.md` (for comment-level attachments).
 - **Configuration Architecture**: Configuration is split into two files to separate shared board settings from local user preferences:
     - **Kanban Settings (`~/Kanban/config.toml`)**: Shared settings that should be synchronized (e.g., via Git).
         - `users`: List of shared user identities.

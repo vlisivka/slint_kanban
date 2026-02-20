@@ -13,6 +13,7 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 - [x] Connect Rust logic to Slint UI to display the board state.
 - [x] Make tickets use fixed amount of vertical space, enough to display title, date, and part of first line of ticket body.
 - [x] UI Refinement: Update ticket cards to show only the first line of the ticket body and ensure it doesn't overflow.
+- [ ] Add "Board Info" button to UI to open root `README.md` in a viewer
 
 ## Phase 2: Reactivity (File Watcher)
 - [x] Add `notify` crate dependency.
@@ -67,6 +68,7 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Make ticket references clickable
   - [x] Navigate to referenced ticket on click
   - [x] Show tooltip with title on hover
+  - [ ] Support copying ticket ID to clipboard from `TicketCard`, `TicketView`, and `TicketEdit`
 
 ### Command Line Interface (CLI)
 - [x] Refactor `main.rs` to move application logic into a testable function.
@@ -108,6 +110,28 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Toggle "Show only mine" (Ctrl+M)
   - [x] Close dialogs or clear search (Esc)
   - [x] Select from search history with Down Arrow
+
+### Recycle Bin Improvements
+- [ ] Create delete confirmation dialog with specific wording ("ticket is moved to recycle bin")
+- [ ] Add "Clear Recycle Bin" button to settings
+- [ ] Implement logic to count tickets in recycle bin
+- [ ] Implement permanent deletion of items in recycle bin
+
+### Ticket Comments
+- [ ] Implement reading comments from `tc<NNN><UID>.md` files in ticket directory
+- [ ] Support YAML frontmatter in comments (`author`, `created_at`, `updated_at`)
+- [ ] Extract and display ticket references (`#abc123`) below comments
+- [ ] Sort comments by `created_at` (older first)
+- [ ] Update UI to display comments in `TicketView`
+- [ ] Implement adding new comments via UI
+
+### Attachments
+- [ ] Create `attachment/` sub-directory logic in ticket models
+- [ ] Implement file copying with duplicate name handling (`file (1).ext`)
+- [ ] Add `attachments` field to ticket and comment frontmatter
+- [ ] Implement "Attach..." button and file dialog in UI
+- [ ] Display attachments in `TicketView` (under description and comments)
+- [ ] Add interaction to open attachments or their parent directory
 
 ### Export Functionality
 - [ ] Implement export features
