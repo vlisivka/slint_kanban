@@ -130,16 +130,16 @@ impl AppController {
         };
 
         match Board::load_board_info(&self.root_path) {
-            Ok(content) => {
+            Ok((metadata, content)) => {
                 let info = TicketStr {
                     id: "board-info".into(),
-                    title: "Board Overview".into(),
+                    title: metadata.title.into(),
                     description: content.into(),
                     snippet: "".into(),
-                    created_at: "".into(),
-                    updated_at: "".into(),
-                    assigned_to: "".into(),
-                    author: "".into(),
+                    created_at: metadata.created_at.into(),
+                    updated_at: metadata.updated_at.into(),
+                    assigned_to: metadata.assigned_to.into(),
+                    author: metadata.author.into(),
                     references: Rc::new(VecModel::default()).into(),
                 };
                 app.set_active_ticket(info);

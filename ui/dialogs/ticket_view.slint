@@ -75,6 +75,20 @@ export component TicketView inherits Rectangle {
                         color: #d33682;
                         opacity: 0.8;
                     }
+
+                    if ticket.created_at != "": Text {
+                        text: "Created: " + ticket.created_at;
+                        font-size: 11px;
+                        horizontal-alignment: center;
+                        opacity: 0.5;
+                    }
+
+                    if ticket.updated_at != "" && ticket.updated_at != ticket.created_at: Text {
+                        text: "Updated: " + ticket.updated_at;
+                        font-size: 11px;
+                        horizontal-alignment: center;
+                        opacity: 0.5;
+                    }
                 }
 
                 close-btn := Button {
