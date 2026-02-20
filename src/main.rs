@@ -103,7 +103,7 @@ pub fn sync_ui_with_board(
     let mut slint_queues: Vec<QueueStr> = vec![];
 
     for queue in &board.queues {
-        let slint_tickets: Vec<TicketStr> = queue
+        let mut filtered_tickets: Vec<&model::Ticket> = queue
             .tickets
             .iter()
             .filter(|t: &&model::Ticket| {
@@ -121,6 +121,13 @@ pub fn sync_ui_with_board(
                 };
                 matches_search && matches_date && matches_user
             })
+            .collect();
+
+        // Sort by updated_at: older at the top, newer at the bottom
+        filtered_tickets.sort_by(|a, b| a.updated_at.cmp(&b.updated_at));
+
+        let slint_tickets: Vec<TicketStr> = filtered_tickets
+            .into_iter()
             .map(|t| ticket_to_slint(t, board))
             .collect();
 
