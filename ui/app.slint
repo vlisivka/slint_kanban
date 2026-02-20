@@ -321,13 +321,7 @@ export component App inherits Window {
                             is_viewing_ticket = true;
                         }
                         create_ticket(qid) => {
-                            editing_id = "";
-                            editing_title = "New Ticket";
-                            editing_desc = "";
-                            editing_assigned_to = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
-                            editing_author = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
-                            target_queue_for_new = qid;
-                            is_editing = true;
+                            root.test_trigger_add_ticket(qid);
                         }
                         edit_limit(qid, qname, qlimit) => {
                             editing_limit_id = qid;
@@ -351,7 +345,7 @@ export component App inherits Window {
         editing_id = "";
         editing_title = "New Ticket";
         editing_desc = "";
-        editing_assigned_to = "";
+        editing_assigned_to = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
         editing_author = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
         target_queue_for_new = qid;
         is_editing = true;

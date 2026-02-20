@@ -157,4 +157,40 @@ fn test_gui_suite() {
             step_elapsed
         );
     }
+
+    // IV. Test specific bugs
+    println!("Testing regression bugs...");
+    test_repro_user_bug();
+}
+
+fn test_repro_user_bug() {
+    let temp_dir = tempdir().unwrap();
+    let root_path = temp_dir.path().to_path_buf();
+
+    Board::ensure_initialized(&root_path).unwrap();
+
+    let ui = App::new().unwrap();
+    let controller = Arc::new(AppController::new(ui.as_weak(), root_path.clone()));
+
+    let user_global = ui.global::<UserGlobal>();
+    println!(
+        "Before reload: users={:?}, active='{}'",
+        user_global.get_users().row_count(),
+        user_global.get_active_user()
+    );
+
+    controller.reload().unwrap();
+    crate::init_callbacks(&ui, controller.clone());
+
+    println!(
+        "After reload: users={:?}, active='{}'",
+        user_global.get_users().row_count(),
+        user_global.get_active_user()
+    );
+
+    ui.invoke_test_trigger_add_ticket("1. Incoming".into());
+    let assigned = ui.get_editing_assigned_to();
+    println!("Final editing assigned to: '{}'", assigned);
+
+    assert_eq!(assigned, "user", "Assigned user should be 'user'");
 }
