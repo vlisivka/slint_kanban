@@ -42,6 +42,7 @@ export component App inherits Window {
     callback remove_search_item(string);
     callback date_filter_changed();
     callback focus_search();
+    callback show_board_info();
     callback shortcut_create_ticket();
     callback toggle_queue_visibility(string, bool);
     callback move_ticket(string, string, string); // ticket_id, from_queue, index:...
@@ -240,6 +241,13 @@ export component App inherits Window {
                             text: "History";
                             clicked => {
                                 show_search_history = !show_search_history;
+                            }
+                        }
+
+                        Button {
+                            text: "Board Info";
+                            clicked => {
+                                show_board_info();
                             }
                         }
                     }

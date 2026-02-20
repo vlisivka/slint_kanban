@@ -39,7 +39,7 @@ export component TicketView inherits Rectangle {
                 padding: 0px;
                 alignment: space-between;
 
-                edit-btn := Button {
+                if ticket.id != "board-info": edit-btn := Button {
                     text: "Edit";
                     width: 100px;
                     height: 40px;

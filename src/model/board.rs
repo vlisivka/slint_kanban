@@ -65,9 +65,26 @@ impl Board {
                 default_config.set_limit("3. Doing".to_string(), 5);
                 default_config.write(root_path)?;
             }
+
+            // Create default root README.md if it doesn't exist
+            let readme_path = root_path.join("README.md");
+            if !readme_path.exists() {
+                let default_readme = "# Board Overview\n\nWelcome to your new Kanban board!\n\n## Rules\n1. Move tickets between queues.\n2. Respect WIP limits.\n";
+                std::fs::write(&readme_path, default_readme)?;
+            }
         }
 
         Ok(())
+    }
+
+    /// Loads the root README.md content.
+    pub fn load_board_info(root_path: &Path) -> anyhow::Result<String> {
+        let readme_path = root_path.join("README.md");
+        if readme_path.exists() {
+            Ok(std::fs::read_to_string(readme_path)?)
+        } else {
+            Ok("# Board Overview\n\nRoot README.md not found.".to_string())
+        }
     }
 
     pub fn queue_path(&self, queue_id: &str) -> PathBuf {

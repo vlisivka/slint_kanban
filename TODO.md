@@ -13,7 +13,7 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 - [x] Connect Rust logic to Slint UI to display the board state.
 - [x] Make tickets use fixed amount of vertical space, enough to display title, date, and part of first line of ticket body.
 - [x] UI Refinement: Update ticket cards to show only the first line of the ticket body and ensure it doesn't overflow.
-- [ ] Add "Board Info" button to UI to open root `README.md` in a viewer
+- [x] Add "Board Info" button to UI to open root `README.md` in a viewer
 
 ## Phase 2: Reactivity (File Watcher)
 - [x] Add `notify` crate dependency.

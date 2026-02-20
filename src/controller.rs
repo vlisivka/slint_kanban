@@ -4,7 +4,7 @@
 //! Includes: AppController struct and methods for handling UI actions.
 
 use crate::model::{Board, Config};
-use crate::{sync_ui_with_board, App, UserGlobal};
+use crate::{sync_ui_with_board, App, TicketStr, UserGlobal};
 use slint::{ComponentHandle, Model, SharedString, VecModel, Weak};
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -120,6 +120,34 @@ impl AppController {
         );
         if let Err(e) = board.move_ticket(&ticket_id, &source_id, &resolved_target_id) {
             self.show_error(&e.to_string());
+        }
+    }
+
+    pub fn handle_show_board_info(&self) {
+        let app = match self.app_weak.upgrade() {
+            Some(a) => a,
+            None => return,
+        };
+
+        match Board::load_board_info(&self.root_path) {
+            Ok(content) => {
+                let info = TicketStr {
+                    id: "board-info".into(),
+                    title: "Board Overview".into(),
+                    description: content.into(),
+                    snippet: "".into(),
+                    created_at: "".into(),
+                    updated_at: "".into(),
+                    assigned_to: "".into(),
+                    author: "".into(),
+                    references: Rc::new(VecModel::default()).into(),
+                };
+                app.set_active_ticket(info);
+                app.set_is_viewing_ticket(true);
+            }
+            Err(e) => {
+                self.show_error(&format!("Error loading board info: {}", e));
+            }
         }
     }
 

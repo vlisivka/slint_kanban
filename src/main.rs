@@ -278,6 +278,11 @@ pub(crate) fn init_callbacks(ui: &App, controller: Arc<AppController>) {
         });
 
     let c = controller.clone();
+    ui.on_show_board_info(move || {
+        c.handle_show_board_info();
+    });
+
+    let c = controller.clone();
     ui.on_focus_search(move || {
         c.handle_focus_search();
     });
