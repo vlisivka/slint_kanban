@@ -42,7 +42,7 @@ export component TicketEdit inherits Rectangle {
                 padding: 0px;
                 alignment: space-between;
 
-                Button {
+                cancel-btn := Button {
                     text: "Cancel";
                     width: 100px;
                     height: 40px;
@@ -59,7 +59,7 @@ export component TicketEdit inherits Rectangle {
                     horizontal-alignment: center;
                 }
 
-                Button {
+                save-btn := Button {
                     text: "Save Ticket";
                     primary: true;
                     width: 120px;
@@ -85,7 +85,7 @@ export component TicketEdit inherits Rectangle {
 
                     HorizontalLayout {
                         spacing: 8px;
-                        ComboBox {
+                        assign-combo := ComboBox {
                             model: users;
                             current-value: assigned_to == "" ? "<unassigned>" : assigned_to;
                             height: 40px;
@@ -128,7 +128,7 @@ export component TicketEdit inherits Rectangle {
                     opacity: 0.6;
                 }
 
-                LineEdit {
+                title-input := LineEdit {
                     text <=> title_text;
                     placeholder-text: "What needs to be done?";
                     height: 40px;
@@ -144,7 +144,7 @@ export component TicketEdit inherits Rectangle {
                     opacity: 0.6;
                 }
 
-                TextEdit {
+                desc-input := TextEdit {
                     text <=> description_text;
                     placeholder-text: "What needs to be done?";
                     preferred-height: 400px;

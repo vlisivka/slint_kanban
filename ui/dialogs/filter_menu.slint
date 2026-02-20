@@ -42,7 +42,7 @@ export component FilterMenu inherits Rectangle {
                 opacity: 0.7;
             }
 
-            ComboBox {
+            user-config-combo := ComboBox {
                 model: UserGlobal.users;
                 current-value: UserGlobal.active-user;
                 selected(val) => {
@@ -51,7 +51,7 @@ export component FilterMenu inherits Rectangle {
             }
         }
 
-        CheckBox {
+        check-my-tickets := CheckBox {
             text: "Show only my tickets";
             checked <=> UserGlobal.show-only-mine;
             toggled => {
@@ -108,7 +108,7 @@ export component FilterMenu inherits Rectangle {
                     width: 40px;
                 }
 
-                LineEdit {
+                date-from-input := LineEdit {
                     text <=> date_from;
                     placeholder-text: "YYYY-MM-DD";
                     edited => {
@@ -125,7 +125,7 @@ export component FilterMenu inherits Rectangle {
                     width: 40px;
                 }
 
-                LineEdit {
+                date-to-input := LineEdit {
                     text <=> date_to;
                     placeholder-text: "YYYY-MM-DD";
                     edited => {

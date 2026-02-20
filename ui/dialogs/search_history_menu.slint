@@ -27,7 +27,7 @@ export component SearchHistoryMenu inherits Rectangle {
 
         VerticalLayout {
             spacing: 4px;
-            for item in history: Rectangle {
+            for item[index] in history: Rectangle {
                 height: 32px;
                 background: touch.has-hover ? Palette.alternate-background : transparent;
                 border-radius: 4px;
@@ -84,7 +84,7 @@ export component SearchHistoryMenu inherits Rectangle {
 
         HorizontalLayout {
             alignment: end;
-            Button {
+            close-btn := Button {
                 text: "Close";
                 clicked => {
                     close();

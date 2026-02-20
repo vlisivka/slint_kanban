@@ -169,6 +169,16 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+## 🛠️ Development & Testing
+ 
+To ensure application stability, run the full test suite with:
+ 
+```bash
+cargo test -- --test-threads=1 --nocapture
+```
+ 
+Always run `cargo fmt` before finishing a task.
+ 
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.

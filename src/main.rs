@@ -151,8 +151,66 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
     // Initial load
     controller.reload()?;
 
+    init_callbacks(&ui, controller.clone());
+
     let watcher_root = root_path.clone();
 
+    // File watcher: debounced reload on filesystem changes
+    let c_watcher = controller.clone();
+    std::thread::spawn(move || {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let mut watcher = notify::recommended_watcher(tx).unwrap();
+
+        if let Err(e) = watcher.watch(&watcher_root, RecursiveMode::Recursive) {
+            eprintln!("Failed to watch directory: {:?}", e);
+            return;
+        }
+
+        use std::time::Duration;
+
+        loop {
+            match rx.recv() {
+                Ok(Ok(event)) => {
+                    use notify::EventKind;
+                    let should_reload = match event.kind {
+                        EventKind::Create(_) | EventKind::Remove(_) => true,
+                        EventKind::Modify(m) => matches!(
+                            m,
+                            notify::event::ModifyKind::Data(_) | notify::event::ModifyKind::Name(_)
+                        ),
+                        _ => false,
+                    };
+
+                    if !should_reload {
+                        continue;
+                    }
+
+                    // Debounce: wait 100ms then drain any events that arrived
+                    // during the sleep, so rapid saves trigger only one reload.
+                    std::thread::sleep(Duration::from_millis(100));
+                    while rx.try_recv().is_ok() {}
+
+                    let c = c_watcher.clone();
+                    let _ = slint::invoke_from_event_loop(move || {
+                        if let Err(e) = c.reload() {
+                            eprintln!("Error reloading board: {:?}", e);
+                        }
+                    });
+                }
+                Ok(Err(e)) => eprintln!("Watch error: {:?}", e),
+                Err(e) => {
+                    eprintln!("Channel error: {:?}", e);
+                    break;
+                }
+            }
+        }
+    });
+
+    ui.run()?;
+    Ok(())
+}
+
+pub(crate) fn init_callbacks(ui: &App, controller: Arc<AppController>) {
     // Set up callbacks
     let c = controller.clone();
     ui.on_move_ticket(move |ticket_id, source_id, target_id| {
@@ -216,7 +274,7 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
         c.handle_search_history_remove(query.into());
     });
 
-    let nav_root = root_path.clone(); // use local var
+    let nav_root = controller.root_path.clone();
     let nav_ui = ui.as_weak();
     ui.on_navigate_to(move |target_id| {
         let board = Board::load(nav_root.clone())
@@ -258,60 +316,6 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
     ui.on_select_history_item(move |_| {
         let _ = c.reload();
     });
-
-    // File watcher: debounced reload on filesystem changes
-    let c_watcher = controller.clone();
-    std::thread::spawn(move || {
-        let (tx, rx) = std::sync::mpsc::channel();
-        let mut watcher = notify::recommended_watcher(tx).unwrap();
-
-        if let Err(e) = watcher.watch(&watcher_root, RecursiveMode::Recursive) {
-            eprintln!("Failed to watch directory: {:?}", e);
-            return;
-        }
-
-        use std::time::Duration;
-
-        loop {
-            match rx.recv() {
-                Ok(Ok(event)) => {
-                    use notify::EventKind;
-                    let should_reload = match event.kind {
-                        EventKind::Create(_) | EventKind::Remove(_) => true,
-                        EventKind::Modify(m) => matches!(
-                            m,
-                            notify::event::ModifyKind::Data(_) | notify::event::ModifyKind::Name(_)
-                        ),
-                        _ => false,
-                    };
-
-                    if !should_reload {
-                        continue;
-                    }
-
-                    // Debounce: wait 100ms then drain any events that arrived
-                    // during the sleep, so rapid saves trigger only one reload.
-                    std::thread::sleep(Duration::from_millis(100));
-                    while rx.try_recv().is_ok() {}
-
-                    let c = c_watcher.clone();
-                    let _ = slint::invoke_from_event_loop(move || {
-                        if let Err(e) = c.reload() {
-                            eprintln!("Error reloading board: {:?}", e);
-                        }
-                    });
-                }
-                Ok(Err(e)) => eprintln!("Watch error: {:?}", e),
-                Err(e) => {
-                    eprintln!("Channel error: {:?}", e);
-                    break;
-                }
-            }
-        }
-    });
-
-    ui.run()?;
-    Ok(())
 }
 
 fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
@@ -498,5 +502,17 @@ fn main() -> anyhow::Result<()> {
     run_main(args)
 }
 
+#[cfg(test)]
+static TEST_INIT: std::sync::Once = std::sync::Once::new();
+
+#[cfg(test)]
+pub fn init_test_backend() {
+    TEST_INIT.call_once(|| {
+        i_slint_backend_testing::init_integration_test_with_system_time();
+    });
+}
+
+#[cfg(test)]
+mod gui_tests;
 #[cfg(test)]
 mod main_tests;

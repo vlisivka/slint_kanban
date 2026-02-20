@@ -56,8 +56,8 @@ export component App inherits Window {
     callback test_trigger_select_history(string); // for testing
     callback test_trigger_remove_history(string); // for testing
     // Tooltip state
-    property <string> tooltip_text: "";
-    property <bool> tooltip_visible: false;
+    out property <string> tooltip_text: "";
+    out property <bool> tooltip_visible: false;
     property <length> tooltip_x: 0px;
     property <length> tooltip_y: 0px;
 
@@ -74,15 +74,15 @@ export component App inherits Window {
 
     // Editing state
     in-out property <bool> is_editing: false;
-    out property <string> editing_id: "";
-    out property <string> editing_title: "";
-    out property <string> editing_desc: "";
-    out property <string> editing_assigned_to: "";
-    out property <string> target_queue_for_new: "";
+    in-out property <string> editing_id: "";
+    in-out property <string> editing_title: "";
+    in-out property <string> editing_desc: "";
+    in-out property <string> editing_assigned_to: "";
+    in-out property <string> target_queue_for_new: "";
 
     // Warning dialog state
-    property <bool> show_warning: false;
-    property <string> warning_message: "";
+    in-out property <bool> show_warning: false;
+    out property <string> warning_message: "";
 
     // Limit editing state
     property <bool> is_editing_limit: false;
@@ -126,7 +126,7 @@ export component App inherits Window {
                         font-weight: 700;
                     }
 
-                    LineEdit {
+                    search-input := LineEdit {
                         text <=> search_query;
                         placeholder-text: "Filter titles, descriptions or IDs...";
                         width: 400px;
@@ -138,14 +138,14 @@ export component App inherits Window {
                         }
                     }
 
-                    Button {
+                    history-btn := Button {
                         text: "History";
                         clicked => {
                             show_search_history = !show_search_history;
                         }
                     }
 
-                    if (search_query != ""): Button {
+                    if (search_query != ""): clear-search-btn := Button {
                         text: "Clear";
                         clicked => {
                             search_query = "";
@@ -158,7 +158,7 @@ export component App inherits Window {
                 HorizontalLayout {
                     alignment: end;
                     padding-right: 15px;
-                    Button {
+                    settings-btn := Button {
                         text: "⚙"; // Gear icon for settings/filter
                         width: 40px;
                         clicked => {
@@ -256,6 +256,7 @@ export component App inherits Window {
     }
 
     test_trigger_select_history(q) => {
+        search_query = q;
         select_history_item(q);
     }
 

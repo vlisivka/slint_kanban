@@ -39,7 +39,7 @@ export component TicketView inherits Rectangle {
                 padding: 0px;
                 alignment: space-between;
 
-                Button {
+                edit-btn := Button {
                     text: "Edit";
                     width: 100px;
                     height: 40px;
@@ -51,7 +51,7 @@ export component TicketView inherits Rectangle {
                 VerticalBox {
                     padding: 0px;
                     spacing: 4px;
-                    Text {
+                    title-txt := Text {
                         text: ticket.title;
                         font-size: 32px;
                         font-weight: 800;
@@ -68,7 +68,7 @@ export component TicketView inherits Rectangle {
                     }
                 }
 
-                Button {
+                close-btn := Button {
                     text: "Close";
                     width: 100px;
                     height: 40px;
@@ -82,7 +82,7 @@ export component TicketView inherits Rectangle {
                 VerticalBox {
                     padding: 20px;
                     spacing: 20px;
-                    Text {
+                    desc-txt := Text {
                         text: ticket.description;
                         font-size: 18px;
                         wrap: word-wrap;

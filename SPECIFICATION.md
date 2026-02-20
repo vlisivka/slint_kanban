@@ -18,6 +18,10 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 -   **Planning**: Before starting implementation, a plan must be created in the `plans` directory.
 -   **Format**: The plan should be a Markdown file named `Plan - NAME OF PLAN.md`.
 -   **Approval**: The plan must be reviewed and approved by the developer before work begins.
+-   **Development Lifecycle**: Before marking a task as complete, you MUST:
+    -   Run all automated tests: `cargo test -- --test-threads=1 --nocapture`.
+    -   Ensure all tests pass (unit, integration, CLI, and GUI tests).
+    -   Format the code using `cargo fmt`.
 
 ## Architecture
 -   **Data Storage**: File-system based.
