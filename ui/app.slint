@@ -126,15 +126,41 @@ export component App inherits Window {
                         font-weight: 700;
                     }
 
-                    search-input := LineEdit {
-                        text <=> search_query;
-                        placeholder-text: "Filter titles, descriptions or IDs...";
+                    Rectangle {
                         width: 400px;
-                        edited(text) => {
-                            search_edited(text);
+                        search-input := LineEdit {
+                            width: 100%;
+                            text <=> search_query;
+                            placeholder-text: "Filter titles, descriptions or IDs...";
+                            edited(text) => {
+                                search_edited(text);
+                            }
+                            accepted(text) => {
+                                accept_search(text);
+                            }
                         }
-                        accepted(text) => {
-                            accept_search(text);
+
+                        if (search_query != ""): Rectangle {
+                            x: parent.width - self.width - 8px;
+                            y: (parent.height - self.height) / 2;
+                            width: 20px;
+                            height: 20px;
+                            border-radius: 10px;
+                            background: clear-touch.pressed ? #ccc : clear-touch.has-hover ? #ddd : transparent;
+                            Text {
+                                text: "✕";
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                                color: Palette.foreground;
+                                font-size: 12px;
+                            }
+
+                            clear-touch := TouchArea {
+                                clicked => {
+                                    search_query = "";
+                                    search_edited("");
+                                }
+                            }
                         }
                     }
 
@@ -142,14 +168,6 @@ export component App inherits Window {
                         text: "History";
                         clicked => {
                             show_search_history = !show_search_history;
-                        }
-                    }
-
-                    if (search_query != ""): clear-search-btn := Button {
-                        text: "Clear";
-                        clicked => {
-                            search_query = "";
-                            search_edited("");
                         }
                     }
                 }
