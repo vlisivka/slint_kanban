@@ -215,7 +215,7 @@ fn test_gui_user_desync() {
 }
 
 fn test_gui_add_comment() {
-    let (ui, controller, root_path, _temp_dir) = setup_test_app();
+    let (ui, _controller, root_path, _temp_dir) = setup_test_app();
 
     // 1. Get first ticket ID
     let id = ui.invoke_test_get_first_ticket_id();

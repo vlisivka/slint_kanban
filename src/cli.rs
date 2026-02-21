@@ -154,6 +154,18 @@ pub enum Commands {
 
         /// Path to the file to attach
         #[arg(short, long)]
-        file: PathBuf,
+        file: Option<PathBuf>,
+
+        /// List all attachments
+        #[arg(short, long)]
+        list: bool,
+
+        /// Show the path to the attachments directory
+        #[arg(short, long)]
+        show: bool,
+
+        /// Open the attachments directory in the file manager
+        #[arg(short, long)]
+        open: bool,
     },
 }

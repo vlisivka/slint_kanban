@@ -284,9 +284,46 @@ fn test_cli_show() -> anyhow::Result<()> {
     assert!(out.contains("Task Show"));
     assert!(out.contains("Show Description"));
     assert!(out.contains("Bob"));
+    assert!(out.contains("Attachments: 0"));
 
     // Invalid show
     env.run_err(&["show", "-i", "invalid_id"]);
+
+    Ok(())
+}
+
+#[test]
+fn test_cli_attach_extended() -> anyhow::Result<()> {
+    let env = TestEnv::new()?;
+
+    env.run(&["add", "-t", "Attach Test", "-q", "1. Incoming"])?;
+    let id = env.board()?.queues[0].tickets[0].id.clone();
+
+    // 1. Test --show (path)
+    let out = env.run(&["attach", "-i", &id, "--show"])?;
+    assert!(out.contains("attachment"));
+    assert!(out.contains(&id));
+
+    // 2. Test --list (empty)
+    let out = env.run(&["attach", "-i", &id, "--list"])?;
+    assert!(out.contains("No attachments found."));
+
+    // 3. Attach a file
+    let dummy = env.root.join("test.txt");
+    std::fs::write(&dummy, "hello")?;
+    env.run(&["attach", "-i", &id, "-f", dummy.to_str().unwrap()])?;
+
+    // 4. Test --list (one file)
+    let out = env.run(&["attach", "-i", &id, "--list"])?;
+    assert!(out.contains("test.txt"));
+
+    // 5. Test show command includes count
+    let out = env.run(&["show", "-i", &id])?;
+    assert!(out.contains("Attachments: 1"));
+
+    // 6. Test --open (check message)
+    let out = env.run(&["attach", "-i", &id, "--open"])?;
+    assert!(out.contains("Opening attachments directory"));
 
     Ok(())
 }

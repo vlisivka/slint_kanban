@@ -349,7 +349,7 @@ fn handle_command(
     command: Commands,
     out: &mut dyn std::io::Write,
 ) -> anyhow::Result<()> {
-    let mut board = Board::load(root_path.clone())?;
+    let board = Board::load(root_path.clone())?;
 
     match command {
         Commands::Add {
@@ -478,6 +478,21 @@ fn handle_command(
                 .map(|q| q.name.as_str())
                 .unwrap_or("Unknown");
 
+            let ticket_dir = board.ticket_path(&id);
+            let attach_dir = ticket_dir.join("attachment");
+            let attachment_count = if attach_dir.exists() {
+                std::fs::read_dir(&attach_dir)
+                    .map(|entries| {
+                        entries
+                            .filter_map(Result::ok)
+                            .filter(|e| e.path().is_file())
+                            .count()
+                    })
+                    .unwrap_or(0)
+            } else {
+                0
+            };
+
             writeln!(out, "ID:          {}", ticket.id)?;
             writeln!(out, "Title:       {}", ticket.title)?;
             writeln!(out, "Status:      {}", queue_name)?;
@@ -493,6 +508,7 @@ fn handle_command(
             writeln!(out, "Author:      {}", ticket.author)?;
             writeln!(out, "Created at:  {}", ticket.created_at)?;
             writeln!(out, "Updated at:  {}", ticket.updated_at)?;
+            writeln!(out, "Attachments: {}", attachment_count)?;
             writeln!(out, "\nDescription:\n{}", ticket.description)?;
             if !ticket.comments.is_empty() {
                 writeln!(out, "\nComments:")?;
@@ -510,9 +526,55 @@ fn handle_command(
             let author = board.config.active_user();
             board.add_comment(&id, &content, author)?;
         }
-        Commands::Attach { id, file } => {
-            let link = board.attach_file(&id, &file)?;
-            writeln!(out, "{}", link)?;
+        Commands::Attach {
+            id,
+            file,
+            list,
+            show,
+            open,
+        } => {
+            let ticket_dir = board.ticket_path(&id);
+            let attach_dir = ticket_dir.join("attachment");
+
+            if !ticket_dir.exists() {
+                anyhow::bail!("Ticket not found: {}", id);
+            }
+
+            if open {
+                if !attach_dir.exists() {
+                    std::fs::create_dir_all(&attach_dir)?;
+                }
+                writeln!(
+                    out,
+                    "Opening attachments directory: {}",
+                    attach_dir.display()
+                )?;
+                #[cfg(not(test))]
+                open::that(&attach_dir)?;
+            } else if show {
+                writeln!(out, "{}", attach_dir.display())?;
+            } else if list {
+                if attach_dir.exists() {
+                    let mut found = false;
+                    for entry in std::fs::read_dir(&attach_dir)? {
+                        let entry = entry?;
+                        if entry.path().is_file() {
+                            found = true;
+                            writeln!(out, "{}", entry.file_name().to_string_lossy())?;
+                        }
+                    }
+                    if !found {
+                        writeln!(out, "No attachments found.")?;
+                    }
+                } else {
+                    writeln!(out, "No attachments found.")?;
+                }
+            } else if let Some(f) = file {
+                let link = board.attach_file(&id, &f)?;
+                writeln!(out, "{}", link)?;
+            } else {
+                anyhow::bail!("No action specified. Use --file, --list, --show, or --open.");
+            }
         }
     }
 
