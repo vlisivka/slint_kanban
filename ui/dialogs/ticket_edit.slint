@@ -7,6 +7,7 @@ import {
     HorizontalBox,
     Palette,
 } from "std-widgets.slint";
+import { IdCopy } from "../common.slint";
 
 export component TicketEdit inherits Rectangle {
     in-out property <string> title_text;
@@ -52,12 +53,20 @@ export component TicketEdit inherits Rectangle {
                     }
                 }
 
-                Text {
-                    text: ticket_id == "" ? "Create New Ticket" : "Edit Ticket #" + ticket_id;
-                    font-size: 32px;
-                    font-weight: 800;
-                    wrap: word-wrap;
-                    horizontal-alignment: center;
+                HorizontalLayout {
+                    alignment: center;
+                    spacing: 8px;
+                    Text {
+                        text: ticket_id == "" ? "Create New Ticket" : "Edit Ticket ";
+                        font-size: 32px;
+                        font-weight: 800;
+                    }
+
+                    if ticket_id != "": IdCopy {
+                        id: ticket_id;
+                        font-size: 32px;
+                        height: 48px; // Match line height of the text roughly
+                    }
                 }
 
                 save-btn := Button {

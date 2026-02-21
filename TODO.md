@@ -68,7 +68,7 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Make ticket references clickable
   - [x] Navigate to referenced ticket on click
   - [x] Show tooltip with title on hover
-  - [ ] Support copying ticket ID to clipboard from `TicketCard`, `TicketView`, and `TicketEdit`
+  - [x] Support copying ticket ID to clipboard from `TicketCard`, `TicketView`, and `TicketEdit`
 
 ### Command Line Interface (CLI)
 - [x] Refactor `main.rs` to move application logic into a testable function.

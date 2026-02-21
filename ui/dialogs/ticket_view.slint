@@ -5,7 +5,7 @@ import {
     HorizontalBox,
     Palette,
 } from "std-widgets.slint";
-import { TicketStr } from "../common.slint";
+import { TicketStr, IdCopy } from "../common.slint";
 
 export component TicketView inherits Rectangle {
     in property <TicketStr> ticket;
@@ -57,6 +57,14 @@ export component TicketView inherits Rectangle {
                         font-weight: 800;
                         wrap: word-wrap;
                         horizontal-alignment: center;
+                    }
+
+                    if ticket.id != "" && ticket.id != "board-info": HorizontalLayout {
+                        alignment: center;
+                        IdCopy {
+                            id: ticket.id;
+                            font-size: 14px;
+                        }
                     }
 
                     if ticket.assigned_to != "": Text {

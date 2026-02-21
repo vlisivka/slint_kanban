@@ -1,5 +1,5 @@
 import { VerticalBox, HorizontalBox, Palette } from "std-widgets.slint";
-import { TicketStr } from "../common.slint";
+import { TicketStr, IdCopy } from "../common.slint";
 
 export component TicketCard inherits Rectangle {
     in property <TicketStr> ticket;
@@ -88,12 +88,9 @@ export component TicketCard inherits Rectangle {
             VerticalLayout {
                 spacing: 2px;
                 alignment: start;
-                Text {
-                    text: "#" + ticket.id;
+                IdCopy {
+                    id: ticket.id;
                     font-size: 11px;
-                    font-weight: 700;
-                    color: #5e6c84;
-                    opacity: 0.6;
                 }
 
                 if ticket.author != "": Text {

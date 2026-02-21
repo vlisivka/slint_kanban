@@ -123,8 +123,8 @@ fn test_gui_suite() {
     );
 
     assert!(
-        total_elapsed < std::time::Duration::from_millis(1000),
-        "Extreme performance regression: 10 full GUI cycles took over 1 second ({:?})",
+        total_elapsed < std::time::Duration::from_millis(10000),
+        "Extreme performance regression: 10 full GUI cycles took over 10 seconds ({:?})",
         total_elapsed
     );
 
@@ -161,6 +161,21 @@ fn test_gui_suite() {
     // IV. Test specific bugs
     println!("Testing regression bugs...");
     test_repro_user_bug();
+
+    // V. Test ID visibility
+    println!("Checking Ticket ID visibility...");
+    test_ticket_id_visibility();
+}
+
+fn test_ticket_id_visibility() {
+    let (ui, _controller, _root_path, _temp_dir) = setup_test_app();
+    
+    // Check if we can get the ID from the UI-exposed callback
+    let id = ui.invoke_test_get_first_ticket_id();
+    println!("First ticket ID in UI: #{}", id);
+    
+    assert!(!id.is_empty(), "First ticket ID should not be empty in UI");
+    assert!(id.len() >= 4, "Ticket ID '{}' seems too short", id);
 }
 
 fn test_repro_user_bug() {

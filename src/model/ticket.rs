@@ -72,9 +72,15 @@ impl Ticket {
             return true;
         }
         let query_lower = query.to_lowercase();
+        let query_clean = if query_lower.starts_with('#') {
+            &query_lower[1..]
+        } else {
+            &query_lower
+        };
+
         self.title.to_lowercase().contains(&query_lower)
             || self.description.to_lowercase().contains(&query_lower)
-            || self.id.to_lowercase().contains(&query_lower)
+            || self.id.to_lowercase().contains(query_clean)
     }
 
     /// Checks whether this ticket's created_at falls within [from, to].

@@ -1,3 +1,5 @@
+import { TextEdit, LineEdit, Button, Palette } from "std-widgets.slint";
+
 export struct RefStr {
     id: string,
     title: string,
@@ -37,4 +39,51 @@ export global UserGlobal {
     in-out property <bool> show-only-mine: false;
     callback change-active-user(string);
     callback toggle-show-only-mine(bool);
+}
+
+export component IdCopy inherits Rectangle {
+    in property <string> id;
+    in property <length> font-size: 11px;
+
+    width: layout.preferred-width;
+    height: 24px;
+    border-radius: 4px;
+    background: touch.has-hover ? #0052cc10 : transparent;
+
+    touch := TouchArea { }
+
+    layout := HorizontalLayout {
+        padding: 2px;
+        spacing: 4px;
+        alignment: start;
+
+        label := Text {
+            text: "#" + root.id;
+            font-size: root.font-size;
+            font-weight: 700;
+            color: #0052cc;
+            vertical-alignment: center;
+        }
+
+        // Hidden TextEdit for copy functionality.
+        // It must be visible (though size 0) to allow copying.
+        edit := TextEdit {
+            text: "#" + root.id;
+            read-only: true;
+            width: 0px;
+            height: 0px;
+            opacity: 0;
+        }
+
+        Button {
+            text: "📋";
+            width: 24px;
+            height: 24px;
+            clicked => {
+                edit.focus();
+                edit.select-all();
+                edit.copy();
+            }
+        }
+    }
 }

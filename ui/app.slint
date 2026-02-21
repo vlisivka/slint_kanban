@@ -59,6 +59,7 @@ export component App inherits Window {
     callback test_trigger_delete_ticket(string); // for testing
     callback test_trigger_select_history(string); // for testing
     callback test_trigger_remove_history(string); // for testing
+    callback test_get_first_ticket_id() -> string; // for testing
     // Tooltip state
     out property <string> tooltip_text: "";
     out property <bool> tooltip_visible: false;
@@ -538,5 +539,21 @@ export component App inherits Window {
             horizontal-alignment: center;
             vertical-alignment: center;
         }
+    }
+
+    test_get_first_ticket_id() => {
+        if (board_queues.length > 0 && board_queues[0].tickets.length > 0) {
+            return board_queues[0].tickets[0].id;
+        }
+        if (board_queues.length > 1 && board_queues[1].tickets.length > 0) {
+            return board_queues[1].tickets[0].id;
+        }
+        if (board_queues.length > 2 && board_queues[2].tickets.length > 0) {
+            return board_queues[2].tickets[0].id;
+        }
+        if (board_queues.length > 3 && board_queues[3].tickets.length > 0) {
+            return board_queues[3].tickets[0].id;
+        }
+        return "";
     }
 }
