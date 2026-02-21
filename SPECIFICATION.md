@@ -83,9 +83,9 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
     -   **Attachments**: Support for attaching files to tickets or specific comments.
         -   Files are copied into the `attachment/` sub-directory of the ticket.
         -   Filename collisions are handled by appending a sequence number (e.g., `file (1).png`).
-        -   The UI provides an "Attach..." button which opens a file selection dialog.
-        -   Attachments are listed under the content they are associated with (the ticket description or the specific comment).
-        -   Clicking an attachment offers options to "Open File" (using the system default viewer) or "Open Directory".
+        -   The UI provides an "Attach File" button during editing tickets or creating comments, which opens a file selection dialog.
+        -   Once attached, a Markdown link to the file (e.g., `[file (1).png](attachment/file (1).png)`) is generated and inserted into the ticket description or comment text.
+        -   The total number of attachments is shown in the ticket view header. Clicking the "📁 Attachments (N)" opens the `attachment/` sub-directory in the host OS's native file manager.
     -   **Collaboration**: Designed for decentralized collaboration where files are synchronized via Git, Dropbox, or similar services.
 
 8.  **Command Line Interface (CLI)**:
@@ -110,10 +110,10 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 -   **Ticket references**: Found in both the ticket description (`README.md`) and comments (`tc*.md`). They are extracted and displayed as clickable links in a row directly below the respective content (the description or the individual comment).
 -   **Ticket Comments**: Stored in separate files inside the ticket directory.
     -   **Filename**: `tc<NNN><UID>.md`. `NNN` is a 3-digit sequence (001, 002, etc.), and `UID` is a unique ID to avoid collisions.
-    -   **Metadata**: stored in YAML frontmatter. Contains `author`, `created_at`, `updated_at`, and a list of `attachments`.
+    -   **Metadata**: stored in YAML frontmatter. Contains `author`, `created_at` and `updated_at`.
     -   **Content**: Markdown text.
 -   **Attachments**: Files stored in the `attachment/` sub-directory.
-    -   Associated via the `attachments` field in the frontmatter of `README.md` (for ticket-level attachments) or `tc*.md` (for comment-level attachments).
+    -   Associated by Markdown links inserted into the description of `README.md` or comments `tc*.md`.
 - **Configuration Architecture**: Configuration is split into two files to separate shared board settings from local user preferences:
     - **Kanban Settings (`~/Kanban/config.toml`)**: Shared settings that should be synchronized (e.g., via Git).
         - `users`: List of shared user identities.

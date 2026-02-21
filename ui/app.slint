@@ -54,6 +54,9 @@ export component App inherits Window {
     callback set-queue-limit(string, int); // queue_id, limit
     callback open-warning-dialog(string); // message
     callback navigate-to(string); // for cross-references
+    callback attach-file(string) -> string; // ticket_id
+    callback open-attachment-folder(string); // ticket_id
+    
     callback test-trigger-add-ticket(string); // for testing
     callback test-trigger-close-view(); // for testing
     callback test-trigger-cancel-edit(); // for testing
@@ -421,6 +424,12 @@ export component App inherits Window {
         add-comment(content) => {
             root.add-comment(active_ticket.id, content);
         }
+        attach-file(id) => {
+            root.attach-file(id)
+        }
+        open-attachment-folder(id) => {
+            root.open-attachment-folder(id);
+        }
     }
 
     // Edit Overlay
@@ -442,6 +451,9 @@ export component App inherits Window {
             } else {
                 update-ticket(id, title, desc, assigned);
             }
+        }
+        attach-file(id) => {
+            root.attach-file(id)
         }
     }
 

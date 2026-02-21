@@ -462,6 +462,58 @@ impl Board {
         Ok(comment_id)
     }
 
+    pub fn attach_file(
+        &self,
+        ticket_id: &str,
+        source_path: &std::path::Path,
+    ) -> anyhow::Result<String> {
+        let ticket_dir = self.ticket_path(ticket_id);
+        if !ticket_dir.exists() {
+            return Err(anyhow::anyhow!("Ticket {} not found", ticket_id));
+        }
+
+        let attach_dir = ticket_dir.join("attachment");
+        if !attach_dir.exists() {
+            std::fs::create_dir_all(&attach_dir)?;
+        }
+
+        let file_name = source_path
+            .file_name()
+            .ok_or_else(|| anyhow::anyhow!("Source path has no filename"))?
+            .to_string_lossy()
+            .to_string();
+
+        let mut target_name = file_name.clone();
+        let mut target_path = attach_dir.join(&target_name);
+
+        // Handle collisions
+        if target_path.exists() {
+            let stem = source_path
+                .file_stem()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+            let ext = source_path
+                .extension()
+                .map(|e| format!(".{}", e.to_string_lossy()))
+                .unwrap_or_default();
+
+            let mut i = 1;
+            loop {
+                target_name = format!("{} ({}){}", stem, i, ext);
+                target_path = attach_dir.join(&target_name);
+                if !target_path.exists() {
+                    break;
+                }
+                i += 1;
+            }
+        }
+
+        std::fs::copy(source_path, &target_path)?;
+
+        Ok(format!("[{}](attachment/{})", target_name, target_name))
+    }
+
     /// Resolves a queue identifier. If `target_id` is "index:<N>", it maps
     /// the pixel-based column index from drag-and-drop to the Nth visible queue.
     /// Otherwise returns the ID as-is (direct queue name from CLI).

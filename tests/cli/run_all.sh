@@ -54,7 +54,8 @@ for test_script in \
     "$SCRIPT_DIR/test_show.sh" \
     "$SCRIPT_DIR/test_update.sh" \
     "$SCRIPT_DIR/test_move.sh" \
-    "$SCRIPT_DIR/test_remove.sh"
+    "$SCRIPT_DIR/test_remove.sh" \
+    "$SCRIPT_DIR/test_attach.sh"
 do
     if [ -f "$test_script" ]; then
         run_suite "$test_script"

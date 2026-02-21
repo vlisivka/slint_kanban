@@ -175,6 +175,7 @@ impl AppController {
                     author: metadata.author.into(),
                     references: Rc::new(VecModel::default()).into(),
                     comments: Rc::new(VecModel::default()).into(),
+                    attachment_count: 0,
                 };
                 app.set_active_ticket(info);
                 app.set_show_ticket_view_dialog(true);
@@ -253,6 +254,57 @@ impl AppController {
                     }
                 }
             }
+        }
+    }
+
+    pub fn handle_attach_file(&self, ticket_id: String) -> String {
+        let board = match self.load_board("attach_file") {
+            Some(b) => b,
+            None => return String::new(),
+        };
+
+        if let Some(path) = rfd::FileDialog::new().pick_file() {
+            println!(
+                "Controller: Attaching file {:?} to ticket {}",
+                path, ticket_id
+            );
+            match board.attach_file(&ticket_id, &path) {
+                Ok(markdown_link) => {
+                    // Update the active ticket to reflect the latest attachment_count
+                    if let Some(app) = self.app_weak.upgrade() {
+                        if let Ok(b) = Board::load(self.root_path.clone()) {
+                            if let Some(t) = b.find_ticket_by_id(&ticket_id) {
+                                app.set_active_ticket(crate::into_slint_ticket(t, &b));
+                            }
+                        }
+                    }
+                    markdown_link
+                }
+                Err(e) => {
+                    eprintln!("Error attaching file: {:?}", e);
+                    self.show_error(&e.to_string());
+                    String::new()
+                }
+            }
+        } else {
+            String::new() // User cancelled
+        }
+    }
+
+    pub fn handle_open_attachment_folder(&self, ticket_id: String) {
+        let board = match self.load_board("open_attachment_folder") {
+            Some(b) => b,
+            None => return,
+        };
+        let attach_dir = board.ticket_path(&ticket_id).join("attachment");
+
+        if attach_dir.exists() {
+            if let Err(e) = open::that(&attach_dir) {
+                eprintln!("Error opening attachment folder: {:?}", e);
+                self.show_error(&format!("Could not open folder: {}", e));
+            }
+        } else {
+            self.show_error("Attachment folder doesn't exist yet.");
         }
     }
 

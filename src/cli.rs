@@ -145,4 +145,15 @@ pub enum Commands {
         #[arg(short, long)]
         content: String,
     },
+
+    /// Attach a file to a ticket
+    Attach {
+        /// Ticket ID (short ID)
+        #[arg(short, long)]
+        id: String,
+
+        /// Path to the file to attach
+        #[arg(short, long)]
+        file: PathBuf,
+    },
 }

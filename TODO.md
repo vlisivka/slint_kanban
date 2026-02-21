@@ -133,12 +133,12 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 - [x] Implement adding new comments via UI
 
 ### Attachments
-- [ ] Create `attachment/` sub-directory logic in ticket models
-- [ ] Implement file copying with duplicate name handling (`file (1).ext`)
-- [ ] Add `attachments` field to ticket and comment frontmatter
-- [ ] Implement "Attach..." button and file dialog in UI
-- [ ] Display attachments in `TicketView` (under description and comments)
-- [ ] Add interaction to open attachments or their parent directory
+- [x] Create `attachment/` sub-directory logic in ticket models
+- [x] Implement file copying with duplicate name handling (`file (1).ext`)
+- [x] Generate Markdown links instead of adding `attachments` field to ticket/comment frontmatter
+- [x] Implement "Attach..." button and file dialog in UI using `rfd`
+- [x] Display attachment count and add button to open attachments parent directory in `TicketView`
+- [x] Implement attach functionality via CLI command
 
 ### Statistics and Analytics
 - [ ] Implement analytics dashboard

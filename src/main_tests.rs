@@ -216,3 +216,53 @@ fn test_cli_comment() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_cli_attach() -> anyhow::Result<()> {
+    let dir = tempdir()?;
+    let root = dir.path().to_path_buf();
+
+    // 1. Add a ticket
+    run_cli(CliArgs {
+        root: Some(root.clone()),
+        command: Some(Commands::Add {
+            title: "Test Attach Ticket".to_string(),
+            description: "".to_string(),
+            queue: "1. Incoming".to_string(),
+            assign_to: "".to_string(),
+        }),
+    })?;
+
+    let board = Board::load(root.clone())?;
+    let id = board.queues[0].tickets[0].id.clone();
+
+    // 2. Create a dummy file to attach
+    let dummy_file_path = root.join("dummy.txt");
+    std::fs::write(&dummy_file_path, "dummy content")?;
+
+    // 3. Attach file
+    run_cli(CliArgs {
+        root: Some(root.clone()),
+        command: Some(Commands::Attach {
+            id: id.clone(),
+            file: dummy_file_path,
+        }),
+    })?;
+
+    // 4. Verify
+    let board2 = Board::load(root)?;
+    let ticket_dir = board2.ticket_path(&id);
+    let attached_file = ticket_dir.join("attachment").join("dummy.txt");
+
+    assert!(
+        attached_file.exists(),
+        "Attached file should exist in the attachment directory"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&attached_file)?,
+        "dummy content",
+        "Attached file content should be correct"
+    );
+
+    Ok(())
+}

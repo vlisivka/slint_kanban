@@ -19,6 +19,7 @@ export component TicketEdit inherits Rectangle {
 
     callback save(string, string, string, string); // id, title, desc, assigned_to
     callback cancel();
+    callback attach-file(string) -> string;
 
     ModalBackdrop {
         dismiss => {
@@ -158,6 +159,23 @@ export component TicketEdit inherits Rectangle {
                         placeholder-text: "What needs to be done?";
                         preferred-height: 400px;
                         vertical-stretch: 1;
+                    }
+
+                    if ticket_id != "": HorizontalLayout {
+                        alignment: end;
+                        attach-btn := Button {
+                            text: "Attach File";
+                            clicked => {
+                                let link = root.attach-file(ticket_id);
+                                if link != "" {
+                                    if description_text != "" {
+                                        description_text += "\n\n" + link;
+                                    } else {
+                                        description_text = link;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

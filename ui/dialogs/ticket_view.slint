@@ -22,6 +22,8 @@ export component TicketView inherits Rectangle {
     callback show-tooltip(string, length, length);
     callback hide-tooltip();
     callback add-comment(string);
+    callback attach-file(string) -> string;
+    callback open-attachment-folder(string);
 
     ModalBackdrop {
         dismiss => {
@@ -43,12 +45,23 @@ export component TicketView inherits Rectangle {
                     padding: 0px;
                     alignment: space-between;
 
-                    if ticket.id != "board-info": edit-btn := Button {
-                        text: "Edit";
-                        width: 100px;
-                        height: 40px;
-                        clicked => {
-                            edit();
+                    HorizontalLayout {
+                        spacing: 8px;
+                        if ticket.id != "board-info": edit-btn := Button {
+                            text: "Edit";
+                            width: 100px;
+                            height: 40px;
+                            clicked => {
+                                edit();
+                            }
+                        }
+
+                        if ticket.id != "board-info" && ticket.attachment_count > 0: Button {
+                            text: "📁 Attachments (" + ticket.attachment_count + ")";
+                            height: 40px;
+                            clicked => {
+                                open-attachment-folder(ticket.id);
+                            }
                         }
                     }
 
@@ -242,8 +255,24 @@ export component TicketView inherits Rectangle {
 
                             HorizontalLayout {
                                 alignment: end;
+                                spacing: 8px;
+                                Button {
+                                    text: "Attach File";
+                                    clicked => {
+                                        let link = root.attach-file(ticket.id);
+                                        if link != "" {
+                                            if comment_input.text != "" {
+                                                comment_input.text += "\n\n" + link;
+                                            } else {
+                                                comment_input.text = link;
+                                            }
+                                        }
+                                    }
+                                }
+
                                 Button {
                                     text: "Post Comment";
+                                    primary: true;
                                     clicked => {
                                         if comment_input.text != "" {
                                             root.add-comment(comment_input.text);

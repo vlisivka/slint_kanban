@@ -70,6 +70,15 @@ pub fn into_slint_ticket(ticket: &model::Ticket, board: &Board) -> TicketStr {
         })
         .collect();
 
+    let mut attachment_count = 0;
+    let attach_dir = board.ticket_path(&ticket.id).join("attachment");
+    if let Ok(entries) = std::fs::read_dir(attach_dir) {
+        attachment_count = entries
+            .flatten()
+            .filter(|e| e.file_type().map(|ft| ft.is_file()).unwrap_or(false))
+            .count() as i32;
+    }
+
     TicketStr {
         id: SharedString::from(&ticket.id),
         title: SharedString::from(&ticket.title),
@@ -81,6 +90,7 @@ pub fn into_slint_ticket(ticket: &model::Ticket, board: &Board) -> TicketStr {
         author: SharedString::from(&ticket.author),
         references: Rc::new(VecModel::from(refs)).into(),
         comments: Rc::new(VecModel::from(slint_comments)).into(),
+        attachment_count,
     }
 }
 
@@ -255,6 +265,14 @@ pub(crate) fn init_callbacks(ui: &App, controller: Arc<AppController>) {
     let c = controller.clone();
     ui.on_add_comment(move |ticket_id, content| {
         c.handle_add_comment(ticket_id.into(), content.into());
+    });
+
+    let c = controller.clone();
+    ui.on_attach_file(move |ticket_id| c.handle_attach_file(ticket_id.into()).into());
+
+    let c = controller.clone();
+    ui.on_open_attachment_folder(move |ticket_id| {
+        c.handle_open_attachment_folder(ticket_id.into());
     });
 
     let c = controller.clone();
@@ -485,6 +503,10 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
             println!("Adding comment to ticket: {}", id);
             let author = board.config.active_user();
             board.add_comment(&id, &content, author)?;
+        }
+        Commands::Attach { id, file } => {
+            let link = board.attach_file(&id, &file)?;
+            println!("{}", link);
         }
     }
 
