@@ -50,7 +50,7 @@ fn run_gui_interaction_cycle(ui: &App, controller: &Arc<AppController>, _root_pa
     ui.invoke_test_trigger_cancel_edit();
 
     ui.invoke_test_trigger_add_ticket("2. ToDo".into());
-    ui.invoke_request_create_ticket(
+    ui.invoke_create_ticket(
         "2. ToDo".into(),
         "Perf Task".into(),
         "Perf Details".into(),
@@ -63,21 +63,21 @@ fn run_gui_interaction_cycle(ui: &App, controller: &Arc<AppController>, _root_pa
     let todo_queue = queues.iter().find(|q| q.id == "2. ToDo").unwrap();
     let t_view = todo_queue.tickets.row_data(0).unwrap();
     ui.set_active_ticket(t_view);
-    ui.set_is_viewing_ticket(true);
+    ui.set_show_ticket_view_dialog(true);
     ui.invoke_test_trigger_close_view();
 
     // 5. Editing
     let t_edit = todo_queue.tickets.row_data(0).unwrap();
-    ui.set_is_editing(true);
-    ui.set_editing_id(t_edit.id.clone());
-    ui.set_editing_title("Updated Perf Title".into());
-    ui.invoke_save_ticket(
+    ui.set_show_ticket_edit_dialog(true);
+    ui.set_editing_ticket_id(t_edit.id.clone());
+    ui.set_editing_ticket_title("Updated Perf Title".into());
+    ui.invoke_update_ticket(
         t_edit.id.clone(),
         "Updated Perf Title".into(),
         t_edit.description.clone(),
         t_edit.assigned_to.clone(),
     );
-    ui.set_is_editing(false); // Reset editing state
+    ui.set_show_ticket_edit_dialog(false); // Reset editing state
     controller.reload().unwrap();
 
     // 6. Deletion
@@ -86,7 +86,7 @@ fn run_gui_interaction_cycle(ui: &App, controller: &Arc<AppController>, _root_pa
     controller.reload().unwrap();
 
     // 7. Limits
-    ui.invoke_request_change_limit("2. ToDo".into(), 5);
+    ui.invoke_set_queue_limit("2. ToDo".into(), 5);
     controller.reload().unwrap();
 
     // 8. Search History Cycle
@@ -105,8 +105,8 @@ fn test_gui_suite() {
     println!("Checking GUI correctness...");
     run_gui_interaction_cycle(&ui, &controller, &root_path);
     assert_eq!(ui.get_board_queues().row_count(), 7); // Still 7 queues
-    assert!(!ui.get_is_editing());
-    assert!(!ui.get_is_viewing_ticket());
+    assert!(!ui.get_show_ticket_edit_dialog());
+    assert!(!ui.get_show_ticket_view_dialog());
 
     // II. Heavy Performance: Run 10 full interaction cycles
     println!("Starting heavy GUI performance test (10 full cycles)...");
@@ -160,7 +160,7 @@ fn test_gui_suite() {
 
     // IV. Test specific bugs
     println!("Testing regression bugs...");
-    test_repro_user_bug();
+    test_gui_user_desync();
 
     // V. Test ID visibility
     println!("Checking Ticket ID visibility...");
@@ -169,16 +169,16 @@ fn test_gui_suite() {
 
 fn test_ticket_id_visibility() {
     let (ui, _controller, _root_path, _temp_dir) = setup_test_app();
-    
+
     // Check if we can get the ID from the UI-exposed callback
     let id = ui.invoke_test_get_first_ticket_id();
     println!("First ticket ID in UI: #{}", id);
-    
+
     assert!(!id.is_empty(), "First ticket ID should not be empty in UI");
     assert!(id.len() >= 4, "Ticket ID '{}' seems too short", id);
 }
 
-fn test_repro_user_bug() {
+fn test_gui_user_desync() {
     let temp_dir = tempdir().unwrap();
     let root_path = temp_dir.path().to_path_buf();
 
@@ -204,7 +204,7 @@ fn test_repro_user_bug() {
     );
 
     ui.invoke_test_trigger_add_ticket("1. Incoming".into());
-    let assigned = ui.get_editing_assigned_to();
+    let assigned = ui.get_editing_ticket_assignee();
     println!("Final editing assigned to: '{}'", assigned);
 
     assert_eq!(assigned, "user", "Assigned user should be 'user'");

@@ -37,29 +37,29 @@ export component App inherits Window {
     in-out property <[string]> search_history: [];
     in-out property <bool> show_search_history: false;
     in-out property <bool> show_filter_menu: false;
-    callback search_edited(string);
-    callback accept_search(string);
-    callback select_history_item(string);
-    callback remove_search_item(string);
-    callback date_filter_changed();
-    callback focus_search();
-    callback show_board_info();
-    callback shortcut_create_ticket();
-    callback toggle_queue_visibility(string, bool);
-    callback move_ticket(string, string, string); // ticket_id, from_queue, index:...
-    callback delete_ticket(string);
-    callback save_ticket(string, string, string, string); // id, title, desc, assigned_to
-    callback request_create_ticket(string, string, string, string); // queue_id, title, desc, assigned_to
-    callback request_change_limit(string, int); // queue_id, limit
-    callback show_warning_dialog(string); // message
-    callback navigate_to(string); // for cross-references
-    callback test_trigger_add_ticket(string); // for testing
-    callback test_trigger_close_view(); // for testing
-    callback test_trigger_cancel_edit(); // for testing
-    callback test_trigger_delete_ticket(string); // for testing
-    callback test_trigger_select_history(string); // for testing
-    callback test_trigger_remove_history(string); // for testing
-    callback test_get_first_ticket_id() -> string; // for testing
+    callback search-edited(string);
+    callback accept-search(string);
+    callback select-history-item(string);
+    callback remove-search-item(string);
+    callback date-filter-changed();
+    callback focus-search();
+    callback show-board-info();
+    callback shortcut-open-new-ticket-dialog();
+    callback toggle-queue-visibility(string, bool);
+    callback move-ticket(string, string, string); // ticket_id, from_queue, index:...
+    callback delete-ticket(string);
+    callback update-ticket(string, string, string, string); // id, title, desc, assigned_to
+    callback create-ticket(string, string, string, string); // queue_id, title, desc, assigned_to
+    callback set-queue-limit(string, int); // queue_id, limit
+    callback open-warning-dialog(string); // message
+    callback navigate-to(string); // for cross-references
+    callback test-trigger-add-ticket(string); // for testing
+    callback test-trigger-close-view(); // for testing
+    callback test-trigger-cancel-edit(); // for testing
+    callback test-trigger-delete-ticket(string); // for testing
+    callback test-trigger-select-history(string); // for testing
+    callback test-trigger-remove-history(string); // for testing
+    callback test-get-first-ticket-id() -> string; // for testing
     // Tooltip state
     out property <string> tooltip_text: "";
     out property <bool> tooltip_visible: false;
@@ -74,30 +74,30 @@ export component App inherits Window {
     property <length> mouse_y: 0px;
 
     // State
-    in-out property <bool> is_viewing_ticket: false;
+    in-out property <bool> show_ticket_view_dialog: false;
     in-out property <TicketStr> active_ticket;
 
     // Editing state
-    in-out property <bool> is_editing: false;
-    in-out property <string> editing_id: "";
-    in-out property <string> editing_title: "";
-    in-out property <string> editing_desc: "";
-    in-out property <string> editing_assigned_to: "";
-    in-out property <string> editing_author: "";
-    in-out property <string> target_queue_for_new: "";
+    in-out property <bool> show_ticket_edit_dialog: false;
+    in-out property <string> editing_ticket_id: "";
+    in-out property <string> editing_ticket_title: "";
+    in-out property <string> editing_ticket_description: "";
+    in-out property <string> editing_ticket_assignee: "";
+    in-out property <string> editing_ticket_author: "";
+    in-out property <string> new_ticket_queue_id: "";
 
     // Warning dialog state
-    in-out property <bool> show_warning: false;
+    in-out property <bool> show_warning_dialog: false;
     out property <string> warning_message: "";
 
     // Limit editing state
-    property <bool> is_editing_limit: false;
-    property <string> editing_limit_id: "";
-    property <string> editing_limit_name: "";
-    property <string> editing_limit_text: "";
+    property <bool> show_queue_limit_dialog: false;
+    property <string> queue_id_for_limit_edit: "";
+    property <string> queue_name_for_limit_edit: "";
+    property <string> queue_limit_text_for_edit: "";
     
     // Deletion state
-    in-out property <bool> show_delete_confirm: false;
+    in-out property <bool> show_delete_confirm_dialog: false;
     in-out property <string> deleting_id: "";
     in-out property <string> deleting_title: "";
 
@@ -120,11 +120,11 @@ export component App inherits Window {
             if (event.modifiers.control) {
                 if (event.text == "f" || event.text == "F" || event.text == "а" || event.text == "А") {
                     search-input.focus();
-                    focus_search();
+                    focus-search();
                     return accept;
                 }
                 if (event.text == "n" || event.text == "N" || event.text == "т" || event.text == "Т") {
-                    shortcut_create_ticket();
+                    shortcut-open-new-ticket-dialog();
                     return accept;
                 }
                 if (event.text == "m" || event.text == "M" || event.text == "ь" || event.text == "Ь") {
@@ -133,20 +133,20 @@ export component App inherits Window {
                 }
             }
             if (event.text == Key.Escape) {
-                if (show_warning) {
-                    show_warning = false;
+                if (show_warning_dialog) {
+                    show_warning_dialog = false;
                     return accept;
                 }
-                if (is_editing_limit) {
-                    is_editing_limit = false;
+                if (show_queue_limit_dialog) {
+                    show_queue_limit_dialog = false;
                     return accept;
                 }
-                if (is_editing) {
-                    is_editing = false;
+                if (show_ticket_edit_dialog) {
+                    show_ticket_edit_dialog = false;
                     return accept;
                 }
-                if (is_viewing_ticket) {
-                    is_viewing_ticket = false;
+                if (show_ticket_view_dialog) {
+                    show_ticket_view_dialog = false;
                     return accept;
                 }
                 if (show_search_history) {
@@ -157,13 +157,13 @@ export component App inherits Window {
                     show_filter_menu = false;
                     return accept;
                 }
-                if (show_delete_confirm) {
-                    show_delete_confirm = false;
+                if (show_delete_confirm_dialog) {
+                    show_delete_confirm_dialog = false;
                     return accept;
                 }
                 if (search_query != "") {
                     search_query = "";
-                    search_edited("");
+                    search-edited("");
                     return accept;
                 }
             }
@@ -204,10 +204,10 @@ export component App inherits Window {
                                 text <=> search_query;
                                 placeholder-text: "Filter titles, descriptions or IDs...";
                                 edited(text) => {
-                                    search_edited(text);
+                                    search-edited(text);
                                 }
                                 accepted(text) => {
-                                    accept_search(text);
+                                    accept-search(text);
                                 }
                                 key-pressed(event) => {
                                     if (event.text == Key.DownArrow) {
@@ -216,7 +216,7 @@ export component App inherits Window {
                                     }
                                     if (event.text == Key.Escape) {
                                         search_query = "";
-                                        search_edited("");
+                                        search-edited("");
                                         focus_scope.focus();
                                         return accept;
                                     }
@@ -242,7 +242,7 @@ export component App inherits Window {
                                 clear-touch := TouchArea {
                                     clicked => {
                                         search_query = "";
-                                        search_edited("");
+                                        search-edited("");
                                     }
                                 }
                             }
@@ -258,7 +258,7 @@ export component App inherits Window {
                         Button {
                             text: "Board Info";
                             clicked => {
-                                show_board_info();
+                                show-board-info();
                             }
                         }
                     }
@@ -289,46 +289,46 @@ export component App inherits Window {
                         queue: queue;
                         width: self.visible ? config.column-width : 0px;
 
-                        start_dragging(tid, qid, mx, my) => {
+                        start-dragging(tid, qid, mx, my) => {
                             dragging_ticket_id = tid;
                             dragging_from_queue_id = qid;
                             mouse_x = mx;
                             mouse_y = my;
                             is_dragging = true;
                         }
-                        move_dragging(mx, my) => {
+                        move-dragging(mx, my) => {
                             mouse_x = mx;
                             mouse_y = my;
                         }
-                        drop_ticket(mx) => {
+                        drop-ticket(mx) => {
                             if (is_dragging) {
                                 is_dragging = false;
                                 let relative_x = mx - columns-row.absolute-position.x;
                                 if (relative_x > config.board-padding) {
                                     let idx = (relative_x - config.board-padding) / (config.column-width + config.column-spacing);
-                                    move_ticket(dragging_ticket_id, dragging_from_queue_id, "index:" + idx);
+                                    move-ticket(dragging_ticket_id, dragging_from_queue_id, "index:" + idx);
                                 }
                                 dragging_ticket_id = "";
                                 dragging_from_queue_id = "";
                             }
                         }
-                        delete_ticket(t) => {
-                            deleting_id = t.id;
-                            deleting_title = t.title;
-                            show_delete_confirm = true;
+                        delete-ticket(ticket_to_delete) => {
+                            deleting_id = ticket_to_delete.id;
+                            deleting_title = ticket_to_delete.title;
+                            show_delete_confirm_dialog = true;
                         }
-                        edit_ticket(t) => {
-                            active_ticket = t;
-                            is_viewing_ticket = true;
+                        edit-ticket(ticket_metadata) => {
+                            active_ticket = ticket_metadata;
+                            show_ticket_view_dialog = true;
                         }
-                        create_ticket(qid) => {
-                            root.test_trigger_add_ticket(qid);
+                        open-new-ticket-dialog(queue_id) => {
+                            root.test-trigger-add-ticket(queue_id);
                         }
-                        edit_limit(qid, qname, qlimit) => {
-                            editing_limit_id = qid;
-                            editing_limit_name = qname;
-                            editing_limit_text = qlimit > 0 ? qlimit : "";
-                            is_editing_limit = true;
+                        open-limit-dialog(queue_id, queue_name, queue_limit) => {
+                            queue_id_for_limit_edit = queue_id;
+                            queue_name_for_limit_edit = queue_name;
+                            queue_limit_text_for_edit = queue_limit > 0 ? queue_limit : "";
+                            show_queue_limit_dialog = true;
                         }
                     }
                 }
@@ -337,40 +337,40 @@ export component App inherits Window {
     }
 
     // Warning dialog handler
-    show_warning_dialog(msg) => {
+    open-warning-dialog(msg) => {
         warning_message = msg;
-        show_warning = true;
+        show_warning_dialog = true;
     }
 
-    test_trigger_add_ticket(qid) => {
-        editing_id = "";
-        editing_title = "New Ticket";
-        editing_desc = "";
-        editing_assigned_to = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
-        editing_author = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
-        target_queue_for_new = qid;
-        is_editing = true;
+    test-trigger-add-ticket(qid) => {
+        editing_ticket_id = "";
+        editing_ticket_title = "New Ticket";
+        editing_ticket_description = "";
+        editing_ticket_assignee = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
+        editing_ticket_author = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
+        new_ticket_queue_id = qid;
+        show_ticket_edit_dialog = true;
     }
 
-    test_trigger_close_view() => {
-        is_viewing_ticket = false;
+    test-trigger-close-view() => {
+        show_ticket_view_dialog = false;
     }
 
-    test_trigger_cancel_edit() => {
-        is_editing = false;
+    test-trigger-cancel-edit() => {
+        show_ticket_edit_dialog = false;
     }
 
-    test_trigger_delete_ticket(tid) => {
-        delete_ticket(tid);
+    test-trigger-delete-ticket(tid) => {
+        delete-ticket(tid);
     }
 
-    test_trigger_select_history(q) => {
+    test-trigger-select-history(q) => {
         search_query = q;
-        select_history_item(q);
+        select-history-item(q);
     }
 
-    test_trigger_remove_history(q) => {
-        remove_search_item(q);
+    test-trigger-remove-history(q) => {
+        remove-search-item(q);
     }
 
     // Drag ghost: floating card that follows the cursor during drag
@@ -391,80 +391,80 @@ export component App inherits Window {
     }
 
     // Ticket View Overlay
-    if (is_viewing_ticket): TicketView {
+    if (show_ticket_view_dialog): TicketView {
         ticket: active_ticket;
         close => {
-            is_viewing_ticket = false;
+            show_ticket_view_dialog = false;
         }
         edit => {
-            is_viewing_ticket = false;
-            editing_id = active_ticket.id;
-            editing_title = active_ticket.title;
-            editing_desc = active_ticket.description;
-            editing_assigned_to = active_ticket.assigned_to;
-            editing_author = active_ticket.author;
-            is_editing = true;
+            show_ticket_view_dialog = false;
+            editing_ticket_id = active_ticket.id;
+            editing_ticket_title = active_ticket.title;
+            editing_ticket_description = active_ticket.description;
+            editing_ticket_assignee = active_ticket.assigned_to;
+            editing_ticket_author = active_ticket.author;
+            show_ticket_edit_dialog = true;
         }
-        navigate_to(target) => {
-            navigate_to(target);
+        navigate-to(target) => {
+            navigate-to(target);
         }
-        show_tooltip(text, x, y) => {
+        show-tooltip(text, x, y) => {
             tooltip_text = text;
             tooltip_x = x;
             tooltip_y = y;
             tooltip_visible = true;
         }
-        hide_tooltip() => {
+        hide-tooltip() => {
             tooltip_visible = false;
         }
     }
 
     // Edit Overlay
-    if (is_editing): TicketEdit {
-        ticket_id: editing_id;
-        title_text: editing_title;
-        description_text: editing_desc;
-        assigned_to: editing_assigned_to;
-        author: editing_author;
+    if (show_ticket_edit_dialog): TicketEdit {
+        ticket_id: editing_ticket_id;
+        title_text: editing_ticket_title;
+        description_text: editing_ticket_description;
+        assigned_to: editing_ticket_assignee;
+        author: editing_ticket_author;
         users: UserGlobal.users;
 
         cancel => {
-            is_editing = false;
+            show_ticket_edit_dialog = false;
         }
         save(id, title, desc, assigned) => {
-            is_editing = false;
+            show_ticket_edit_dialog = false;
             if (id == "") {
-                request_create_ticket(target_queue_for_new, title, desc, assigned);
+                create-ticket(new_ticket_queue_id, title, desc, assigned);
             } else {
-                save_ticket(id, title, desc, assigned);
+                update-ticket(id, title, desc, assigned);
             }
         }
     }
 
     // Warning Dialog Overlay
-    if (show_warning): WarningDialog {
+    if (show_warning_dialog): WarningDialog {
         message: warning_message;
         close => {
-            show_warning = false;
+            show_warning_dialog = false;
         }
     }
 
     // Limit Edit Overlay
-    if (is_editing_limit): QueueLimitEdit {
-        queue_id: editing_limit_id;
-        queue_name: editing_limit_name;
-        limit_text: editing_limit_text;
+    if (show_queue_limit_dialog): QueueLimitEdit {
+        queue_id: queue_id_for_limit_edit;
+        queue_name: queue_name_for_limit_edit;
+        limit_text: queue_limit_text_for_edit;
 
         cancel => {
-            is_editing_limit = false;
+            show_queue_limit_dialog = false;
         }
-        remove_limit(qid) => {
-            is_editing_limit = false;
-            request_change_limit(qid, -1);
+        remove-limit(qid) => {
+            show_queue_limit_dialog = false;
+            set-queue-limit(qid, -1);
         }
         save(qid, limit) => {
-            is_editing_limit = false;
-            request_change_limit(qid, limit);
+            show_queue_limit_dialog = false;
+            set-queue-limit(qid, limit);
         }
     }
 
@@ -480,24 +480,24 @@ export component App inherits Window {
         close => {
             show_filter_menu = false;
         }
-        toggle_visibility(qid, visible) => {
-            toggle_queue_visibility(qid, visible);
+        toggle-visibility(qid, visible) => {
+            toggle-queue-visibility(qid, visible);
         }
-        date_filter_changed => {
-            root.date_filter_changed();
+        date-filter-changed => {
+            root.date-filter-changed();
         }
     }
 
     // Delete Confirmation Overlay
-    if (show_delete_confirm): DeleteConfirmDialog {
+    if (show_delete_confirm_dialog): DeleteConfirmDialog {
         ticket_id: deleting_id;
         ticket_title: deleting_title;
         cancel => {
-            show_delete_confirm = false;
+            show_delete_confirm_dialog = false;
         }
         confirm => {
-            show_delete_confirm = false;
-            root.delete_ticket(deleting_id);
+            show_delete_confirm_dialog = false;
+            root.delete-ticket(deleting_id);
         }
     }
 
@@ -507,13 +507,13 @@ export component App inherits Window {
         y: 70px; // Below header
         width: 400px;
         history: search_history;
-        select_search(query) => {
+        select-history-item(query) => {
             show_search_history = false;
             search_query = query;
-            select_history_item(query);
+            select-history-item(query);
         }
-        remove_search(query) => {
-            remove_search_item(query);
+        remove-history-item(query) => {
+            remove-search-item(query);
         }
         close => {
             show_search_history = false;
@@ -541,7 +541,7 @@ export component App inherits Window {
         }
     }
 
-    test_get_first_ticket_id() => {
+    test-get-first-ticket-id() => {
         if (board_queues.length > 0 && board_queues[0].tickets.length > 0) {
             return board_queues[0].tickets[0].id;
         }

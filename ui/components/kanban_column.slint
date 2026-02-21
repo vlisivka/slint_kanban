@@ -4,20 +4,20 @@ import {
     HorizontalBox,
     Palette,
 } from "std-widgets.slint";
-import { QueueStr, TicketStr } from "../common.slint";
+import { QueueStr, TicketStr, Theme } from "../common.slint";
 import { TicketCard } from "./ticket_card.slint";
 
 export component KanbanColumn inherits Rectangle {
     in property <QueueStr> queue;
 
     // Drag/Drop/Delete/Edit callbacks
-    callback start_dragging(string, string, length, length);
-    callback move_dragging(length, length);
-    callback drop_ticket(length);
-    callback delete_ticket(TicketStr);
-    callback edit_ticket(TicketStr);
-    callback create_ticket(string); // queue_id
-    callback edit_limit(string, string, int); // id, name, current_limit
+    callback start-dragging(string, string, length, length);
+    callback move-dragging(length, length);
+    callback drop-ticket(length);
+    callback delete-ticket(TicketStr);
+    callback edit-ticket(TicketStr);
+    callback open-new-ticket-dialog(string); // queue_id
+    callback open-limit-dialog(string, string, int); // id, name, current_limit
 
     width: 280px;
     horizontal-stretch: 0;
@@ -61,7 +61,7 @@ export component KanbanColumn inherits Rectangle {
 
                     touch-add := TouchArea {
                         clicked => {
-                            create_ticket(queue.id);
+                            open-new-ticket-dialog(queue.id);
                         }
                     }
                 }
@@ -69,7 +69,7 @@ export component KanbanColumn inherits Rectangle {
                 // Limit Badge (clickable)
                 if queue.limit > 0: TouchArea {
                     clicked => {
-                        edit_limit(queue.id, queue.name, queue.limit);
+                        open-limit-dialog(queue.id, queue.name, queue.limit);
                     }
 
                     Rectangle {
@@ -78,11 +78,11 @@ export component KanbanColumn inherits Rectangle {
                         border-radius: 12px;
                         background: {
                             if queue.ticket_count >= queue.limit {
-                                #ff4444  // Red when at limit
+                                Theme.danger
                             } else if queue.ticket_count >= queue.limit * 80 / 100 {
-                                #ff9800  // Orange when >= 80%
+                                Theme.warning
                             } else {
-                                #4caf50  // Green when normal
+                                Theme.success
                             }
                         };
 
@@ -113,7 +113,7 @@ export component KanbanColumn inherits Rectangle {
 
                     touch-limit-none := TouchArea {
                         clicked => {
-                            edit_limit(queue.id, queue.name, -1);
+                            open-limit-dialog(queue.id, queue.name, -1);
                         }
                     }
                 }
@@ -126,20 +126,20 @@ export component KanbanColumn inherits Rectangle {
                 for ticket in queue.tickets: TicketCard {
                     ticket: ticket;
                     from_queue_id: queue.id;
-                    start_dragging(tid, qid, mx, my) => {
-                        start_dragging(tid, qid, mx, my);
+                    start-dragging(ticket_id, start_queue_id, mouse_x, mouse_y) => {
+                        start-dragging(ticket_id, start_queue_id, mouse_x, mouse_y);
                     }
-                    move_dragging(mx, my) => {
-                        move_dragging(mx, my);
+                    move-dragging(mouse_x, mouse_y) => {
+                        move-dragging(mouse_x, mouse_y);
                     }
-                    drop_ticket(mx) => {
-                        drop_ticket(mx);
+                    drop-ticket(mouse_x) => {
+                        drop-ticket(mouse_x);
                     }
-                    delete_clicked(t) => {
-                        delete_ticket(t);
+                    delete-ticket(ticket_to_delete) => {
+                        delete-ticket(ticket_to_delete);
                     }
-                    edit_clicked(t) => {
-                        edit_ticket(t);
+                    edit-ticket(ticket_to_edit) => {
+                        edit-ticket(ticket_to_edit);
                     }
                 }
             }

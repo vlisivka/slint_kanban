@@ -4,6 +4,7 @@ import {
     VerticalBox,
     Palette,
 } from "std-widgets.slint";
+import { ModalBackdrop, Theme } from "../common.slint";
 
 export component QueueLimitEdit inherits Rectangle {
     in property <string> queue_name;
@@ -12,82 +13,79 @@ export component QueueLimitEdit inherits Rectangle {
 
     callback save(string, int); // id, limit
     callback cancel();
-    callback remove_limit(string); // id
+    callback remove-limit(string); // id
 
-    background: #00000080;
-
-    // Backdrop: clicks outside cancel the edit
-    TouchArea {
-        clicked => {
+    ModalBackdrop {
+        dismiss => {
             cancel();
         }
-    }
 
-    Rectangle {
-        width: 400px;
-        height: 280px;
-        x: (parent.width - self.width) / 2;
-        y: (parent.height - self.height) / 2;
-        background: Palette.background;
-        border-radius: 12px;
-        drop-shadow-blur: 16px;
-        drop-shadow-color: #00000040;
+        Rectangle {
+            width: 400px;
+            height: 280px;
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            background: Palette.background;
+            border-radius: 12px;
+            drop-shadow-blur: 16px;
+            drop-shadow-color: Theme.shadow;
 
-        TouchArea { }
+            TouchArea { }
 
-        VerticalBox {
-            padding: 24px;
-            spacing: 20px;
+            VerticalBox {
+                padding: 24px;
+                spacing: 20px;
 
-            Text {
-                text: "Set Limit for " + queue_name;
-                font-size: 20px;
-                font-weight: 700;
-                horizontal-alignment: center;
-            }
-
-            VerticalLayout {
-                spacing: 8px;
                 Text {
-                    text: "Max Tickets";
-                    font-size: 11px;
-                    font-weight: 800;
-                    opacity: 0.6;
+                    text: "Set Limit for " + queue_name;
+                    font-size: 20px;
+                    font-weight: 700;
+                    horizontal-alignment: center;
                 }
 
-                limit-input := LineEdit {
-                    text <=> limit_text;
-                    placeholder-text: "e.g. 5, 21";
-                    height: 40px;
-                    input-type: number;
-                }
-            }
-
-            HorizontalLayout {
-                spacing: 12px;
-                Button {
-                    text: "Cancel";
-                    clicked => {
-                        cancel();
+                VerticalLayout {
+                    spacing: 8px;
+                    Text {
+                        text: "Max Tickets";
+                        font-size: 11px;
+                        font-weight: 800;
+                        opacity: 0.6;
                     }
-                    horizontal-stretch: 1;
+
+                    limit-input := LineEdit {
+                        text <=> limit_text;
+                        placeholder-text: "e.g. 5, 21";
+                        height: 40px;
+                        input-type: number;
+                    }
                 }
 
-                Button {
-                    text: "Remove Limit";
-                    clicked => {
-                        remove_limit(queue_id);
+                HorizontalLayout {
+                    spacing: 12px;
+                    Button {
+                        text: "Cancel";
+                        clicked => {
+                            cancel();
+                        }
+                        horizontal-stretch: 1;
                     }
-                    horizontal-stretch: 1;
-                }
 
-                save-btn := Button {
-                    text: "Save";
-                    primary: true;
-                    clicked => {
-                        save(queue_id, limit_text.to-float());
+                    Button {
+                        text: "Remove Limit";
+                        clicked => {
+                            remove-limit(queue_id);
+                        }
+                        horizontal-stretch: 1;
                     }
-                    horizontal-stretch: 1;
+
+                    save-btn := Button {
+                        text: "Save";
+                        primary: true;
+                        clicked => {
+                            save(queue_id, limit_text.to-float());
+                        }
+                        horizontal-stretch: 1;
+                    }
                 }
             }
         }

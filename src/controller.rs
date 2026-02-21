@@ -4,7 +4,7 @@
 //! Includes: AppController struct and methods for handling UI actions.
 
 use crate::model::{Board, Config};
-use crate::{sync_ui_with_board, App, TicketStr, UserGlobal};
+use crate::{sync_board_to_ui, App, TicketStr, UserGlobal};
 use slint::{ComponentHandle, Model, SharedString, VecModel, Weak};
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -34,67 +34,76 @@ impl AppController {
             .ok_or_else(|| anyhow::anyhow!("UI dropped"))?;
         let board = Board::load(self.root_path.clone())?;
 
-        // 1. Sync Board Data (Queues & Tickets)
+        self.sync_board_data(&app, &board);
+        self.sync_users(&app, &board);
+        self.sync_config(&app, &board);
+
+        Ok(())
+    }
+
+    /// Pushes filtered board data (queues & tickets) into the UI.
+    fn sync_board_data(&self, app: &App, board: &Board) {
         let query = app.get_search_query();
         let date_from = app.get_date_from();
         let date_to = app.get_date_to();
-        let user_global = app.global::<UserGlobal>();
 
         let show_only_mine = board.config.show_only_mine();
         let active_user = board.config.active_user();
 
-        sync_ui_with_board(
-            &app,
-            &board,
+        sync_board_to_ui(
+            app,
+            board,
             query.as_str(),
             date_from.as_str(),
             date_to.as_str(),
             show_only_mine,
             active_user,
         );
+    }
 
-        // 2. Sync Users — only update the model when the list actually changed,
-        //    because resetting VecModel resets ComboBox selection and causes flicker.
+    /// Syncs the user list and active user into the UI global.
+    /// Only updates the VecModel when the list actually changed to avoid
+    /// resetting ComboBox selection and causing flicker.
+    fn sync_users(&self, app: &App, board: &Board) {
+        let user_global = app.global::<UserGlobal>();
+
         let mut new_users: Vec<SharedString> = Vec::new();
-        // Ensure <unassigned> is always available
         if !board.config.users().iter().any(|u| u == "<unassigned>") {
             new_users.push(SharedString::from("<unassigned>"));
         }
-        new_users.extend(board.config.users().iter().map(|s| SharedString::from(s)));
+        new_users.extend(board.config.users().iter().map(SharedString::from));
 
         let current_users_model = user_global.get_users();
-        let users_changed = if current_users_model.row_count() != new_users.len() {
-            true
-        } else {
-            current_users_model
+        let users_changed = current_users_model.row_count() != new_users.len()
+            || current_users_model
                 .iter()
                 .zip(new_users.iter())
-                .any(|(a, b)| a != *b)
-        };
+                .any(|(a, b)| a != *b);
 
         if users_changed {
             println!("Controller: Updating users list in UI...");
             user_global.set_users(Rc::new(VecModel::from(new_users)).into());
         }
 
-        // 3. Sync Active User (ensure consistency)
+        // Sync active user
         let new_active_user = SharedString::from(board.config.active_user());
         if user_global.get_active_user() != new_active_user {
             user_global.set_active_user(new_active_user);
         }
+    }
 
-        // 4. Sync Other Config
-        user_global.set_show_only_mine(board.config.show_only_mine());
+    /// Syncs config state (show_only_mine, search history) into the UI.
+    fn sync_config(&self, app: &App, board: &Board) {
+        app.global::<UserGlobal>()
+            .set_show_only_mine(board.config.show_only_mine());
 
         let history: Vec<SharedString> = board
             .config
             .search_history()
             .iter()
-            .map(|s| SharedString::from(s))
+            .map(SharedString::from)
             .collect();
         app.set_search_history(Rc::new(VecModel::from(history)).into());
-
-        Ok(())
     }
 
     fn load_board(&self, action: &str) -> Option<Board> {
@@ -126,7 +135,7 @@ impl AppController {
 
     // --- Action Handlers ---
 
-    pub fn handle_move(&self, ticket_id: String, source_id: String, target_id: String) {
+    pub fn handle_move_ticket(&self, ticket_id: String, source_id: String, target_id: String) {
         let board = match self.load_board("move") {
             Some(b) => b,
             None => return,
@@ -167,7 +176,7 @@ impl AppController {
                     references: Rc::new(VecModel::default()).into(),
                 };
                 app.set_active_ticket(info);
-                app.set_is_viewing_ticket(true);
+                app.set_show_ticket_view_dialog(true);
             }
             Err(e) => {
                 self.show_error(&format!("Error loading board info: {}", e));
@@ -175,7 +184,7 @@ impl AppController {
         }
     }
 
-    pub fn handle_delete(&self, ticket_id: String) {
+    pub fn handle_delete_ticket(&self, ticket_id: String) {
         let board = match self.load_board("delete") {
             Some(b) => b,
             None => return,
@@ -187,7 +196,7 @@ impl AppController {
         }
     }
 
-    pub fn handle_create(
+    pub fn handle_create_ticket(
         &self,
         queue_id: String,
         title: String,
@@ -206,7 +215,7 @@ impl AppController {
         }
     }
 
-    pub fn handle_save(
+    pub fn handle_update_ticket(
         &self,
         ticket_id: String,
         title: String,
@@ -224,7 +233,7 @@ impl AppController {
         }
     }
 
-    pub fn handle_change_limit(&self, queue_id: String, limit: i32) {
+    pub fn handle_set_queue_limit(&self, queue_id: String, limit: i32) {
         let mut board = match self.load_board("limit") {
             Some(b) => b,
             None => return,
@@ -242,7 +251,7 @@ impl AppController {
         }
     }
 
-    pub fn handle_user_change(&self, username: String) {
+    pub fn handle_change_active_user(&self, username: String) {
         self.modify_config("user change", |c| c.user.active_user = username.clone());
 
         // Update UI immediately so the user doesn't see stale state while
@@ -253,7 +262,7 @@ impl AppController {
         }
     }
 
-    pub fn handle_toggle_mine(&self, enabled: bool) {
+    pub fn handle_toggle_show_only_mine(&self, enabled: bool) {
         self.modify_config("toggle mine", |c| c.user.show_only_mine = enabled);
 
         // Update UI immediately so the user doesn't see stale state while
@@ -264,16 +273,16 @@ impl AppController {
         }
     }
 
-    pub fn handle_queue_visibility(&self, queue_id: String, visible: bool) {
+    pub fn handle_toggle_queue_visibility(&self, queue_id: String, visible: bool) {
         self.modify_config("queue visibility", |c| c.set_visible(queue_id, visible));
     }
 
-    pub fn handle_search_history_add(&self, query: String) {
+    pub fn handle_accept_search(&self, query: String) {
         self.modify_config("search history add", |c| c.add_search_to_history(query));
         // UI history is synced on file-watcher-triggered reload
     }
 
-    pub fn handle_search_history_remove(&self, query: String) {
+    pub fn handle_remove_search_item(&self, query: String) {
         self.modify_config("search history remove", |c| {
             c.remove_search_from_history(&query)
         });
@@ -310,9 +319,27 @@ impl AppController {
         }
     }
 
+    pub fn handle_navigate_to(&self, target_id: String) {
+        let board = match self.load_board("navigate") {
+            Some(b) => b,
+            None => return,
+        };
+
+        let id_to_find = target_id.strip_prefix('#').unwrap_or(&target_id);
+
+        if let Some(ticket) = board.find_ticket_by_id(id_to_find) {
+            if let Some(app) = self.app_weak.upgrade() {
+                app.set_active_ticket(crate::into_slint_ticket(ticket, &board));
+                app.set_show_ticket_view_dialog(true);
+            }
+        } else {
+            self.show_error(&format!("Ticket NOT FOUND: {}", target_id));
+        }
+    }
+
     fn show_error(&self, msg: &str) {
         if let Some(app) = self.app_weak.upgrade() {
-            app.invoke_show_warning_dialog(SharedString::from(msg));
+            app.invoke_open_warning_dialog(SharedString::from(msg));
         }
     }
 }

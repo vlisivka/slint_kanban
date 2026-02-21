@@ -31,7 +31,7 @@ pub struct UserConfig {
     pub date_to: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Config {
     pub kanban: KanbanConfig,
     pub user: UserConfig,
@@ -63,15 +63,6 @@ impl Default for UserConfig {
             search_history: Vec::new(),
             date_from: "".to_string(),
             date_to: "".to_string(),
-        }
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            kanban: KanbanConfig::default(),
-            user: UserConfig::default(),
         }
     }
 }
@@ -111,7 +102,7 @@ impl Config {
     pub fn queue_limits(&self) -> &HashMap<String, usize> {
         &self.kanban.queue_limits
     }
-    pub fn users(&self) -> &Vec<String> {
+    pub fn users(&self) -> &[String] {
         &self.kanban.users
     }
     pub fn active_user(&self) -> &str {

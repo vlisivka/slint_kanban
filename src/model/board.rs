@@ -9,6 +9,17 @@ use crate::model::queue::Queue;
 use crate::model::ticket::{Ticket, TicketMetadata};
 use std::path::{Path, PathBuf};
 
+/// Default queue names created when initializing a new board.
+const DEFAULT_QUEUES: &[&str] = &[
+    "1. Incoming",
+    "2. ToDo",
+    "3. Doing",
+    "4. Reviewing",
+    "5. Testing",
+    "6. Done",
+    "7. Archive",
+];
+
 /// File-system–backed Kanban board.
 ///
 /// Layout on disk:
@@ -44,16 +55,7 @@ impl Board {
         }
 
         if !has_queues {
-            let default_queues = vec![
-                "1. Incoming",
-                "2. ToDo",
-                "3. Doing",
-                "4. Reviewing",
-                "5. Testing",
-                "6. Done",
-                "7. Archive",
-            ];
-            for q in default_queues {
+            for q in DEFAULT_QUEUES {
                 std::fs::create_dir_all(queues_path.join(q))?;
             }
 
@@ -79,55 +81,38 @@ impl Board {
 
     /// Loads the root README.md content and metadata.
     pub fn load_board_info(root_path: &Path) -> anyhow::Result<(TicketMetadata, String)> {
-        let readme_path = root_path.join("README.md");
-        if readme_path.exists() {
-            let content = std::fs::read_to_string(&readme_path)?;
-            let parts: Vec<&str> = content.splitn(3, "---").collect();
+        let default_meta = || TicketMetadata {
+            title: "Board Overview".to_string(),
+            ..Default::default()
+        };
 
-            if parts.len() < 3 {
-                // No frontmatter
-                Ok((
-                    TicketMetadata {
-                        title: "Board Overview".to_string(),
-                        created_at: "".to_string(),
-                        updated_at: "".to_string(),
-                        assigned_to: "".to_string(),
-                        author: "".to_string(),
-                    },
-                    content,
-                ))
-            } else {
-                let frontmatter = parts[1];
-                let body = parts[2].trim().to_string();
-                let mut metadata: TicketMetadata = serde_yaml::from_str(frontmatter)
-                    .unwrap_or_else(|_| TicketMetadata {
-                        title: "Board Overview".to_string(),
-                        created_at: "".to_string(),
-                        updated_at: "".to_string(),
-                        assigned_to: "".to_string(),
-                        author: "".to_string(),
-                    });
-                if metadata.title.is_empty() {
-                    metadata.title = "Board Overview".to_string();
-                }
-                // Backfill updated_at
-                if metadata.updated_at.is_empty() && !metadata.created_at.is_empty() {
-                    metadata.updated_at = metadata.created_at.clone();
-                }
-                Ok((metadata, body))
-            }
-        } else {
-            Ok((
-                TicketMetadata {
-                    title: "Board Overview".to_string(),
-                    created_at: "".to_string(),
-                    updated_at: "".to_string(),
-                    assigned_to: "".to_string(),
-                    author: "".to_string(),
-                },
+        let readme_path = root_path.join("README.md");
+        if !readme_path.exists() {
+            return Ok((
+                default_meta(),
                 "# Board Overview\n\nRoot README.md not found.".to_string(),
-            ))
+            ));
         }
+
+        let content = std::fs::read_to_string(&readme_path)?;
+        let parts: Vec<&str> = content.splitn(3, "---").collect();
+
+        if parts.len() < 3 {
+            return Ok((default_meta(), content));
+        }
+
+        let frontmatter = parts[1];
+        let body = parts[2].trim().to_string();
+        let mut metadata: TicketMetadata =
+            serde_yaml::from_str(frontmatter).unwrap_or_else(|_| default_meta());
+        if metadata.title.is_empty() {
+            metadata.title = "Board Overview".to_string();
+        }
+        // Backfill updated_at
+        if metadata.updated_at.is_empty() && !metadata.created_at.is_empty() {
+            metadata.updated_at = metadata.created_at.clone();
+        }
+        Ok((metadata, body))
     }
 
     pub fn queue_path(&self, queue_id: &str) -> PathBuf {
@@ -138,7 +123,9 @@ impl Board {
         self.tickets_path.join(ticket_id)
     }
 
-    pub(crate) fn load_ticket(&self, path: &Path) -> anyhow::Result<Ticket> {
+    /// Loads a ticket from disk. Thin wrapper over [`Ticket::load`] kept
+    /// for backward-compatibility with existing tests.
+    pub fn load_ticket(&self, path: &Path) -> anyhow::Result<Ticket> {
         Ticket::load(path)
     }
 
@@ -197,7 +184,7 @@ impl Board {
                 match resolved_result {
                     Ok(resolved_path) => {
                         if resolved_path.exists() && resolved_path.is_dir() {
-                            match self.load_ticket(&resolved_path) {
+                            match Ticket::load(&resolved_path) {
                                 Ok(ticket) => tickets.push(ticket),
                                 Err(e) => eprintln!(
                                     "Warning: Failed to load ticket at {:?}: {}",
@@ -346,22 +333,24 @@ impl Board {
 
         self.check_queue_limit(queue_id)?;
 
-        // Generate unique ID
-        let id: String = std::iter::repeat(())
-            .map(|()| {
-                let chars = b"abcdefghijklmnopqrstuvwxyz0123456789";
-                let idx = rand::thread_rng().gen_range(0..chars.len());
-                chars[idx] as char
+        // Generate unique ID, retrying on (extremely rare) collisions
+        let ticket_id = (0..5)
+            .map(|_| {
+                std::iter::repeat(())
+                    .map(|()| {
+                        let chars = b"abcdefghijklmnopqrstuvwxyz0123456789";
+                        let idx = rand::thread_rng().gen_range(0..chars.len());
+                        chars[idx] as char
+                    })
+                    .take(6)
+                    .collect::<String>()
             })
-            .take(6)
-            .collect();
-        let ticket_id = id;
+            .find(|id| !self.ticket_path(id).exists())
+            .ok_or_else(|| {
+                anyhow::anyhow!("Failed to generate unique ticket ID after 5 attempts")
+            })?;
 
         let ticket_dir = self.ticket_path(&ticket_id);
-        if ticket_dir.exists() {
-            // ID collision (extremely rare) — retry with a new random ID
-            return self.create_ticket(title, description, queue_id, assigned_to, author);
-        }
         std::fs::create_dir_all(&ticket_dir)?;
 
         let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
@@ -391,7 +380,7 @@ impl Board {
         assigned_to: &str,
     ) -> anyhow::Result<()> {
         let ticket_dir = self.ticket_path(ticket_id);
-        let mut ticket = self.load_ticket(&ticket_dir)?;
+        let mut ticket = Ticket::load(&ticket_dir)?;
 
         ticket.updated_at = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
         ticket.title = title.to_string();

@@ -1,9 +1,10 @@
 import { Button, VerticalBox, Palette } from "std-widgets.slint";
+import { CloseButton } from "../common.slint";
 
 export component SearchHistoryMenu inherits Rectangle {
     in property <[string]> history;
-    callback select_search(string);
-    callback remove_search(string);
+    callback select-history-item(string);
+    callback remove-history-item(string);
     callback close();
 
     background: Palette.background;
@@ -34,7 +35,7 @@ export component SearchHistoryMenu inherits Rectangle {
 
                 touch := TouchArea {
                     clicked => {
-                        select_search(item);
+                        select-history-item(item);
                     }
                 }
 
@@ -51,25 +52,12 @@ export component SearchHistoryMenu inherits Rectangle {
                         horizontal-stretch: 1;
                     }
 
-                    Rectangle {
-                        width: 20px;
-                        height: 20px;
-                        background: touch-del.pressed ? #eb1abaff : (touch-del.has-hover ? #ff0048ff : transparent);
-                        border-radius: 4px;
+                    CloseButton {
+                        size: 20px;
                         vertical-stretch: 0;
                         horizontal-stretch: 0;
-
-                        Text {
-                            text: "×";
-                            font-size: 14px;
-                            horizontal-alignment: center;
-                            vertical-alignment: center;
-                        }
-
-                        touch-del := TouchArea {
-                            clicked => {
-                                remove_search(item);
-                            }
+                        clicked => {
+                            remove-history-item(item);
                         }
                     }
                 }

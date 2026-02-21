@@ -1,4 +1,4 @@
-import { TextEdit, LineEdit, Button, Palette } from "std-widgets.slint";
+import { TextEdit, Button, Palette } from "std-widgets.slint";
 
 export struct RefStr {
     id: string,
@@ -26,6 +26,21 @@ export struct QueueStr {
     visible: bool,
 }
 
+// Centralized color palette for the application.
+// Use these instead of hardcoded hex values for consistency.
+export global Theme {
+    out property <color> id-color: #0052cc;
+    out property <color> id-hover-bg: #0052cc10;
+    out property <color> author-color: #d33682;
+    out property <color> danger: #ff4444;
+    out property <color> warning: #ff9800;
+    out property <color> success: #4caf50;
+    out property <color> delete-hover: #ff0048;
+    out property <color> delete-active: #eb1aba;
+    out property <color> backdrop: #00000080;
+    out property <color> shadow: #00000040;
+}
+
 export component AppConfig {
     out property <length> column-width: 280px;
     out property <length> column-spacing: 16px;
@@ -41,6 +56,47 @@ export global UserGlobal {
     callback toggle-show-only-mine(bool);
 }
 
+// Reusable "×" close/delete button with hover effects.
+export component CloseButton inherits Rectangle {
+    callback clicked();
+    in property <length> size: 24px;
+
+    width: size;
+    height: size;
+    border-radius: 4px;
+    background: touch.pressed ? Theme.delete-active : (touch.has-hover ? Theme.delete-hover : transparent);
+
+    Text {
+        text: "×";
+        font-size: root.size * 0.75;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        color: touch.has-hover ? white : Palette.foreground;
+    }
+
+    touch := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+// Semi-transparent backdrop for modal dialogs.
+// Clicking the backdrop triggers dismiss(); child content is placed on top.
+export component ModalBackdrop inherits Rectangle {
+    callback dismiss();
+
+    background: Theme.backdrop;
+
+    TouchArea {
+        clicked => {
+            dismiss();
+        }
+    }
+
+    @children
+}
+
 export component IdCopy inherits Rectangle {
     in property <string> id;
     in property <length> font-size: 11px;
@@ -48,7 +104,7 @@ export component IdCopy inherits Rectangle {
     width: layout.preferred-width;
     height: 24px;
     border-radius: 4px;
-    background: touch.has-hover ? #0052cc10 : transparent;
+    background: touch.has-hover ? Theme.id-hover-bg : transparent;
 
     touch := TouchArea { }
 
@@ -61,7 +117,7 @@ export component IdCopy inherits Rectangle {
             text: "#" + root.id;
             font-size: root.font-size;
             font-weight: 700;
-            color: #0052cc;
+            color: Theme.id-color;
             vertical-alignment: center;
         }
 

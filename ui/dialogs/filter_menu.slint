@@ -11,8 +11,8 @@ export component FilterMenu inherits Rectangle {
     in-out property <[QueueStr]> queues;
     in-out property <string> date_from;
     in-out property <string> date_to;
-    callback toggle_visibility(string, bool);
-    callback date_filter_changed();
+    callback toggle-visibility(string, bool);
+    callback date-filter-changed();
     callback close();
 
     background: Palette.background;
@@ -81,7 +81,7 @@ export component FilterMenu inherits Rectangle {
                     text: q.name;
                     checked: q.visible;
                     toggled => {
-                        toggle_visibility(q.id, self.checked);
+                        toggle-visibility(q.id, self.checked);
                     }
                 }
             }
@@ -112,7 +112,7 @@ export component FilterMenu inherits Rectangle {
                     text <=> date_from;
                     placeholder-text: "YYYY-MM-DD";
                     edited => {
-                        date_filter_changed();
+                        date-filter-changed();
                     }
                 }
             }
@@ -129,7 +129,7 @@ export component FilterMenu inherits Rectangle {
                     text <=> date_to;
                     placeholder-text: "YYYY-MM-DD";
                     edited => {
-                        date_filter_changed();
+                        date-filter-changed();
                     }
                 }
             }

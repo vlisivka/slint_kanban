@@ -20,7 +20,7 @@ fn test_cli_add() -> anyhow::Result<()> {
         }),
     };
 
-    run_main(args)?;
+    run_cli(args)?;
 
     let board = Board::load(root)?;
     let incoming = board.queues.iter().find(|q| q.id == "1. Incoming").unwrap();
@@ -40,7 +40,7 @@ fn test_cli_update() -> anyhow::Result<()> {
     let root = dir.path().to_path_buf();
 
     // 1. Add a ticket
-    run_main(CliArgs {
+    run_cli(CliArgs {
         root: Some(root.clone()),
         command: Some(Commands::Add {
             title: "Old Title".to_string(),
@@ -54,7 +54,7 @@ fn test_cli_update() -> anyhow::Result<()> {
     let id = board.queues[0].tickets[0].id.clone();
 
     // 2. Update it
-    run_main(CliArgs {
+    run_cli(CliArgs {
         root: Some(root.clone()),
         command: Some(Commands::Update {
             id: id.clone(),
@@ -79,7 +79,7 @@ fn test_cli_move() -> anyhow::Result<()> {
     let root = dir.path().to_path_buf();
 
     // 1. Add a ticket
-    run_main(CliArgs {
+    run_cli(CliArgs {
         root: Some(root.clone()),
         command: Some(Commands::Add {
             title: "Move Me".to_string(),
@@ -93,7 +93,7 @@ fn test_cli_move() -> anyhow::Result<()> {
     let id = board.queues[0].tickets[0].id.clone();
 
     // 2. Move it
-    run_main(CliArgs {
+    run_cli(CliArgs {
         root: Some(root.clone()),
         command: Some(Commands::Move {
             id: id.clone(),
@@ -117,7 +117,7 @@ fn test_cli_remove() -> anyhow::Result<()> {
     let root = dir.path().to_path_buf();
 
     // 1. Add a ticket
-    run_main(CliArgs {
+    run_cli(CliArgs {
         root: Some(root.clone()),
         command: Some(Commands::Add {
             title: "Delete Me".to_string(),
@@ -131,7 +131,7 @@ fn test_cli_remove() -> anyhow::Result<()> {
     let id = board.queues[0].tickets[0].id.clone();
 
     // 2. Remove it
-    run_main(CliArgs {
+    run_cli(CliArgs {
         root: Some(root.clone()),
         command: Some(Commands::Remove { id: id.clone() }),
     })?;
@@ -146,7 +146,7 @@ fn test_cli_remove() -> anyhow::Result<()> {
 }
 
 #[test]
-fn test_change_limit() -> anyhow::Result<()> {
+fn test_cli_change_limit() -> anyhow::Result<()> {
     let dir = tempdir()?;
     let root = dir.path().to_path_buf();
 

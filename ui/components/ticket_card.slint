@@ -1,16 +1,16 @@
 import { VerticalBox, HorizontalBox, Palette } from "std-widgets.slint";
-import { TicketStr, IdCopy } from "../common.slint";
+import { TicketStr, IdCopy, CloseButton, Theme } from "../common.slint";
 
 export component TicketCard inherits Rectangle {
     in property <TicketStr> ticket;
     in property <string> from_queue_id;
 
     // Callbacks
-    callback start_dragging(string, string, length, length);
-    callback move_dragging(length, length);
-    callback drop_ticket(length);
-    callback delete_clicked(TicketStr);
-    callback edit_clicked(TicketStr);
+    callback start-dragging(string, string, length, length);
+    callback move-dragging(length, length);
+    callback drop-ticket(length);
+    callback delete-ticket(TicketStr);
+    callback edit-ticket(TicketStr);
 
     border-radius: 8px;
     border-width: 1px;
@@ -23,19 +23,19 @@ export component TicketCard inherits Rectangle {
     touch-area := TouchArea {
         pointer-event(event) => {
             if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
-                start_dragging(ticket.id, from_queue_id, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                start-dragging(ticket.id, from_queue_id, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
             }
             if (event.kind == PointerEventKind.up) {
-                drop_ticket(self.absolute-position.x + self.mouse-x);
+                drop-ticket(self.absolute-position.x + self.mouse-x);
             }
         }
         moved => {
             if (self.pressed) {
-                move_dragging(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                move-dragging(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
             }
         }
         clicked => {
-            edit_clicked(ticket);
+            edit-ticket(ticket);
         }
     }
 
@@ -54,23 +54,9 @@ export component TicketCard inherits Rectangle {
                 overflow: elide;
             }
 
-            Rectangle {
-                width: 24px;
-                height: 24px;
-                background: touch-del.pressed ? #eb1abaff : (touch-del.has-hover ? #ff0048ff : transparent);
-                border-radius: 4px;
-
-                Text {
-                    text: "×";
-                    font-size: 18px;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                }
-
-                touch-del := TouchArea {
-                    clicked => {
-                        delete_clicked(ticket);
-                    }
+            CloseButton {
+                clicked => {
+                    delete-ticket(ticket);
                 }
             }
         }
@@ -97,7 +83,7 @@ export component TicketCard inherits Rectangle {
                     text: "✍ " + ticket.author;
                     font-size: 11px;
                     font-weight: 500;
-                    color: #d33682; // A nice magenta/berry color
+                    color: Theme.author-color;
                 }
 
                 if ticket.assigned_to != "": Text {

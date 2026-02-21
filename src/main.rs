@@ -18,48 +18,11 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 
-/// Returns `true` when colored output should be suppressed.
-/// Honors the NO_COLOR standard: https://no-color.org/
-/// NO_COLOR is respected if the variable is set (to any value, including empty).
-pub fn no_color() -> bool {
-    std::env::var_os("NO_COLOR").is_some()
-}
-
-/// Print a line to stdout, stripping ANSI codes when NO_COLOR is set.
-/// Usage: `cprintln!("text {}", value)` — same as println! but color-aware.
-macro_rules! cprintln {
-    ($fmt:literal $(, $arg:expr)* $(,)?) => {
-        if crate::no_color() {
-            // Strip ANSI codes: replace ESC[ sequences with nothing
-            let raw = format!($fmt $(, $arg)*);
-            // Remove ANSI escape sequences \x1b[...m
-            let stripped = raw
-                .split('\x1b')
-                .enumerate()
-                .map(|(i, part)| {
-                    if i == 0 {
-                        part.to_string()
-                    } else {
-                        // Drop up to and including the first 'm'
-                        match part.find('m') {
-                            Some(pos) => part[pos + 1..].to_string(),
-                            None => part.to_string(),
-                        }
-                    }
-                })
-                .collect::<String>();
-            println!("{}", stripped);
-        } else {
-            println!($fmt $(, $arg)*);
-        }
-    };
-}
-
 slint::include_modules!();
 
 /// Converts a domain Ticket into the Slint-generated TicketStr for UI binding.
 /// `snippet` is the first line of the description, shown on the card preview.
-pub fn ticket_to_slint(ticket: &model::Ticket, board: &Board) -> TicketStr {
+pub fn into_slint_ticket(ticket: &model::Ticket, board: &Board) -> TicketStr {
     let snippet = ticket.description.lines().next().unwrap_or("").to_string();
     let refs: Vec<RefStr> = ticket
         .extract_references()
@@ -91,7 +54,7 @@ pub fn ticket_to_slint(ticket: &model::Ticket, board: &Board) -> TicketStr {
 
 /// Pushes the full board state into the UI, applying search/date/user filters.
 /// Called on every reload (initial load, file watcher event, or filter change).
-pub fn sync_ui_with_board(
+pub fn sync_board_to_ui(
     ui: &App,
     board: &Board,
     query: &str,
@@ -106,20 +69,17 @@ pub fn sync_ui_with_board(
         let mut filtered_tickets: Vec<&model::Ticket> = queue
             .tickets
             .iter()
-            .filter(|t: &&model::Ticket| {
-                let matches_search = t.matches(query);
-                let matches_date = t.matches_date_range(date_from, date_to);
-                let matches_user = if show_only_mine {
-                    let target_user = if active_user == "<unassigned>" {
+            .filter(|t| {
+                let user_filter = if show_only_mine {
+                    Some(if active_user == "<unassigned>" {
                         ""
                     } else {
                         active_user
-                    };
-                    t.assigned_to == target_user
+                    })
                 } else {
-                    true
+                    None
                 };
-                matches_search && matches_date && matches_user
+                t.matches_all(query, date_from, date_to, user_filter)
             })
             .collect();
 
@@ -128,7 +88,7 @@ pub fn sync_ui_with_board(
 
         let slint_tickets: Vec<TicketStr> = filtered_tickets
             .into_iter()
-            .map(|t| ticket_to_slint(t, board))
+            .map(|t| into_slint_ticket(t, board))
             .collect();
 
         let ticket_count = slint_tickets.len() as i32;
@@ -232,17 +192,17 @@ pub(crate) fn init_callbacks(ui: &App, controller: Arc<AppController>) {
     // Set up callbacks
     let c = controller.clone();
     ui.on_move_ticket(move |ticket_id, source_id, target_id| {
-        c.handle_move(ticket_id.into(), source_id.into(), target_id.into());
+        c.handle_move_ticket(ticket_id.into(), source_id.into(), target_id.into());
     });
 
     let c = controller.clone();
     ui.on_delete_ticket(move |ticket_id| {
-        c.handle_delete(ticket_id.into());
+        c.handle_delete_ticket(ticket_id.into());
     });
 
     let c = controller.clone();
-    ui.on_request_create_ticket(move |queue_id, title, description, assigned_to| {
-        c.handle_create(
+    ui.on_create_ticket(move |queue_id, title, description, assigned_to| {
+        c.handle_create_ticket(
             queue_id.into(),
             title.into(),
             description.into(),
@@ -251,8 +211,8 @@ pub(crate) fn init_callbacks(ui: &App, controller: Arc<AppController>) {
     });
 
     let c = controller.clone();
-    ui.on_save_ticket(move |ticket_id, title, description, assigned_to| {
-        c.handle_save(
+    ui.on_update_ticket(move |ticket_id, title, description, assigned_to| {
+        c.handle_update_ticket(
             ticket_id.into(),
             title.into(),
             description.into(),
@@ -261,20 +221,20 @@ pub(crate) fn init_callbacks(ui: &App, controller: Arc<AppController>) {
     });
 
     let c = controller.clone();
-    ui.on_request_change_limit(move |queue_id, limit| {
-        c.handle_change_limit(queue_id.into(), limit);
+    ui.on_set_queue_limit(move |queue_id, limit| {
+        c.handle_set_queue_limit(queue_id.into(), limit);
     });
 
     let c = controller.clone();
     ui.global::<UserGlobal>()
         .on_change_active_user(move |username| {
-            c.handle_user_change(username.into());
+            c.handle_change_active_user(username.into());
         });
 
     let c = controller.clone();
     ui.global::<UserGlobal>()
         .on_toggle_show_only_mine(move |enabled| {
-            c.handle_toggle_mine(enabled);
+            c.handle_toggle_show_only_mine(enabled);
         });
 
     let c = controller.clone();
@@ -288,50 +248,28 @@ pub(crate) fn init_callbacks(ui: &App, controller: Arc<AppController>) {
     });
 
     let c = controller.clone();
-    ui.on_shortcut_create_ticket(move || {
+    ui.on_shortcut_open_new_ticket_dialog(move || {
         c.handle_shortcut_create_ticket();
     });
 
     let c = controller.clone();
     ui.on_toggle_queue_visibility(move |queue_id, visible| {
-        c.handle_queue_visibility(queue_id.into(), visible);
+        c.handle_toggle_queue_visibility(queue_id.into(), visible);
     });
 
     let c = controller.clone();
     ui.on_accept_search(move |query| {
-        c.handle_search_history_add(query.into());
+        c.handle_accept_search(query.into());
     });
 
     let c = controller.clone();
     ui.on_remove_search_item(move |query| {
-        c.handle_search_history_remove(query.into());
+        c.handle_remove_search_item(query.into());
     });
 
-    let nav_root = controller.root_path.clone();
-    let nav_ui = ui.as_weak();
+    let c = controller.clone();
     ui.on_navigate_to(move |target_id| {
-        let board = Board::load(nav_root.clone())
-            .unwrap_or_else(|_| Board::load(nav_root.clone()).unwrap());
-
-        let id_to_find = if target_id.starts_with('#') {
-            &target_id[1..]
-        } else {
-            &target_id
-        };
-
-        if let Some(ticket) = board.find_ticket_by_id(id_to_find) {
-            if let Some(ui) = nav_ui.upgrade() {
-                ui.set_active_ticket(ticket_to_slint(ticket, &board));
-                ui.set_is_viewing_ticket(true);
-            }
-        } else {
-            if let Some(ui) = nav_ui.upgrade() {
-                ui.invoke_show_warning_dialog(SharedString::from(format!(
-                    "Ticket NOT FOUND: {}",
-                    target_id
-                )));
-            }
-        }
+        c.handle_navigate_to(target_id.into());
     });
 
     // Search/filter callbacks trigger board reload to apply new filters
@@ -361,7 +299,7 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
             queue,
             assign_to,
         } => {
-            cprintln!("Adding ticket: {} to queue: {}", title, queue);
+            println!("Adding ticket: {} to queue: {}", title, queue);
             let author = board.config.active_user();
             board.create_ticket(&title, &description, &queue, &assign_to, author)?;
         }
@@ -372,7 +310,7 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
             assign_to,
             unassign,
         } => {
-            cprintln!("Updating ticket: {}", id);
+            println!("Updating ticket: {}", id);
             let ticket = board
                 .find_ticket_by_id(&id)
                 .ok_or_else(|| anyhow::anyhow!("Ticket not found: {}", id))?;
@@ -402,34 +340,27 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
                 let filtered_tickets: Vec<&model::Ticket> = queue
                     .tickets
                     .iter()
-                    .filter(|t: &&model::Ticket| {
-                        let matches_search = t.matches(&query);
-                        let matches_date = t.matches_date_range(&date_from_str, &date_to_str);
-                        let matches_id = if let Some(ref target_id) = id {
-                            t.id == *target_id
+                    .filter(|t| {
+                        let user_filter = if unassigned {
+                            Some("")
                         } else {
-                            true
+                            assigned_to_user.as_deref()
                         };
-                        let matches_user = if unassigned {
-                            t.assigned_to.is_empty()
-                        } else if let Some(ref user) = assigned_to_user {
-                            t.assigned_to == *user
-                        } else {
-                            true
-                        };
-                        matches_search && matches_date && matches_id && matches_user
+                        let matches_id = id.as_ref().is_none_or(|target| t.id == *target);
+                        matches_id
+                            && t.matches_all(&query, &date_from_str, &date_to_str, user_filter)
                     })
                     .collect();
 
                 if !filtered_tickets.is_empty() {
-                    cprintln!("\n=== {} ===", queue.name);
+                    println!("\n=== {} ===", queue.name);
                     for t in filtered_tickets {
                         let user_display = if t.assigned_to.is_empty() {
                             "<unassigned>".to_string()
                         } else {
                             t.assigned_to.clone()
                         };
-                        cprintln!("[{}] {} (Assigned: {})", t.id, t.title, user_display);
+                        println!("[{}] {} (Assigned: {})", t.id, t.title, user_display);
                     }
                 }
             }
@@ -441,23 +372,23 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
         } => {
             let mut config = board.config.clone();
             if let Some(user) = active_user {
-                cprintln!("Setting active user to: {}", user);
+                println!("Setting active user to: {}", user);
                 config.user.active_user = user;
             }
             if let Some(mine) = show_only_mine {
-                cprintln!("Setting show_only_mine to: {}", mine);
+                println!("Setting show_only_mine to: {}", mine);
                 config.user.show_only_mine = mine;
             }
             if let Some(user) = add_user {
                 if !config.kanban.users.contains(&user) {
-                    cprintln!("Adding user: {}", user);
+                    println!("Adding user: {}", user);
                     config.kanban.users.push(user);
                 }
             }
             config.write(&root_path)?;
         }
         Commands::Move { id, queue } => {
-            cprintln!("Moving ticket: {} to queue: {}", id, queue);
+            println!("Moving ticket: {} to queue: {}", id, queue);
             let _ticket = board
                 .find_ticket_by_id(&id)
                 .ok_or_else(|| anyhow::anyhow!("Ticket not found: {}", id))?;
@@ -469,11 +400,11 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
             board.move_ticket(&id, &source_queue.id, &queue)?;
         }
         Commands::Remove { id } => {
-            cprintln!("Removing ticket: {}", id);
+            println!("Removing ticket: {}", id);
             board.delete_ticket(&id)?;
         }
         Commands::Open { path } => {
-            cprintln!("Opening GUI for path: {:?}", path);
+            println!("Opening GUI for path: {:?}", path);
             run_gui(path)?;
         }
         Commands::Show { id } => {
@@ -488,10 +419,10 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
                 .map(|q| q.name.as_str())
                 .unwrap_or("Unknown");
 
-            cprintln!("ID:          {}", ticket.id);
-            cprintln!("Title:       {}", ticket.title);
-            cprintln!("Status:      {}", queue_name);
-            cprintln!(
+            println!("ID:          {}", ticket.id);
+            println!("Title:       {}", ticket.title);
+            println!("Status:      {}", queue_name);
+            println!(
                 "Assigned to: {}",
                 if ticket.assigned_to.is_empty() {
                     "<unassigned>"
@@ -499,10 +430,10 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
                     &ticket.assigned_to
                 }
             );
-            cprintln!("Author:      {}", ticket.author);
-            cprintln!("Created at:  {}", ticket.created_at);
-            cprintln!("Updated at:  {}", ticket.updated_at);
-            cprintln!("\nDescription:\n{}", ticket.description);
+            println!("Author:      {}", ticket.author);
+            println!("Created at:  {}", ticket.created_at);
+            println!("Updated at:  {}", ticket.updated_at);
+            println!("\nDescription:\n{}", ticket.description);
         }
     }
 
@@ -511,7 +442,7 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
 
 /// Resolves the root path and dispatches to GUI or CLI command handler.
 /// Root path priority: --root flag > KANBAN_HOME env var > ~/Kanban default.
-fn run_main(args: CliArgs) -> anyhow::Result<()> {
+fn run_cli(args: CliArgs) -> anyhow::Result<()> {
     let root_path = if let Some(path) = args.root {
         path
     } else if let Ok(kanban_home) = std::env::var("KANBAN_HOME") {
@@ -534,7 +465,7 @@ fn run_main(args: CliArgs) -> anyhow::Result<()> {
 fn main() -> anyhow::Result<()> {
     use clap::Parser;
     let args = CliArgs::parse();
-    run_main(args)
+    run_cli(args)
 }
 
 #[cfg(test)]

@@ -6,8 +6,9 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct TicketMetadata {
+    #[serde(default)]
     pub title: String,
     #[serde(default)]
     pub created_at: String, // "YYYY-MM-DD HH:MM:SS" format
@@ -72,8 +73,8 @@ impl Ticket {
             return true;
         }
         let query_lower = query.to_lowercase();
-        let query_clean = if query_lower.starts_with('#') {
-            &query_lower[1..]
+        let query_clean = if let Some(stripped) = query_lower.strip_prefix('#') {
+            stripped
         } else {
             &query_lower
         };
@@ -95,6 +96,21 @@ impl Ticket {
             return false;
         }
         true
+    }
+
+    /// Combined filter: search query + date range + user assignment.
+    /// Use `assigned_to_filter` = `Some("username")` to filter by user,
+    /// or `None` to skip user filtering.
+    pub fn matches_all(
+        &self,
+        query: &str,
+        date_from: &str,
+        date_to: &str,
+        assigned_to_filter: Option<&str>,
+    ) -> bool {
+        self.matches(query)
+            && self.matches_date_range(date_from, date_to)
+            && assigned_to_filter.is_none_or(|user| self.assigned_to == user)
     }
 
     /// Loads a ticket from its directory. Expected format of README.md:
