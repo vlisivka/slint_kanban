@@ -344,8 +344,12 @@ pub(crate) fn init_callbacks(ui: &App, controller: Arc<AppController>) {
     });
 }
 
-fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
-    let board = Board::load(root_path.clone())?;
+fn handle_command(
+    root_path: std::path::PathBuf,
+    command: Commands,
+    out: &mut dyn std::io::Write,
+) -> anyhow::Result<()> {
+    let mut board = Board::load(root_path.clone())?;
 
     match command {
         Commands::Add {
@@ -354,7 +358,7 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
             queue,
             assign_to,
         } => {
-            println!("Adding ticket: {} to queue: {}", title, queue);
+            writeln!(out, "Adding ticket: {} to queue: {}", title, queue)?;
             let author = board.config.active_user();
             board.create_ticket(&title, &description, &queue, &assign_to, author)?;
         }
@@ -365,7 +369,7 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
             assign_to,
             unassign,
         } => {
-            println!("Updating ticket: {}", id);
+            writeln!(out, "Updating ticket: {}", id)?;
             let ticket = board
                 .find_ticket_by_id(&id)
                 .ok_or_else(|| anyhow::anyhow!("Ticket not found: {}", id))?;
@@ -408,14 +412,14 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
                     .collect();
 
                 if !filtered_tickets.is_empty() {
-                    println!("\n=== {} ===", queue.name);
+                    writeln!(out, "\n=== {} ===", queue.name)?;
                     for t in filtered_tickets {
                         let user_display = if t.assigned_to.is_empty() {
                             "<unassigned>".to_string()
                         } else {
                             t.assigned_to.clone()
                         };
-                        println!("[{}] {} (Assigned: {})", t.id, t.title, user_display);
+                        writeln!(out, "[{}] {} (Assigned: {})", t.id, t.title, user_display)?;
                     }
                 }
             }
@@ -427,23 +431,23 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
         } => {
             let mut config = board.config.clone();
             if let Some(user) = active_user {
-                println!("Setting active user to: {}", user);
+                writeln!(out, "Setting active user to: {}", user)?;
                 config.user.active_user = user;
             }
             if let Some(mine) = show_only_mine {
-                println!("Setting show_only_mine to: {}", mine);
+                writeln!(out, "Setting show_only_mine to: {}", mine)?;
                 config.user.show_only_mine = mine;
             }
             if let Some(user) = add_user {
                 if !config.kanban.users.contains(&user) {
-                    println!("Adding user: {}", user);
+                    writeln!(out, "Adding user: {}", user)?;
                     config.kanban.users.push(user);
                 }
             }
             config.write(&root_path)?;
         }
         Commands::Move { id, queue } => {
-            println!("Moving ticket: {} to queue: {}", id, queue);
+            writeln!(out, "Moving ticket: {} to queue: {}", id, queue)?;
             let _ticket = board
                 .find_ticket_by_id(&id)
                 .ok_or_else(|| anyhow::anyhow!("Ticket not found: {}", id))?;
@@ -455,11 +459,11 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
             board.move_ticket(&id, &source_queue.id, &queue)?;
         }
         Commands::Remove { id } => {
-            println!("Removing ticket: {}", id);
+            writeln!(out, "Removing ticket: {}", id)?;
             board.delete_ticket(&id)?;
         }
         Commands::Open { path } => {
-            println!("Opening GUI for path: {:?}", path);
+            writeln!(out, "Opening GUI for path: {:?}", path)?;
             run_gui(path)?;
         }
         Commands::Show { id } => {
@@ -474,39 +478,41 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
                 .map(|q| q.name.as_str())
                 .unwrap_or("Unknown");
 
-            println!("ID:          {}", ticket.id);
-            println!("Title:       {}", ticket.title);
-            println!("Status:      {}", queue_name);
-            println!(
+            writeln!(out, "ID:          {}", ticket.id)?;
+            writeln!(out, "Title:       {}", ticket.title)?;
+            writeln!(out, "Status:      {}", queue_name)?;
+            writeln!(
+                out,
                 "Assigned to: {}",
                 if ticket.assigned_to.is_empty() {
                     "<unassigned>"
                 } else {
                     &ticket.assigned_to
                 }
-            );
-            println!("Author:      {}", ticket.author);
-            println!("Created at:  {}", ticket.created_at);
-            println!("Updated at:  {}", ticket.updated_at);
-            println!("\nDescription:\n{}", ticket.description);
+            )?;
+            writeln!(out, "Author:      {}", ticket.author)?;
+            writeln!(out, "Created at:  {}", ticket.created_at)?;
+            writeln!(out, "Updated at:  {}", ticket.updated_at)?;
+            writeln!(out, "\nDescription:\n{}", ticket.description)?;
             if !ticket.comments.is_empty() {
-                println!("\nComments:");
+                writeln!(out, "\nComments:")?;
                 for c in &ticket.comments {
-                    println!(
+                    writeln!(
+                        out,
                         "- [{}] {} ({}): {}",
                         c.id, c.metadata.author, c.metadata.created_at, c.content
-                    );
+                    )?;
                 }
             }
         }
         Commands::Comment { id, content } => {
-            println!("Adding comment to ticket: {}", id);
+            writeln!(out, "Adding comment to ticket: {}", id)?;
             let author = board.config.active_user();
             board.add_comment(&id, &content, author)?;
         }
         Commands::Attach { id, file } => {
             let link = board.attach_file(&id, &file)?;
-            println!("{}", link);
+            writeln!(out, "{}", link)?;
         }
     }
 
@@ -515,7 +521,7 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
 
 /// Resolves the root path and dispatches to GUI or CLI command handler.
 /// Root path priority: --root flag > KANBAN_HOME env var > ~/Kanban default.
-fn run_cli(args: CliArgs) -> anyhow::Result<()> {
+fn run_cli(args: CliArgs, out: &mut dyn std::io::Write) -> anyhow::Result<()> {
     let root_path = if let Some(path) = args.root {
         path
     } else if let Ok(kanban_home) = std::env::var("KANBAN_HOME") {
@@ -529,7 +535,7 @@ fn run_cli(args: CliArgs) -> anyhow::Result<()> {
     Board::ensure_initialized(&root_path)?;
 
     if let Some(command) = args.command {
-        handle_command(root_path, command)
+        handle_command(root_path, command, out)
     } else {
         run_gui(root_path)
     }
@@ -538,7 +544,7 @@ fn run_cli(args: CliArgs) -> anyhow::Result<()> {
 fn main() -> anyhow::Result<()> {
     use clap::Parser;
     let args = CliArgs::parse();
-    run_cli(args)
+    run_cli(args, &mut std::io::stdout())
 }
 
 #[cfg(test)]

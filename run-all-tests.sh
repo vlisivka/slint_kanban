@@ -18,8 +18,4 @@ cargo fmt
 echo "--- 🧪 Running Cargo tests (Unit, Main tests, GUI/Perf/Fuzzy) ---"
 cargo test -- --test-threads=1 --nocapture
 
-# 3. Run CLI Shell Integration Tests
-echo "--- 🐚 Running CLI Shell Integration Tests ---"
-bash tests/cli/run_all.sh
-
 echo "--- ✅ All tests passed successfully! ---"

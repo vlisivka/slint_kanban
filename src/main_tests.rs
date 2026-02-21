@@ -20,7 +20,7 @@ fn test_cli_add() -> anyhow::Result<()> {
         }),
     };
 
-    run_cli(args)?;
+    run_cli(args, &mut std::io::stdout())?;
 
     let board = Board::load(root)?;
     let incoming = board.queues.iter().find(|q| q.id == "1. Incoming").unwrap();
@@ -40,30 +40,36 @@ fn test_cli_update() -> anyhow::Result<()> {
     let root = dir.path().to_path_buf();
 
     // 1. Add a ticket
-    run_cli(CliArgs {
-        root: Some(root.clone()),
-        command: Some(Commands::Add {
-            title: "Old Title".to_string(),
-            description: "Old Desc".to_string(),
-            queue: "1. Incoming".to_string(),
-            assign_to: "".to_string(),
-        }),
-    })?;
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Add {
+                title: "Old Title".to_string(),
+                description: "Old Desc".to_string(),
+                queue: "1. Incoming".to_string(),
+                assign_to: "".to_string(),
+            }),
+        },
+        &mut std::io::stdout(),
+    )?;
 
     let board = Board::load(root.clone())?;
     let id = board.queues[0].tickets[0].id.clone();
 
     // 2. Update it
-    run_cli(CliArgs {
-        root: Some(root.clone()),
-        command: Some(Commands::Update {
-            id: id.clone(),
-            title: Some("New Title".to_string()),
-            description: None,
-            assign_to: None,
-            unassign: false,
-        }),
-    })?;
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Update {
+                id: id.clone(),
+                title: Some("New Title".to_string()),
+                description: None,
+                assign_to: None,
+                unassign: false,
+            }),
+        },
+        &mut std::io::stdout(),
+    )?;
 
     let board = Board::load(root)?;
     let ticket = board.find_ticket_by_id(&id).unwrap();
@@ -79,33 +85,55 @@ fn test_cli_move() -> anyhow::Result<()> {
     let root = dir.path().to_path_buf();
 
     // 1. Add a ticket
-    run_cli(CliArgs {
-        root: Some(root.clone()),
-        command: Some(Commands::Add {
-            title: "Move Me".to_string(),
-            description: "".to_string(),
-            queue: "1. Incoming".to_string(),
-            assign_to: "".to_string(),
-        }),
-    })?;
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Add {
+                title: "Move Me".to_string(),
+                description: "".to_string(),
+                queue: "1. Incoming".to_string(),
+                assign_to: "".to_string(),
+            }),
+        },
+        &mut std::io::stdout(),
+    )?;
 
     let board = Board::load(root.clone())?;
     let id = board.queues[0].tickets[0].id.clone();
 
     // 2. Move it
-    run_cli(CliArgs {
-        root: Some(root.clone()),
-        command: Some(Commands::Move {
-            id: id.clone(),
-            queue: "2. ToDo".to_string(),
-        }),
-    })?;
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Move {
+                id: id.clone(),
+                queue: "2. ToDo".to_string(),
+            }),
+        },
+        &mut std::io::stdout(),
+    )?;
 
-    let board = Board::load(root)?;
+    let board = Board::load(root.clone())?;
     let todo = board.queues.iter().find(|q| q.id == "2. ToDo").unwrap();
     assert!(
         todo.tickets.iter().any(|t| t.id == id),
         "Ticket should be present in the target queue after CLI 'move' command. Verify move_ticket logic and handle_command mapping."
+    );
+
+    // 3. Move it to invalid queue (should fail)
+    let res = run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Move {
+                id: id.clone(),
+                queue: "NonExistent".to_string(),
+            }),
+        },
+        &mut std::io::stdout(),
+    );
+    assert!(
+        res.is_err(),
+        "Moving to an invalid queue should return an error"
     );
 
     Ok(())
@@ -117,29 +145,50 @@ fn test_cli_remove() -> anyhow::Result<()> {
     let root = dir.path().to_path_buf();
 
     // 1. Add a ticket
-    run_cli(CliArgs {
-        root: Some(root.clone()),
-        command: Some(Commands::Add {
-            title: "Delete Me".to_string(),
-            description: "".to_string(),
-            queue: "1. Incoming".to_string(),
-            assign_to: "".to_string(),
-        }),
-    })?;
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Add {
+                title: "Delete Me".to_string(),
+                description: "".to_string(),
+                queue: "1. Incoming".to_string(),
+                assign_to: "".to_string(),
+            }),
+        },
+        &mut std::io::stdout(),
+    )?;
 
     let board = Board::load(root.clone())?;
     let id = board.queues[0].tickets[0].id.clone();
 
     // 2. Remove it
-    run_cli(CliArgs {
-        root: Some(root.clone()),
-        command: Some(Commands::Remove { id: id.clone() }),
-    })?;
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Remove { id: id.clone() }),
+        },
+        &mut std::io::stdout(),
+    )?;
 
-    let board = Board::load(root)?;
+    let board = Board::load(root.clone())?;
     assert!(
         board.find_ticket_by_id(&id).is_none(),
         "Ticket should no longer exist after CLI 'remove' command. Check delete_ticket in model.rs and its usage in handle_command."
+    );
+
+    // 3. Remove non-existent ticket (should fail)
+    let res = run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Remove {
+                id: "invalid_id".to_string(),
+            }),
+        },
+        &mut std::io::stdout(),
+    );
+    assert!(
+        res.is_err(),
+        "Removing a non-existent ticket should return an error"
     );
 
     Ok(())
@@ -180,27 +229,33 @@ fn test_cli_comment() -> anyhow::Result<()> {
     let root = dir.path().to_path_buf();
 
     // 1. Add a ticket
-    run_cli(CliArgs {
-        root: Some(root.clone()),
-        command: Some(Commands::Add {
-            title: "Test Comment Ticket".to_string(),
-            description: "".to_string(),
-            queue: "1. Incoming".to_string(),
-            assign_to: "".to_string(),
-        }),
-    })?;
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Add {
+                title: "Test Comment Ticket".to_string(),
+                description: "".to_string(),
+                queue: "1. Incoming".to_string(),
+                assign_to: "".to_string(),
+            }),
+        },
+        &mut std::io::stdout(),
+    )?;
 
     let board = Board::load(root.clone())?;
     let id = board.queues[0].tickets[0].id.clone();
 
     // 2. Add comment
-    run_cli(CliArgs {
-        root: Some(root.clone()),
-        command: Some(Commands::Comment {
-            id: id.clone(),
-            content: "CLI created comment".to_string(),
-        }),
-    })?;
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Comment {
+                id: id.clone(),
+                content: "CLI created comment".to_string(),
+            }),
+        },
+        &mut std::io::stdout(),
+    )?;
 
     let board2 = Board::load(root)?;
     let ticket = board2.find_ticket_by_id(&id).unwrap();
@@ -223,15 +278,18 @@ fn test_cli_attach() -> anyhow::Result<()> {
     let root = dir.path().to_path_buf();
 
     // 1. Add a ticket
-    run_cli(CliArgs {
-        root: Some(root.clone()),
-        command: Some(Commands::Add {
-            title: "Test Attach Ticket".to_string(),
-            description: "".to_string(),
-            queue: "1. Incoming".to_string(),
-            assign_to: "".to_string(),
-        }),
-    })?;
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Add {
+                title: "Test Attach Ticket".to_string(),
+                description: "".to_string(),
+                queue: "1. Incoming".to_string(),
+                assign_to: "".to_string(),
+            }),
+        },
+        &mut std::io::stdout(),
+    )?;
 
     let board = Board::load(root.clone())?;
     let id = board.queues[0].tickets[0].id.clone();
@@ -241,13 +299,16 @@ fn test_cli_attach() -> anyhow::Result<()> {
     std::fs::write(&dummy_file_path, "dummy content")?;
 
     // 3. Attach file
-    run_cli(CliArgs {
-        root: Some(root.clone()),
-        command: Some(Commands::Attach {
-            id: id.clone(),
-            file: dummy_file_path,
-        }),
-    })?;
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Attach {
+                id: id.clone(),
+                file: dummy_file_path,
+            }),
+        },
+        &mut std::io::stdout(),
+    )?;
 
     // 4. Verify
     let board2 = Board::load(root)?;
@@ -263,6 +324,232 @@ fn test_cli_attach() -> anyhow::Result<()> {
         "dummy content",
         "Attached file content should be correct"
     );
+
+    Ok(())
+}
+
+#[test]
+fn test_cli_configure() -> anyhow::Result<()> {
+    let dir = tempdir()?;
+    let root = dir.path().to_path_buf();
+
+    // 1. Initialize board
+    Board::ensure_initialized(&root)?;
+
+    // 2. Add user
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Configure {
+                add_user: Some("newusr".to_string()),
+                active_user: None,
+                show_only_mine: None,
+            }),
+        },
+        &mut std::io::stdout(),
+    )?;
+
+    let board = Board::load(root.clone())?;
+    assert!(
+        board.config.kanban.users.contains(&"newusr".to_string()),
+        "User should be added to the config"
+    );
+
+    // 3. Set active user and show_only_mine
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Configure {
+                add_user: None,
+                active_user: Some("newusr".to_string()),
+                show_only_mine: Some(true),
+            }),
+        },
+        &mut std::io::stdout(),
+    )?;
+
+    let board2 = Board::load(root)?;
+    assert_eq!(
+        board2.config.user.active_user, "newusr",
+        "Active user should be updated"
+    );
+    assert_eq!(
+        board2.config.user.show_only_mine, true,
+        "show_only_mine should be updated"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_cli_list() -> anyhow::Result<()> {
+    let dir = tempdir()?;
+    let root = dir.path().to_path_buf();
+
+    // 1. Add tickets
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Add {
+                title: "Task A".to_string(),
+                description: "Desc A".to_string(),
+                queue: "1. Incoming".to_string(),
+                assign_to: "Alice".to_string(),
+            }),
+        },
+        &mut std::io::stdout(),
+    )?;
+
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Add {
+                title: "Task B".to_string(),
+                description: "KeywordX".to_string(),
+                queue: "2. ToDo".to_string(),
+                assign_to: "".to_string(), // Unassigned
+            }),
+        },
+        &mut std::io::stdout(),
+    )?;
+
+    let board = Board::load(root.clone())?;
+    // Collect output
+    let mut out = Vec::new();
+
+    // List all
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::List {
+                assigned_to_user: None,
+                unassigned: false,
+                search: None,
+                id: None,
+                date_from: None,
+                date_to: None,
+            }),
+        },
+        &mut out,
+    )?;
+
+    let output = String::from_utf8(out)?;
+    assert!(output.contains("Task A"));
+    assert!(output.contains("Task B"));
+
+    // List assigned to Alice
+    let mut out = Vec::new();
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::List {
+                assigned_to_user: Some("Alice".to_string()),
+                unassigned: false,
+                search: None,
+                id: None,
+                date_from: None,
+                date_to: None,
+            }),
+        },
+        &mut out,
+    )?;
+    let output = String::from_utf8(out)?;
+    assert!(output.contains("Task A"));
+    assert!(!output.contains("Task B"));
+
+    // List unassigned
+    let mut out = Vec::new();
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::List {
+                assigned_to_user: None,
+                unassigned: true,
+                search: None,
+                id: None,
+                date_from: None,
+                date_to: None,
+            }),
+        },
+        &mut out,
+    )?;
+    let output = String::from_utf8(out)?;
+    assert!(!output.contains("Task A"));
+    assert!(output.contains("Task B"));
+
+    // Search KeywordX
+    let mut out = Vec::new();
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::List {
+                assigned_to_user: None,
+                unassigned: false,
+                search: Some("KeywordX".to_string()),
+                id: None,
+                date_from: None,
+                date_to: None,
+            }),
+        },
+        &mut out,
+    )?;
+    let output = String::from_utf8(out)?;
+    assert!(!output.contains("Task A"));
+    assert!(output.contains("Task B"));
+
+    Ok(())
+}
+
+#[test]
+fn test_cli_show() -> anyhow::Result<()> {
+    let dir = tempdir()?;
+    let root = dir.path().to_path_buf();
+
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Add {
+                title: "Task Show".to_string(),
+                description: "Show Description".to_string(),
+                queue: "1. Incoming".to_string(),
+                assign_to: "Bob".to_string(),
+            }),
+        },
+        &mut std::io::stdout(),
+    )?;
+
+    let board = Board::load(root.clone())?;
+    let id = board.queues[0].tickets[0].id.clone();
+
+    // Show correct ID
+    let mut out = Vec::new();
+    run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Show { id: id.clone() }),
+        },
+        &mut out,
+    )?;
+
+    let output = String::from_utf8(out)?;
+    assert!(output.contains(&id));
+    assert!(output.contains("Task Show"));
+    assert!(output.contains("Show Description"));
+    assert!(output.contains("Bob"));
+
+    // Show incorrect ID
+    let mut out = Vec::new();
+    let res = run_cli(
+        CliArgs {
+            root: Some(root.clone()),
+            command: Some(Commands::Show {
+                id: "invalid_id".to_string(),
+            }),
+        },
+        &mut out,
+    );
+
+    assert!(res.is_err(), "Showing an invalid ID should return an error");
 
     Ok(())
 }
