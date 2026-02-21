@@ -228,7 +228,6 @@ fn test_delete_ticket() -> anyhow::Result<()> {
     let root_dir = root.path().to_path_buf();
     let tickets_dir = root_dir.join("Tickets");
     let queues_dir = root_dir.join("Queue");
-    let deleted_dir = root_dir.join("Deleted");
 
     std::fs::create_dir_all(&tickets_dir)?;
     std::fs::create_dir_all(&queues_dir)?;
@@ -263,10 +262,6 @@ fn test_delete_ticket() -> anyhow::Result<()> {
     assert!(
         !t1_path.exists(),
         "The ticket folder in 'Tickets/' should be removed"
-    );
-    assert!(
-        deleted_dir.join("T1").exists(),
-        "The ticket folder should be moved to 'Deleted/'"
     );
     assert!(
         !q1_path.join("T1_link").exists(),

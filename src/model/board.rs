@@ -265,7 +265,7 @@ impl Board {
         }
     }
 
-    /// Soft-deletes a ticket: moves its directory from Tickets/ to Deleted/,
+    /// Soft-deletes a ticket: moves its directory to the system Recycle Bin,
     /// then removes all queue symlinks that pointed to it.
     pub fn delete_ticket(&self, ticket_id: &str) -> anyhow::Result<()> {
         let ticket_path = self.ticket_path(ticket_id);
@@ -273,39 +273,44 @@ impl Board {
             return Err(anyhow::anyhow!("Ticket {} not found", ticket_id));
         }
 
-        let root_dir = self.tickets_path.parent().unwrap();
-        let deleted_root = root_dir.join("Deleted");
-        if !deleted_root.exists() {
-            std::fs::create_dir_all(&deleted_root)?;
-        }
-
-        let dest_path = deleted_root.join(ticket_id);
-        if dest_path.exists() {
-            std::fs::remove_dir_all(&dest_path)?;
-        }
-
-        // Save canonical path before rename to compare with symlink targets later.
+        // We use canonicalized path for any advanced checking before moving
         let abs_ticket_path = ticket_path.canonicalize()?;
 
-        std::fs::rename(&ticket_path, &dest_path)?;
+        // Move the directory to the system Recycle Bin
+        #[cfg(not(test))]
+        {
+            if let Err(e) = trash::delete(&abs_ticket_path) {
+                return Err(anyhow::anyhow!("Failed to move ticket to trash: {}", e));
+            }
+        }
 
-        // After rename, symlinks may resolve to either the old or the new location
-        // depending on OS caching, so we need both paths for comparison.
-        let abs_dest_path = dest_path.canonicalize()?;
+        // During tests we perform hard deletion to avoid polluting the system trash
+        #[cfg(test)]
+        {
+            std::fs::remove_dir_all(&abs_ticket_path)?;
+        }
 
-        // Remove symlinks in all queues that pointed to the deleted ticket
+        // Remove symlinks in all queues that pointed to the deleted ticket.
+        // Since the target is now deleted or moved to trash, the links are broken.
+        // We identify them primarily by their file stem matching the ticket_id.
         for entry in std::fs::read_dir(&self.queues_path)?.flatten() {
             let queue_dir = entry.path();
             if queue_dir.is_dir() {
                 for ticket_entry in std::fs::read_dir(&queue_dir)?.flatten() {
                     let symlink_path = ticket_entry.path();
                     if symlink_path.is_symlink() {
-                        if let Ok(resolved) = Self::resolve_symlink(&queue_dir, &symlink_path) {
-                            // Match against both old and new paths (canonicalize may fail for broken links)
-                            let resolved_abs = resolved.canonicalize().unwrap_or(resolved);
+                        let matches_deleted = if let Some(stem) = symlink_path.file_stem() {
+                            stem.to_string_lossy() == ticket_id
+                        } else {
+                            false
+                        };
 
-                            if resolved_abs == abs_dest_path || resolved_abs == abs_ticket_path {
-                                std::fs::remove_file(symlink_path)?;
+                        if matches_deleted {
+                            if let Err(e) = std::fs::remove_file(&symlink_path) {
+                                eprintln!(
+                                    "Failed to remove broken symlink {:?}: {}",
+                                    symlink_path, e
+                                );
                             }
                         }
                     }

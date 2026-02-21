@@ -99,9 +99,18 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Full-text search across ticket titles and descriptions
   - [x] Filter by queue
   - [x] Filter by date range
-  - [ ] Highlight search results
   - [x] Search history
   - [x] Order tickets in queues by time of last update.
+
+### Multi-user Support
+- [x] Implement multi-user support
+  - [x] Update `Config` model with `users`, `active_user`, and `show_only_mine`
+  - [x] Add `assigned_to` field to `Ticket` and `TicketMetadata`
+  - [x] Implement user selection and filtering toggle in global UI
+  - [x] Add user assignment selector in `TicketEdit` and `TicketView`
+  - [x] Update CLI commands to handle `--assigned-to`
+  - [x] Add unit tests for user-based filtering and config
+  - [x] Add `author` field to `Ticket` and `TicketMetadata` (automatically set to active user on creation)
 
 ### Keyboard Shortcuts
 - [x] Implement essential keyboard shortcuts
@@ -113,9 +122,7 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 
 ### Recycle Bin Improvements
 - [x] Create delete confirmation dialog with specific wording ("ticket is moved to recycle bin")
-- [ ] Add "Clear Recycle Bin" button to settings
-- [ ] Implement logic to count tickets in recycle bin
-- [ ] Implement permanent deletion of items in recycle bin
+- [x] Move deleted tickets to system Recycle Bin.
 
 ### Ticket Comments
 - [ ] Implement reading comments from `tc<NNN><UID>.md` files in ticket directory
@@ -133,15 +140,6 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 - [ ] Display attachments in `TicketView` (under description and comments)
 - [ ] Add interaction to open attachments or their parent directory
 
-### Export Functionality
-- [ ] Implement export features
-  - [ ] Export single ticket to PDF
-  - [ ] Export entire board to PDF
-  - [ ] Export to HTML format
-  - [ ] Export to Markdown
-  - [ ] Batch export functionality
-  - [ ] Export configuration options
-
 ### Statistics and Analytics
 - [ ] Implement analytics dashboard
   - [ ] Ticket count per queue
@@ -151,15 +149,15 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [ ] Burndown charts
   - [ ] Export statistics to CSV
 
-### Multi-user Support
-- [x] Implement multi-user support
-  - [x] Update `Config` model with `users`, `active_user`, and `show_only_mine`
-  - [x] Add `assigned_to` field to `Ticket` and `TicketMetadata`
-  - [x] Implement user selection and filtering toggle in global UI
-  - [x] Add user assignment selector in `TicketEdit` and `TicketView`
-  - [x] Update CLI commands to handle `--assigned-to`
-  - [x] Add unit tests for user-based filtering and config
-  - [x] Add `author` field to `Ticket` and `TicketMetadata` (automatically set to active user on creation)
+### Export Functionality
+- [ ] Implement export features
+  - [ ] Export single ticket with comments and attachment (names only) to PDF (including it queue name)
+  - [ ] Export entire queue with tickets to PDF
+  - [ ] Export entire board with board description and all queues and their tickets to PDF
+  - [ ] Export to HTML format
+  - [ ] Export to Markdown
+  - [ ] Batch export functionality
+  - [ ] Export configuration options
 
 ### Markdown Rendering
 - [/] Implement Markdown rendering in ticket detail view using Servo

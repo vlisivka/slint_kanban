@@ -100,9 +100,8 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
         -   `configure`: Change settings (options: `--active-user`, `--show-only-mine`, `--add-user`).
         -   `open PATH`: Open specified directory in the GUI.
     -   **Recycle Bin Management**:
-        -   A "Clear Recycle Bin" button must be available in the application settings/configuration UI.
-        -   This button must display the current count of tickets in the recycle bin awaiting deletion.
-        -   The action permanently deletes all content from the `~/Kanban/Deleted` directory.
+        -   When tickets are deleted, they are moved directly to the host OS's native Recycle Bin/Trash (using the `trash` crate).
+        -   There is no custom `~/Kanban/Deleted` directory anymore. Users manage their deleted items via their standard OS interfaces.
     -   **Testability**: Core logic must be decoupled from the `main` function to allow automated CLI testing.
 
 ## Data Models
