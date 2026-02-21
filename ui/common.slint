@@ -5,6 +5,15 @@ export struct RefStr {
     title: string,
 }
 
+export struct CommentStr {
+    id: string,
+    author: string,
+    created_at: string,
+    updated_at: string,
+    content: string,
+    references: [RefStr],
+}
+
 export struct TicketStr {
     id: string,
     title: string,
@@ -15,6 +24,7 @@ export struct TicketStr {
     assigned_to: string,
     author: string,
     references: [RefStr],
+    comments: [CommentStr],
 }
 
 export struct QueueStr {

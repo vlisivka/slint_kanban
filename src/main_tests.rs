@@ -173,3 +173,46 @@ fn test_cli_change_limit() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_cli_comment() -> anyhow::Result<()> {
+    let dir = tempdir()?;
+    let root = dir.path().to_path_buf();
+
+    // 1. Add a ticket
+    run_cli(CliArgs {
+        root: Some(root.clone()),
+        command: Some(Commands::Add {
+            title: "Test Comment Ticket".to_string(),
+            description: "".to_string(),
+            queue: "1. Incoming".to_string(),
+            assign_to: "".to_string(),
+        }),
+    })?;
+
+    let board = Board::load(root.clone())?;
+    let id = board.queues[0].tickets[0].id.clone();
+
+    // 2. Add comment
+    run_cli(CliArgs {
+        root: Some(root.clone()),
+        command: Some(Commands::Comment {
+            id: id.clone(),
+            content: "CLI created comment".to_string(),
+        }),
+    })?;
+
+    let board2 = Board::load(root)?;
+    let ticket = board2.find_ticket_by_id(&id).unwrap();
+    assert_eq!(
+        ticket.comments.len(),
+        1,
+        "There should be exactly one comment added via CLI"
+    );
+    assert_eq!(
+        ticket.comments[0].content, "CLI created comment",
+        "Content of the comment should match input"
+    );
+
+    Ok(())
+}

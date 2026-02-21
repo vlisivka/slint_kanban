@@ -50,6 +50,7 @@ export component App inherits Window {
     callback delete-ticket(string);
     callback update-ticket(string, string, string, string); // id, title, desc, assigned_to
     callback create-ticket(string, string, string, string); // queue_id, title, desc, assigned_to
+    callback add-comment(string, string); // ticket_id, content
     callback set-queue-limit(string, int); // queue_id, limit
     callback open-warning-dialog(string); // message
     callback navigate-to(string); // for cross-references
@@ -416,6 +417,9 @@ export component App inherits Window {
         }
         hide-tooltip() => {
             tooltip_visible = false;
+        }
+        add-comment(content) => {
+            root.add-comment(active_ticket.id, content);
         }
     }
 

@@ -134,4 +134,15 @@ pub enum Commands {
         #[arg(short, long)]
         id: String,
     },
+
+    /// Add a comment to a ticket
+    Comment {
+        /// Ticket ID (short ID)
+        #[arg(short, long)]
+        id: String,
+
+        /// Comment content
+        #[arg(short, long)]
+        content: String,
+    },
 }

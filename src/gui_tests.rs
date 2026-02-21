@@ -165,6 +165,10 @@ fn test_gui_suite() {
     // V. Test ID visibility
     println!("Checking Ticket ID visibility...");
     test_ticket_id_visibility();
+
+    // VI. Test comments addition
+    println!("Checking GUI Add Comment...");
+    test_gui_add_comment();
 }
 
 fn test_ticket_id_visibility() {
@@ -208,4 +212,30 @@ fn test_gui_user_desync() {
     println!("Final editing assigned to: '{}'", assigned);
 
     assert_eq!(assigned, "user", "Assigned user should be 'user'");
+}
+
+fn test_gui_add_comment() {
+    let (ui, controller, root_path, _temp_dir) = setup_test_app();
+
+    // 1. Get first ticket ID
+    let id = ui.invoke_test_get_first_ticket_id();
+    assert!(!id.is_empty(), "Need a ticket to add a comment to");
+
+    // 2. Add comment via GUI callback
+    ui.invoke_add_comment(id.clone().into(), "Hello from GUI test".into());
+
+    // 3. Verify it was written to Board
+    let board = Board::load(root_path).unwrap();
+    let ticket = board.find_ticket_by_id(&id).unwrap();
+
+    assert_eq!(
+        ticket.comments.len(),
+        1,
+        "There should be exactly one comment added via GUI callback"
+    );
+    assert_eq!(ticket.comments[0].content, "Hello from GUI test");
+    assert_eq!(
+        ticket.comments[0].metadata.author, "user",
+        "Author should be the mock active user"
+    );
 }

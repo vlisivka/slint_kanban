@@ -367,6 +367,7 @@ impl Board {
             description: description.to_string(),
             assigned_to: assigned_to.to_string(),
             author: author.to_string(),
+            comments: vec![],
         };
         ticket.save(&ticket_dir)?;
 
@@ -395,6 +396,70 @@ impl Board {
         ticket.save(&ticket_dir)?;
 
         Ok(())
+    }
+
+    pub fn add_comment(
+        &self,
+        ticket_id: &str,
+        content: &str,
+        author: &str,
+    ) -> anyhow::Result<String> {
+        let ticket_dir = self.ticket_path(ticket_id);
+        if !ticket_dir.exists() {
+            return Err(anyhow::anyhow!("Ticket {} not found", ticket_id));
+        }
+
+        // Find next integer NNN
+        let mut max_n: u32 = 0;
+        if let Ok(entries) = std::fs::read_dir(&ticket_dir) {
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().into_owned();
+                if name.starts_with("tc") && name.ends_with(".md") && name.len() >= 5 {
+                    if let Ok(n) = name[2..5].parse::<u32>() {
+                        if n > max_n {
+                            max_n = n;
+                        }
+                    }
+                }
+            }
+        }
+        let next_n = max_n + 1;
+
+        // Generate UID
+        use rand::Rng;
+        let mut rng = rand::rngs::OsRng;
+        let uid_chars: String = (0..5)
+            .map(|_| {
+                let chars = b"abcdefghijklmnopqrstuvwxyz0123456789";
+                let idx = rng.gen_range(0..chars.len());
+                chars[idx] as char
+            })
+            .collect();
+
+        let comment_id = format!("tc{:03}{}", next_n, uid_chars);
+        let comment_path = ticket_dir.join(format!("{}.md", comment_id));
+
+        let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        let comment = crate::model::comment::Comment {
+            id: comment_id.clone(),
+            metadata: crate::model::comment::CommentMetadata {
+                author: author.to_string(),
+                created_at: now.clone(),
+                updated_at: now.clone(),
+                attachments: None,
+            },
+            content: content.to_string(),
+            references: vec![],
+        };
+
+        comment.save(&comment_path)?;
+
+        // Update ticket's updated_at
+        let mut ticket = Ticket::load(&ticket_dir)?;
+        ticket.updated_at = now;
+        ticket.save(&ticket_dir)?;
+
+        Ok(comment_id)
     }
 
     /// Resolves a queue identifier. If `target_id` is "index:<N>", it maps

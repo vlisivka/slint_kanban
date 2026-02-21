@@ -174,6 +174,7 @@ impl AppController {
                     assigned_to: metadata.assigned_to.into(),
                     author: metadata.author.into(),
                     references: Rc::new(VecModel::default()).into(),
+                    comments: Rc::new(VecModel::default()).into(),
                 };
                 app.set_active_ticket(info);
                 app.set_show_ticket_view_dialog(true);
@@ -230,6 +231,28 @@ impl AppController {
         println!("Controller: Saving ticket {}", ticket_id);
         if let Err(e) = board.update_ticket(&ticket_id, &title, &description, &assigned_to) {
             eprintln!("Error saving ticket: {:?}", e);
+        }
+    }
+
+    pub fn handle_add_comment(&self, ticket_id: String, content: String) {
+        let board = match self.load_board("add_comment") {
+            Some(b) => b,
+            None => return,
+        };
+
+        println!("Controller: Adding comment to ticket {}", ticket_id);
+        let author = board.config.active_user();
+        if let Err(e) = board.add_comment(&ticket_id, &content, author) {
+            eprintln!("Error adding comment: {:?}", e);
+            self.show_error(&e.to_string());
+        } else {
+            if let Some(app) = self.app_weak.upgrade() {
+                if let Ok(b) = Board::load(self.root_path.clone()) {
+                    if let Some(t) = b.find_ticket_by_id(&ticket_id) {
+                        app.set_active_ticket(crate::into_slint_ticket(t, &b));
+                    }
+                }
+            }
         }
     }
 

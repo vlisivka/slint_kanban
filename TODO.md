@@ -125,12 +125,12 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 - [x] Move deleted tickets to system Recycle Bin.
 
 ### Ticket Comments
-- [ ] Implement reading comments from `tc<NNN><UID>.md` files in ticket directory
-- [ ] Support YAML frontmatter in comments (`author`, `created_at`, `updated_at`)
-- [ ] Extract and display ticket references (`#abc123`) below comments
-- [ ] Sort comments by `created_at` (older first)
-- [ ] Update UI to display comments in `TicketView`
-- [ ] Implement adding new comments via UI
+- [x] Implement reading comments from `tc<NNN><UID>.md` files in ticket directory
+- [x] Support YAML frontmatter in comments (`author`, `created_at`, `updated_at`)
+- [x] Extract and display ticket references (`#abc123`) below comments
+- [x] Sort comments by `created_at` (older first)
+- [x] Update UI to display comments in `TicketView`
+- [x] Implement adding new comments via UI
 
 ### Attachments
 - [ ] Create `attachment/` sub-directory logic in ticket models

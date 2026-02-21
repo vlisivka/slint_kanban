@@ -39,6 +39,37 @@ pub fn into_slint_ticket(ticket: &model::Ticket, board: &Board) -> TicketStr {
             }
         })
         .collect();
+
+    let slint_comments: Vec<CommentStr> = ticket
+        .comments
+        .iter()
+        .map(|c| {
+            let crefs: Vec<RefStr> = c
+                .references
+                .iter()
+                .map(|id_with_hash| {
+                    let id = id_with_hash.trim_start_matches('#');
+                    let title = board
+                        .find_ticket_by_id(id)
+                        .map(|t| t.title.clone())
+                        .unwrap_or_else(|| "Unknown Ticket".to_string());
+                    RefStr {
+                        id: SharedString::from(id_with_hash),
+                        title: SharedString::from(title),
+                    }
+                })
+                .collect();
+            CommentStr {
+                id: SharedString::from(&c.id),
+                author: SharedString::from(&c.metadata.author),
+                created_at: SharedString::from(&c.metadata.created_at),
+                updated_at: SharedString::from(&c.metadata.updated_at),
+                content: SharedString::from(&c.content),
+                references: Rc::new(VecModel::from(crefs)).into(),
+            }
+        })
+        .collect();
+
     TicketStr {
         id: SharedString::from(&ticket.id),
         title: SharedString::from(&ticket.title),
@@ -49,6 +80,7 @@ pub fn into_slint_ticket(ticket: &model::Ticket, board: &Board) -> TicketStr {
         assigned_to: SharedString::from(&ticket.assigned_to),
         author: SharedString::from(&ticket.author),
         references: Rc::new(VecModel::from(refs)).into(),
+        comments: Rc::new(VecModel::from(slint_comments)).into(),
     }
 }
 
@@ -218,6 +250,11 @@ pub(crate) fn init_callbacks(ui: &App, controller: Arc<AppController>) {
             description.into(),
             assigned_to.into(),
         );
+    });
+
+    let c = controller.clone();
+    ui.on_add_comment(move |ticket_id, content| {
+        c.handle_add_comment(ticket_id.into(), content.into());
     });
 
     let c = controller.clone();
@@ -434,6 +471,20 @@ fn handle_command(root_path: PathBuf, command: Commands) -> anyhow::Result<()> {
             println!("Created at:  {}", ticket.created_at);
             println!("Updated at:  {}", ticket.updated_at);
             println!("\nDescription:\n{}", ticket.description);
+            if !ticket.comments.is_empty() {
+                println!("\nComments:");
+                for c in &ticket.comments {
+                    println!(
+                        "- [{}] {} ({}): {}",
+                        c.id, c.metadata.author, c.metadata.created_at, c.content
+                    );
+                }
+            }
+        }
+        Commands::Comment { id, content } => {
+            println!("Adding comment to ticket: {}", id);
+            let author = board.config.active_user();
+            board.add_comment(&id, &content, author)?;
         }
     }
 

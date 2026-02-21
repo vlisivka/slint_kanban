@@ -76,6 +76,7 @@ fn test_ticket_matches() {
         updated_at: "now".to_string(),
         assigned_to: "".to_string(),
         author: "me".to_string(),
+        comments: vec![],
     };
 
     assert!(
@@ -103,6 +104,7 @@ fn test_ticket_matches_date_range() {
         updated_at: "2024-02-18 12:00:00".to_string(),
         assigned_to: "".to_string(),
         author: "me".to_string(),
+        comments: vec![],
     };
 
     // 1. No filters
@@ -193,6 +195,7 @@ fn test_extract_references() {
         assigned_to: "".to_string(),
         author: "me".to_string(),
         description: "Check #abc123 and #def456. Also #123 is too short, and #abcdef78 is too long but should extract #abcdef. And #abc123 again.".to_string(),
+        comments: vec![],
     };
     let refs = t.extract_references();
     assert_eq!(refs.len(), 3, "Should extract exactly 3 unique references.");
@@ -224,6 +227,7 @@ fn test_update_ticket_unassign() {
         description: "Desc".to_string(),
         assigned_to: "Alice".to_string(),
         author: "Bob".to_string(),
+        comments: vec![],
     };
     ticket.save(&ticket_path).unwrap();
 

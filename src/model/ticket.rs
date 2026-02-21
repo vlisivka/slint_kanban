@@ -29,6 +29,7 @@ pub struct Ticket {
     pub description: String,
     pub assigned_to: String,
     pub author: String,
+    pub comments: Vec<crate::model::Comment>,
 }
 
 impl Ticket {
@@ -41,6 +42,7 @@ impl Ticket {
             description,
             assigned_to: metadata.assigned_to,
             author: metadata.author,
+            comments: Vec::new(),
         }
     }
 
@@ -157,7 +159,23 @@ impl Ticket {
             metadata.updated_at = metadata.created_at.clone();
         }
 
-        Ok(Ticket::from_metadata(ticket_id, metadata, body))
+        let mut ticket = Ticket::from_metadata(ticket_id, metadata, body);
+
+        let mut comments = Vec::new();
+        if let Ok(entries) = std::fs::read_dir(path) {
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().into_owned();
+                if name.starts_with("tc") && name.ends_with(".md") {
+                    if let Ok(comment) = crate::model::Comment::load(&entry.path()) {
+                        comments.push(comment);
+                    }
+                }
+            }
+        }
+        comments.sort_by(|a, b| a.metadata.created_at.cmp(&b.metadata.created_at));
+        ticket.comments = comments;
+
+        Ok(ticket)
     }
 
     pub fn save(&self, path: &std::path::Path) -> anyhow::Result<()> {
