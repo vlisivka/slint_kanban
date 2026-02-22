@@ -19,6 +19,7 @@ pub struct KanbanConfig {
 pub struct UserConfig {
     #[serde(default = "default_user")]
     pub active_user: String,
+    pub machine_id: Option<String>,
     #[serde(default)]
     pub show_only_mine: bool,
     #[serde(default)]
@@ -58,6 +59,7 @@ impl Default for UserConfig {
     fn default() -> Self {
         Self {
             active_user: default_user(),
+            machine_id: None,
             show_only_mine: false,
             hidden_queues: Vec::new(),
             search_history: Vec::new(),
@@ -80,9 +82,9 @@ impl Config {
 
         // 2. Load User Config (~/.config/slint-kanban/user.toml)
         let user_path = Self::user_config_path();
-        let user: UserConfig = if let Some(path) = user_path {
+        let mut user: UserConfig = if let Some(ref path) = user_path {
             if path.exists() {
-                let content = std::fs::read_to_string(&path)?;
+                let content = std::fs::read_to_string(path)?;
                 toml::from_str(&content).unwrap_or_default()
             } else {
                 UserConfig::default()
@@ -91,7 +93,37 @@ impl Config {
             UserConfig::default()
         };
 
+        // Ensure machine_id
+        let mut should_save_user = false;
+        if user.machine_id.is_none() || user.machine_id.as_ref().unwrap().is_empty() {
+            user.machine_id = Some(Self::generate_machine_id());
+            should_save_user = true;
+        }
+
+        if should_save_user {
+            if let Some(path) = &user_path {
+                if let Some(parent) = path.parent() {
+                    let _ = std::fs::create_dir_all(parent);
+                }
+                if let Ok(content) = toml::to_string_pretty(&user) {
+                    let _ = std::fs::write(path, content);
+                }
+            }
+        }
+
         Ok(Config { kanban, user })
+    }
+
+    fn generate_machine_id() -> String {
+        use rand::Rng;
+        let charset: &[u8] = b"abcdefghijklmnopqrstuvwxyz0123456789";
+        let mut rng = rand::thread_rng();
+        (0..8)
+            .map(|_| {
+                let idx = rng.gen_range(0..charset.len());
+                charset[idx] as char
+            })
+            .collect()
     }
 
     pub fn user_config_path() -> Option<std::path::PathBuf> {
@@ -107,6 +139,9 @@ impl Config {
     }
     pub fn active_user(&self) -> &str {
         &self.user.active_user
+    }
+    pub fn machine_id(&self) -> Option<&str> {
+        self.user.machine_id.as_deref()
     }
     pub fn show_only_mine(&self) -> bool {
         self.user.show_only_mine

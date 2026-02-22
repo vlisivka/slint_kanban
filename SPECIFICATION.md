@@ -87,6 +87,11 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
         -   Once attached, a Markdown link to the file (e.g., `[file (1).png](attachment/file (1).png)`) is generated and inserted into the ticket description or comment text.
         -   The total number of attachments is shown in the ticket view header. Clicking the "📁 Attachments (N)" opens the `attachment/` sub-directory in the host OS's native file manager.
     -   **Collaboration**: Designed for decentralized collaboration where files are synchronized via Git, Dropbox, or similar services.
+    -   **Activity Logging**: Support for logging user actions (e.g., creating or editing tickets, commenting, attaching files, assigning users).
+        -   To avoid conflicts during synchronization, each user logs their actions into a separate file using their active username and a unique machine ID: `Kanban/logs/log_${USER}_${MACHINE_ID}.md`.
+        -   Logs use a Markdown table format (e.g., `| **Date** | **Action** | **Action description** | **JSON** |`) so they are easy to read and parse. 
+        -   The `JSON` column stores the machine-readable payload of the action in JSON format (including the action type itself, e.g. `{"action": "...", "id": "..."}`) to simplify parsing the whole event into a single Enum. Placed at the end of the row, it does not clutter the human-readable text.
+        -   When creating the file for the first time, a Markdown header and table definition are added. Subsequent entries are simply appended to the file without reading its previous contents.
 
 8.  **Command Line Interface (CLI)**:
     -   Non-interactive interface controlled via arguments and options.
@@ -120,6 +125,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
         - `queue_limits`: Mapping of queue names to WIP limits.
     - **User Settings (`~/.config/APP_NAME/user.toml`)**: Local preferences unique to each user/machine.
         - `active_user`: Currently selected local user identity.
+        - `machine_id`: A unique, randomly generated short ID created upon first run to uniquely identify the machine, used for log files.
         - `show_only_mine`: Flag to filter by `active_user`.
         - `hidden_queues`: List of queues to hide from the board.
         - `search_history`: List of recent search queries.

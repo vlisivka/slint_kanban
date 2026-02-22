@@ -657,3 +657,55 @@ fn test_move_ticket_invalid_queue() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_activity_logging() -> anyhow::Result<()> {
+    let board_dir = tempdir()?;
+    let root_path = board_dir.path().to_path_buf();
+
+    let user_dir = tempdir()?;
+    std::env::set_var("HOME", user_dir.path());
+    #[cfg(target_os = "linux")]
+    std::env::set_var("XDG_CONFIG_HOME", user_dir.path());
+
+    Board::ensure_initialized(&root_path)?;
+    let board = Board::load(root_path.clone())?;
+
+    // Create ticket should produce a log entry
+    let tid = board.create_ticket("Log Task", "Log Desc", "2. ToDo", "user1", "author1")?;
+
+    // Move ticket should produce a log entry
+    board.move_ticket(&tid, "2. ToDo", "3. Doing")?;
+
+    // Check logs
+    let machine_id = board.config.machine_id().unwrap();
+    let log_file_name = format!("log_{}_{}.md", board.config.active_user(), machine_id);
+    let log_path = root_path.join("logs").join(log_file_name);
+
+    assert!(log_path.exists(), "Log file should be created");
+
+    let log_content = std::fs::read_to_string(&log_path)?;
+
+    assert!(
+        log_content.contains("# User Activity Log:"),
+        "Should contain header"
+    );
+    assert!(
+        log_content.contains("| **Date** | **Action** | **Action description** | **JSON** |"),
+        "Should contain table header"
+    );
+    assert!(
+        log_content.contains("CREATE_TICKET"),
+        "Should contain CREATE_TICKET action"
+    );
+    assert!(
+        log_content.contains("CHANGE_STATUS"),
+        "Should contain CHANGE_STATUS action"
+    );
+    assert!(
+        log_content.contains("Log Task"),
+        "Should contain ticket title"
+    );
+
+    Ok(())
+}

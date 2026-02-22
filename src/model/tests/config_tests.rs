@@ -72,3 +72,33 @@ fn test_split_config_persistence() {
     assert_eq!(loaded.get_limit("ToDo"), Some(42));
     assert_eq!(loaded.user.search_history, vec!["rust"]);
 }
+
+#[test]
+fn test_machine_id_generation_on_load() {
+    use tempfile::tempdir;
+    let board_dir = tempdir().unwrap();
+    let board_root = board_dir.path();
+
+    let user_dir = tempdir().unwrap();
+    std::env::set_var("HOME", user_dir.path());
+    #[cfg(target_os = "linux")]
+    std::env::set_var("XDG_CONFIG_HOME", user_dir.path());
+
+    let user_config_path = Config::user_config_path().expect("Should have user config path");
+    if user_config_path.exists() {
+        std::fs::remove_file(&user_config_path).unwrap();
+    }
+
+    // Load it - should generate machine_id and save it
+    let loaded1 = Config::load(board_root).unwrap();
+    assert!(loaded1.machine_id().is_some());
+    let machine_id1 = loaded1.machine_id().unwrap().to_string();
+    assert!(!machine_id1.is_empty());
+
+    // Verify it saved user config
+    assert!(user_config_path.exists());
+
+    // Load it again - should use the saved machine_id
+    let loaded2 = Config::load(board_root).unwrap();
+    assert_eq!(loaded2.machine_id(), Some(machine_id1.as_str()));
+}

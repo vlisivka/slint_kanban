@@ -141,6 +141,14 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 - [x] Implement attach functionality via CLI command
 
 ### Statistics and Analytics
+- [x] Implement journaling of user actions into `Kanban/logs/log_${USER}_${MACHINE_ID}.md` using Markdown table format with JSON arguments.
+  - [x] Generate and store `machine_id` in user config on first run.
+  - [x] Create `ActionPayload` enum and `append_log_entry` function in `model.rs`.
+  - [x] Log ticket creation and updates (title/description).
+  - [x] Log moving tickets between queues.
+  - [x] Log adding comments.
+  - [x] Log attaching files.
+  - [x] Log assigning and unassigning users.
 - [ ] Implement analytics dashboard
   - [ ] Ticket count per queue
   - [ ] Time tracking per ticket/queue
@@ -148,6 +156,9 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [ ] Trend visualization
   - [ ] Burndown charts
   - [ ] Export statistics to CSV
+
+### Conflicts handling in multi-user multi-machine setup
+  - [ ] Handle conflicts properly.
 
 ### Export Functionality
 - [ ] Implement export features
@@ -158,6 +169,12 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [ ] Export to Markdown
   - [ ] Batch export functionality
   - [ ] Export configuration options
+
+### Translate GUI, CLI, and logs into user language.
+  - [ ] Mark all user facing strings.
+  - [ ] Extract translatable strings inot a .pot file.
+  - [ ] Translate .pot file into Ukrainian language.
+  - [ ] Compile in translation statically or load dynamically.
 
 ### Markdown Rendering
 - [/] Implement Markdown rendering in ticket detail view using Servo

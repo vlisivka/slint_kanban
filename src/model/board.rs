@@ -4,9 +4,11 @@
 //! Includes: Board struct and its complex operational methods.
 //! Constraints: Should rely on Ticket, Queue, and Config for data structures, but manages the coordination between them.
 
+use crate::model::action::ActionPayload;
 use crate::model::config::Config;
 use crate::model::queue::Queue;
 use crate::model::ticket::{Ticket, TicketMetadata};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 /// Default queue names created when initializing a new board.
@@ -255,6 +257,20 @@ impl Board {
             let file_name = source_link.file_name().unwrap();
             let dest_link = target_path.join(file_name);
             std::fs::rename(source_link, dest_link)?;
+
+            let payload = ActionPayload::ChangeStatus {
+                id: ticket_id.to_string(),
+                from: source_queue_id.to_string(),
+                to: target_queue_id.to_string(),
+            };
+            let _ = self.append_log_entry(
+                payload,
+                &format!(
+                    "Moved ticket #{} from \"{}\" to \"{}\"",
+                    ticket_id, source_queue_id, target_queue_id
+                ),
+            );
+
             Ok(())
         } else {
             Err(anyhow::anyhow!(
@@ -375,6 +391,18 @@ impl Board {
         #[cfg(unix)]
         std::os::unix::fs::symlink(&ticket_dir, queue_path.join(&ticket_id))?;
 
+        let payload = ActionPayload::CreateTicket {
+            id: ticket_id.clone(),
+            title: title.to_string(),
+        };
+        let _ = self.append_log_entry(
+            payload,
+            &format!(
+                "Created ticket \"{}\" (#{}) in queue \"{}\"",
+                title, ticket_id, queue_id
+            ),
+        );
+
         Ok(ticket_id)
     }
 
@@ -388,12 +416,36 @@ impl Board {
         let ticket_dir = self.ticket_path(ticket_id);
         let mut ticket = Ticket::load(&ticket_dir)?;
 
+        let old_assigned = ticket.assigned_to.clone();
+
         ticket.updated_at = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
         ticket.title = title.to_string();
         ticket.description = description.to_string();
         ticket.assigned_to = assigned_to.to_string();
 
         ticket.save(&ticket_dir)?;
+
+        if old_assigned != assigned_to && !assigned_to.is_empty() {
+            let payload = ActionPayload::AssignTicket {
+                id: ticket_id.to_string(),
+                assignee: Some(assigned_to.to_string()),
+            };
+            let _ = self.append_log_entry(
+                payload,
+                &format!("Assigned ticket #{} to {}", ticket_id, assigned_to),
+            );
+        } else if old_assigned != assigned_to && assigned_to.is_empty() {
+            let payload = ActionPayload::AssignTicket {
+                id: ticket_id.to_string(),
+                assignee: None,
+            };
+            let _ = self.append_log_entry(payload, &format!("Unassigned ticket #{}", ticket_id));
+        }
+
+        let payload = ActionPayload::UpdateTicket {
+            id: ticket_id.to_string(),
+        };
+        let _ = self.append_log_entry(payload, &format!("Updated ticket #{}", ticket_id));
 
         Ok(())
     }
@@ -459,6 +511,12 @@ impl Board {
         ticket.updated_at = now;
         ticket.save(&ticket_dir)?;
 
+        let payload = ActionPayload::AddComment {
+            id: ticket_id.to_string(),
+            comment_id: comment_id.clone(),
+        };
+        let _ = self.append_log_entry(payload, &format!("Added comment to ticket #{}", ticket_id));
+
         Ok(comment_id)
     }
 
@@ -510,6 +568,15 @@ impl Board {
         }
 
         std::fs::copy(source_path, &target_path)?;
+
+        let payload = ActionPayload::AttachFile {
+            id: ticket_id.to_string(),
+            filename: target_name.clone(),
+        };
+        let _ = self.append_log_entry(
+            payload,
+            &format!("Attached file \"{}\" to ticket #{}", target_name, ticket_id),
+        );
 
         Ok(format!("[{}](attachment/{})", target_name, target_name))
     }
@@ -574,5 +641,58 @@ impl Board {
         } else {
             Ok(link_path.to_path_buf())
         }
+    }
+
+    pub fn append_log_entry(
+        &self,
+        payload: ActionPayload,
+        description: &str,
+    ) -> anyhow::Result<()> {
+        let active_user = self.config.active_user();
+        if active_user.is_empty() {
+            return Ok(());
+        }
+        let machine_id = self.config.machine_id().unwrap_or("unknown");
+
+        let root_path = self
+            .tickets_path
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("Invalid board root path"))?;
+
+        let logs_path = root_path.join("logs");
+        if !logs_path.exists() {
+            std::fs::create_dir_all(&logs_path)?;
+        }
+
+        let log_file_name = format!("log_{}_{}.md", active_user, machine_id);
+        let log_path = logs_path.join(log_file_name);
+
+        let should_write_header = !log_path.exists();
+
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_path)?;
+
+        if should_write_header {
+            writeln!(
+                &mut file,
+                "# User Activity Log: {}\n\n| **Date** | **Action** | **Action description** | **JSON** |\n| :--- | :--- | :--- | :--- |",
+                active_user
+            )?;
+        }
+
+        // Use second precision without fractional part for better readability
+        let now = chrono::Local::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        let action_name = payload.to_string();
+        let json = serde_json::to_string(&payload)?;
+
+        writeln!(
+            &mut file,
+            "| {} | {} | {} | `{}` |",
+            now, action_name, description, json
+        )?;
+
+        Ok(())
     }
 }
