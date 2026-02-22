@@ -177,8 +177,9 @@ The following features are planned for future releases:
    - Markdown export for documentation
 
 8. **Statistics and Analytics**:
+   - Snapshot-metrics (Ticket count per queue and per user) and Agile metrics (Average Lead Time, Average Cycle Time) are implemented and accessible via CLI `stats` command and the `📊 Statistics` button in the GUI.
    - Dashboard with ticket metrics
-   - Time tracking per queue
+   - Time tracking per queue is implemented via log parsing.
    - Completion rates and trends
    - Burndown charts for project tracking
 

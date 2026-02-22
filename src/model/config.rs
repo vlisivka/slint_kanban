@@ -7,12 +7,32 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct Sprint {
+    pub number: u32,
+    pub name: String,
+    pub start_date: String,
+    pub end_date: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct Workflow {
+    #[serde(default)]
+    pub start_queues: Vec<String>,
+    #[serde(default)]
+    pub done_queues: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KanbanConfig {
     #[serde(default)]
     pub queue_limits: HashMap<String, usize>,
     #[serde(default = "default_users")]
     pub users: Vec<String>,
+    #[serde(default)]
+    pub sprints: Vec<Sprint>,
+    #[serde(default)]
+    pub workflows: HashMap<String, Workflow>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,6 +71,8 @@ impl Default for KanbanConfig {
         Self {
             queue_limits: HashMap::new(),
             users: default_users(),
+            sprints: Vec::new(),
+            workflows: HashMap::new(),
         }
     }
 }
@@ -139,6 +161,14 @@ impl Config {
     }
     pub fn active_user(&self) -> &str {
         &self.user.active_user
+    }
+
+    pub fn get_current_sprint(&self) -> Option<&Sprint> {
+        let today = chrono::Local::now().naive_local().date().to_string();
+        self.kanban
+            .sprints
+            .iter()
+            .find(|s| s.start_date <= today && today <= s.end_date)
     }
     pub fn machine_id(&self) -> Option<&str> {
         self.user.machine_id.as_deref()

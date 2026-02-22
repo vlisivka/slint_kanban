@@ -1,0 +1,180 @@
+import {
+    Button,
+    ScrollView,
+    Palette,
+    VerticalBox,
+    HorizontalBox,
+} from "std-widgets.slint";
+import { BoardSummaryStr } from "common.slint";
+
+export component StatsView inherits Rectangle {
+    in property <BoardSummaryStr> stats;
+    callback close();
+
+    background: Palette.background;
+    width: 100%;
+    height: 100%;
+
+    VerticalBox {
+        padding: 40px;
+        spacing: 20px;
+
+        HorizontalLayout {
+            Text {
+                text: "Board Statistics";
+                font-size: 24px;
+                font-weight: 700;
+            }
+
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+
+            Button {
+                text: "Back to Board";
+                clicked => {
+                    close();
+                }
+            }
+        }
+
+        ScrollView {
+            VerticalLayout {
+                spacing: 20px;
+
+                // Summary
+                VerticalLayout {
+                    spacing: 8px;
+                    Text {
+                        text: "== Board Summary ==";
+                        font-weight: 700;
+                    }
+
+                    Text {
+                        text: "Total tickets: " + stats.total_tickets;
+                    }
+
+                    Text {
+                        text: "Unassigned: " + stats.unassigned_tickets;
+                    }
+
+                    Text {
+                        text: "Average Lead Time: " + stats.avg_lead_time;
+                    }
+
+                    Text {
+                        text: "Average Cycle Time: " + stats.avg_cycle_time;
+                    }
+                }
+
+                // Queues
+                VerticalLayout {
+                    spacing: 8px;
+                    Text {
+                        text: "== Tickets per Queue ==";
+                        font-weight: 700;
+                    }
+
+                    HorizontalLayout {
+                        spacing: 16px;
+                        Text {
+                            width: 200px;
+                            text: "Queue";
+                            font-weight: 700;
+                        }
+
+                        Text {
+                            width: 60px;
+                            text: "Count";
+                            font-weight: 700;
+                            horizontal-alignment: right;
+                        }
+
+                        Text {
+                            width: 60px;
+                            text: "Limit";
+                            font-weight: 700;
+                            horizontal-alignment: right;
+                        }
+
+                        Text {
+                            width: 60px;
+                            text: "Usage";
+                            font-weight: 700;
+                            horizontal-alignment: right;
+                        }
+                    }
+
+                    for q in stats.queues: HorizontalLayout {
+                        spacing: 16px;
+                        Text {
+                            width: 200px;
+                            text: q.name;
+                        }
+
+                        Text {
+                            width: 60px;
+                            text: q.count;
+                            horizontal-alignment: right;
+                        }
+
+                        Text {
+                            width: 60px;
+                            text: q.limit;
+                            horizontal-alignment: right;
+                        }
+
+                        Text {
+                            width: 60px;
+                            text: q.usage;
+                            horizontal-alignment: right;
+                        }
+                    }
+                }
+
+                // Users
+                VerticalLayout {
+                    spacing: 8px;
+                    Text {
+                        text: "== Tickets per User ==";
+                        font-weight: 700;
+                    }
+
+                    HorizontalLayout {
+                        spacing: 16px;
+                        Text {
+                            width: 200px;
+                            text: "User";
+                            font-weight: 700;
+                        }
+
+                        Text {
+                            width: 60px;
+                            text: "Count";
+                            font-weight: 700;
+                            horizontal-alignment: right;
+                        }
+                    }
+
+                    for u in stats.users: HorizontalLayout {
+                        spacing: 16px;
+                        Text {
+                            width: 200px;
+                            text: u.name;
+                        }
+
+                        Text {
+                            width: 60px;
+                            text: u.count;
+                            horizontal-alignment: right;
+                        }
+                    }
+                }
+
+                Rectangle {
+                    vertical-stretch: 1;
+                }
+            }
+        }
+    }
+}

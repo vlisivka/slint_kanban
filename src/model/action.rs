@@ -4,7 +4,11 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "action")]
 pub enum ActionPayload {
     #[serde(rename = "CREATE_TICKET")]
-    CreateTicket { id: String, title: String },
+    CreateTicket {
+        id: String,
+        title: String,
+        queue: String,
+    },
     #[serde(rename = "UPDATE_TICKET")]
     UpdateTicket { id: String },
     #[serde(rename = "CHANGE_STATUS")]

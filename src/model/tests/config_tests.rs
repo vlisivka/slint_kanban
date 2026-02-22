@@ -102,3 +102,36 @@ fn test_machine_id_generation_on_load() {
     let loaded2 = Config::load(board_root).unwrap();
     assert_eq!(loaded2.machine_id(), Some(machine_id1.as_str()));
 }
+
+#[test]
+fn test_get_current_sprint() {
+    use crate::model::config::Sprint;
+    let mut config = Config::default();
+
+    let today = chrono::Local::now().naive_local().date();
+    let yesterday = (today - chrono::Duration::days(1)).to_string();
+    let tomorrow = (today + chrono::Duration::days(1)).to_string();
+    let last_week = (today - chrono::Duration::days(7)).to_string();
+    let two_weeks_ago = (today - chrono::Duration::days(14)).to_string();
+
+    config.kanban.sprints = vec![
+        Sprint {
+            number: 1,
+            name: "Past Sprint".to_string(),
+            start_date: two_weeks_ago,
+            end_date: last_week,
+        },
+        Sprint {
+            number: 2,
+            name: "Current Sprint".to_string(),
+            start_date: yesterday,
+            end_date: tomorrow,
+        },
+    ];
+
+    let current = config
+        .get_current_sprint()
+        .expect("Should find current sprint");
+    assert_eq!(current.number, 2);
+    assert_eq!(current.name, "Current Sprint");
+}

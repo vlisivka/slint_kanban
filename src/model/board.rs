@@ -394,6 +394,7 @@ impl Board {
         let payload = ActionPayload::CreateTicket {
             id: ticket_id.clone(),
             title: title.to_string(),
+            queue: queue_id.to_string(),
         };
         let _ = self.append_log_entry(
             payload,

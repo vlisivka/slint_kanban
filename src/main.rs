@@ -9,7 +9,7 @@ mod cli;
 mod controller;
 mod model;
 
-use cli::{CliArgs, Commands};
+use cli::{CliArgs, Commands, SprintAction};
 use controller::AppController;
 use model::Board;
 use notify::{RecursiveMode, Watcher};
@@ -298,6 +298,16 @@ pub(crate) fn init_callbacks(ui: &App, controller: Arc<AppController>) {
     });
 
     let c = controller.clone();
+    ui.on_request_stats(move || {
+        c.handle_request_stats();
+    });
+
+    let c = controller.clone();
+    ui.on_request_sprints_view(move || {
+        c.handle_request_sprints_view();
+    });
+
+    let c = controller.clone();
     ui.on_focus_search(move || {
         c.handle_focus_search();
     });
@@ -446,6 +456,66 @@ fn handle_command(
             }
             config.write(&root_path)?;
         }
+        Commands::Stats { user } => {
+            let summary = crate::model::stats::get_board_summary(&board);
+
+            writeln!(out, "== Board Summary ==")?;
+            writeln!(out, "Total tickets: {}", summary.total_tickets)?;
+            writeln!(out, "Unassigned:    {}", summary.unassigned_tickets)?;
+            writeln!(
+                out,
+                "Avg Lead Time: {}",
+                summary
+                    .avg_lead_time_days
+                    .map(|d| format!("{:.1} days", d))
+                    .unwrap_or_else(|| "-".to_string())
+            )?;
+            writeln!(
+                out,
+                "Avg Cycle Time: {}\n",
+                summary
+                    .avg_cycle_time_days
+                    .map(|d| format!("{:.1} days", d))
+                    .unwrap_or_else(|| "-".to_string())
+            )?;
+
+            writeln!(out, "== Tickets per Queue ==")?;
+            writeln!(
+                out,
+                "{:<20} {:>5} {:>6} {:>5}",
+                "Queue", "Count", "Limit", "Usage"
+            )?;
+            for q in summary.queues {
+                let limit_str = q
+                    .limit
+                    .map(|l| l.to_string())
+                    .unwrap_or_else(|| "-".to_string());
+                let usage_str = if let Some(limit) = q.limit {
+                    if limit > 0 {
+                        format!("{}%", (q.count * 100) / limit)
+                    } else {
+                        "-".to_string()
+                    }
+                } else {
+                    "-".to_string()
+                };
+                writeln!(
+                    out,
+                    "{:<20} {:>5} {:>6} {:>5}",
+                    q.name, q.count, limit_str, usage_str
+                )?;
+            }
+            writeln!(out)?;
+
+            writeln!(out, "== Tickets per User ==")?;
+            writeln!(out, "{:<20} {:>5}", "User", "Count")?;
+            for u in summary.users {
+                if user.as_ref().is_some_and(|f| f != &u.name) {
+                    continue;
+                }
+                writeln!(out, "{:<20} {:>5}", u.name, u.count)?;
+            }
+        }
         Commands::Move { id, queue } => {
             writeln!(out, "Moving ticket: {} to queue: {}", id, queue)?;
             let _ticket = board
@@ -576,6 +646,125 @@ fn handle_command(
                 anyhow::bail!("No action specified. Use --file, --list, --show, or --open.");
             }
         }
+        Commands::Sprint { action } => {
+            let mut sprint_board = board;
+            match action {
+                SprintAction::List => {
+                    if sprint_board.config.kanban.sprints.is_empty() {
+                        writeln!(out, "No sprints found.")?;
+                    } else {
+                        writeln!(
+                            out,
+                            "{:<6} {:<20} {:<12} {:<12}",
+                            "Number", "Name", "Start", "End"
+                        )?;
+                        writeln!(
+                            out,
+                            "------------------------------------------------------"
+                        )?;
+                        for sprint in &sprint_board.config.kanban.sprints {
+                            writeln!(
+                                out,
+                                "{:<6} {:<20} {:<12} {:<12}",
+                                sprint.number, sprint.name, sprint.start_date, sprint.end_date
+                            )?;
+                        }
+                    }
+                }
+                SprintAction::Current => {
+                    if let Some(current) = sprint_board.config.get_current_sprint() {
+                        writeln!(
+                            out,
+                            "Current Sprint: {} - {} ({} to {})",
+                            current.number, current.name, current.start_date, current.end_date
+                        )?;
+                    } else {
+                        writeln!(out, "No active sprint for today.")?;
+                    }
+                }
+                SprintAction::Add {
+                    number,
+                    name,
+                    start,
+                    end,
+                } => {
+                    let next_number = if let Some(n) = number {
+                        if sprint_board
+                            .config
+                            .kanban
+                            .sprints
+                            .iter()
+                            .any(|s| s.number == n)
+                        {
+                            anyhow::bail!("Sprint with number {} already exists.", n);
+                        }
+                        n
+                    } else {
+                        sprint_board
+                            .config
+                            .kanban
+                            .sprints
+                            .iter()
+                            .map(|s| s.number)
+                            .max()
+                            .map(|n| n + 1)
+                            .unwrap_or(1)
+                    };
+
+                    sprint_board
+                        .config
+                        .kanban
+                        .sprints
+                        .push(crate::model::config::Sprint {
+                            number: next_number,
+                            name: name.clone(),
+                            start_date: start.clone(),
+                            end_date: end.clone(),
+                        });
+                    sprint_board.config.kanban.sprints.sort_by_key(|s| s.number);
+                    sprint_board.config.write(&root_path)?;
+                    writeln!(out, "Added sprint: {} - {}", next_number, name)?;
+                }
+                SprintAction::Update {
+                    number,
+                    name,
+                    start,
+                    end,
+                } => {
+                    let sprint = sprint_board
+                        .config
+                        .kanban
+                        .sprints
+                        .iter_mut()
+                        .find(|s| s.number == number)
+                        .ok_or_else(|| anyhow::anyhow!("Sprint {} not found.", number))?;
+                    if let Some(ref n) = name {
+                        sprint.name = n.clone();
+                    }
+                    if let Some(ref s) = start {
+                        sprint.start_date = s.clone();
+                    }
+                    if let Some(ref e) = end {
+                        sprint.end_date = e.clone();
+                    }
+                    sprint_board.config.write(&root_path)?;
+                    writeln!(out, "Updated sprint {}.", number)?;
+                }
+                SprintAction::Remove { number } => {
+                    let initial_len = sprint_board.config.kanban.sprints.len();
+                    sprint_board
+                        .config
+                        .kanban
+                        .sprints
+                        .retain(|s| s.number != number);
+                    if sprint_board.config.kanban.sprints.len() == initial_len {
+                        anyhow::bail!("Sprint {} not found.", number);
+                    }
+                    sprint_board.config.write(&root_path)?;
+                    writeln!(out, "Removed sprint {}.", number)?;
+                }
+            }
+        }
     }
 
     Ok(())
@@ -600,6 +789,63 @@ fn run_cli(args: CliArgs, out: &mut dyn std::io::Write) -> anyhow::Result<()> {
         handle_command(root_path, command, out)
     } else {
         run_gui(root_path)
+    }
+}
+
+pub(crate) fn into_slint_summary(
+    summary: crate::model::stats::BoardSummary,
+) -> crate::BoardSummaryStr {
+    let slint_queues: Vec<crate::QueueStatStr> = summary
+        .queues
+        .into_iter()
+        .map(|q| {
+            let limit_str = q
+                .limit
+                .map(|l| l.to_string())
+                .unwrap_or_else(|| "-".to_string());
+            let usage_str = if let Some(limit) = q.limit {
+                if limit > 0 {
+                    format!("{}%", (q.count * 100) / limit)
+                } else {
+                    "-".to_string()
+                }
+            } else {
+                "-".to_string()
+            };
+            crate::QueueStatStr {
+                name: q.name.into(),
+                count: q.count as i32,
+                limit: limit_str.into(),
+                usage: usage_str.into(),
+            }
+        })
+        .collect();
+
+    let slint_users: Vec<crate::UserStatStr> = summary
+        .users
+        .into_iter()
+        .map(|u| crate::UserStatStr {
+            name: u.name.into(),
+            count: u.count as i32,
+        })
+        .collect();
+
+    let lead_time_str = summary
+        .avg_lead_time_days
+        .map(|d| format!("{:.1} days", d))
+        .unwrap_or_else(|| "-".to_string());
+    let cycle_time_str = summary
+        .avg_cycle_time_days
+        .map(|d| format!("{:.1} days", d))
+        .unwrap_or_else(|| "-".to_string());
+
+    crate::BoardSummaryStr {
+        total_tickets: summary.total_tickets as i32,
+        unassigned_tickets: summary.unassigned_tickets as i32,
+        queues: std::rc::Rc::new(slint::VecModel::from(slint_queues)).into(),
+        users: std::rc::Rc::new(slint::VecModel::from(slint_users)).into(),
+        avg_lead_time: lead_time_str.into(),
+        avg_cycle_time: cycle_time_str.into(),
     }
 }
 

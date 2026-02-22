@@ -150,8 +150,9 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Log attaching files.
   - [x] Log assigning and unassigning users.
 - [ ] Implement analytics dashboard
-  - [ ] Ticket count per queue
-  - [ ] Time tracking per ticket/queue
+  - [x] Ticket count per queue
+  - [x] Sprints (CLI CRUD + GUI display)
+  - [x] Time tracking per ticket/queue (Lead/Cycle time calculations implemented)
   - [ ] Completion rate calculations
   - [ ] Trend visualization
   - [ ] Burndown charts

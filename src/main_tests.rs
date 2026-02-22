@@ -197,6 +197,13 @@ fn test_cli_attach() -> anyhow::Result<()> {
 #[test]
 fn test_cli_configure() -> anyhow::Result<()> {
     let env = TestEnv::new()?;
+    // Mock HOME for user config path during test
+    let user_dir = tempfile::tempdir().unwrap();
+    std::env::set_var("HOME", user_dir.path());
+    // Note: dirs::config_dir() might use different env vars on different OS
+    #[cfg(target_os = "linux")]
+    std::env::set_var("XDG_CONFIG_HOME", user_dir.path());
+
     Board::ensure_initialized(&env.root)?;
 
     env.run(&["configure", "--add-user", "newusr"])?;
@@ -324,6 +331,90 @@ fn test_cli_attach_extended() -> anyhow::Result<()> {
     // 6. Test --open (check message)
     let out = env.run(&["attach", "-i", &id, "--open"])?;
     assert!(out.contains("Opening attachments directory"));
+
+    Ok(())
+}
+
+#[test]
+fn test_cli_stats() -> anyhow::Result<()> {
+    let env = TestEnv::new()?;
+    Board::ensure_initialized(&env.root)?;
+
+    env.run(&[
+        "add",
+        "-t",
+        "Task 1",
+        "-q",
+        "1. Incoming",
+        "--assign-to",
+        "Alice",
+    ])?;
+    env.run(&["add", "-t", "Task 2", "-q", "2. ToDo", "--assign-to", "Bob"])?;
+    env.run(&["add", "-t", "Task 3", "-q", "1. Incoming"])?;
+
+    let out = env.run(&["stats"])?;
+    assert!(out.contains("== Board Summary =="));
+    assert!(out.contains("Total tickets: 3"));
+    assert!(out.contains("Unassigned:    1"));
+
+    assert!(out.contains("== Tickets per Queue =="));
+    assert!(out.contains("1. Incoming              2      -     -"));
+    assert!(out.contains("2. ToDo                  1     21    4%"));
+
+    assert!(out.contains("== Tickets per User =="));
+    assert!(out.contains("Alice                    1"));
+    assert!(out.contains("Bob                      1"));
+
+    // Test filtering by user
+    let out = env.run(&["stats", "--user", "Alice"])?;
+    assert!(out.contains("Alice                    1"));
+    assert!(!out.contains("Bob"));
+
+    Ok(())
+}
+
+#[test]
+fn test_cli_sprint_crud() -> anyhow::Result<()> {
+    let env = TestEnv::new()?;
+    Board::ensure_initialized(&env.root)?;
+
+    env.run(&[
+        "sprint",
+        "add",
+        "--number",
+        "1",
+        "--name",
+        "Sprint 1",
+        "--start",
+        "2026-02-01",
+        "--end",
+        "2026-02-14",
+    ])?;
+
+    let out = env.run(&["sprint", "list"])?;
+    assert!(out.contains("Sprint 1"));
+
+    env.run(&["sprint", "update", "--number", "1", "--name", "Sprint 2"])?;
+    let out = env.run(&["sprint", "list"])?;
+    assert!(out.contains("Sprint 2"));
+
+    env.run(&["sprint", "remove", "--number", "1"])?;
+    let out = env.run(&["sprint", "list"])?;
+    assert!(out.contains("No sprints found."));
+
+    // Test automatic numbering
+    env.run(&[
+        "sprint",
+        "add",
+        "--name",
+        "Auto Sprint",
+        "--start",
+        "2026-03-01",
+        "--end",
+        "2026-03-14",
+    ])?;
+    let out = env.run(&["sprint", "list"])?;
+    assert!(out.contains("1      Auto Sprint"));
 
     Ok(())
 }

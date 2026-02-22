@@ -9,6 +9,7 @@ pub mod board;
 pub mod comment;
 pub mod config;
 pub mod queue;
+pub mod stats;
 pub mod ticket;
 
 pub use board::Board;

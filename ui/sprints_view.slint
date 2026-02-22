@@ -1,0 +1,124 @@
+import {
+    Button,
+    ScrollView,
+    Palette,
+    VerticalBox,
+    HorizontalBox,
+} from "std-widgets.slint";
+import { SprintStr } from "common.slint";
+
+export component SprintsView inherits Rectangle {
+    in property <[SprintStr]> sprints;
+    callback close();
+
+    background: Palette.background;
+    width: 100%;
+    height: 100%;
+
+    VerticalBox {
+        padding: 40px;
+        spacing: 20px;
+
+        HorizontalLayout {
+            Text {
+                text: "Sprints Management";
+                font-size: 24px;
+                font-weight: 700;
+            }
+
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+
+            Button {
+                text: "Back to Board";
+                clicked => {
+                    close();
+                }
+            }
+        }
+
+        ScrollView {
+            VerticalLayout {
+                spacing: 12px;
+
+                // Header
+                HorizontalLayout {
+                    spacing: 16px;
+                    padding-bottom: 8px;
+                    Text {
+                        width: 60px;
+                        text: "#";
+                        font-weight: 700;
+                    }
+
+                    Text {
+                        horizontal-stretch: 1;
+                        text: "Sprint Name";
+                        font-weight: 700;
+                    }
+
+                    Text {
+                        width: 100px;
+                        text: "Start Date";
+                        font-weight: 700;
+                    }
+
+                    Text {
+                        width: 100px;
+                        text: "End Date";
+                        font-weight: 700;
+                    }
+                }
+
+                // Divider
+                Rectangle {
+                    height: 1px;
+                    background: Palette.border;
+                }
+
+                if (sprints.length == 0): Rectangle {
+                    height: 40px;
+                    Text {
+                        text: "No sprints configured.";
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                        color: Palette.foreground;
+                        opacity: 0.5;
+                    }
+                }
+
+                for s in sprints: HorizontalLayout {
+                    spacing: 16px;
+                    padding: 8px;
+                    
+                    // Highlight if it's "current" logic-wise, but here we just list all
+                    
+                    Text {
+                        width: 60px;
+                        text: s.number;
+                    }
+
+                    Text {
+                        horizontal-stretch: 1;
+                        text: s.name;
+                    }
+
+                    Text {
+                        width: 100px;
+                        text: s.start_date;
+                    }
+
+                    Text {
+                        width: 100px;
+                        text: s.end_date;
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            vertical-stretch: 1;
+        }
+    }
+}

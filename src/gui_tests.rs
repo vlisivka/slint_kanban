@@ -169,6 +169,10 @@ fn test_gui_suite() {
     // VI. Test comments addition
     println!("Checking GUI Add Comment...");
     test_gui_add_comment();
+
+    // VII. Test Stats View
+    println!("Checking Stats View...");
+    test_gui_stats_view_opens();
 }
 
 fn test_ticket_id_visibility() {
@@ -237,5 +241,32 @@ fn test_gui_add_comment() {
     assert_eq!(
         ticket.comments[0].metadata.author, "user",
         "Author should be the mock active user"
+    );
+}
+
+fn test_gui_stats_view_opens() {
+    let (ui, _controller, _root_path, _temp_dir) = setup_test_app();
+
+    assert!(
+        !ui.get_show_stats_view(),
+        "Stats view should be closed initially"
+    );
+
+    ui.invoke_request_stats();
+
+    assert!(
+        ui.get_show_stats_view(),
+        "Stats view should be open after request"
+    );
+
+    let stats = ui.get_board_stats();
+    assert_eq!(
+        stats.total_tickets, 2,
+        "Should have 2 tickets created in setup"
+    );
+    assert_eq!(
+        stats.queues.row_count(),
+        7,
+        "Should have 7 queues in default config"
     );
 }

@@ -37,6 +37,34 @@ export struct QueueStr {
     visible: bool,
 }
 
+export struct QueueStatStr {
+    name: string,
+    count: int,
+    limit: string,
+    usage: string,
+}
+
+export struct UserStatStr {
+    name: string,
+    count: int,
+}
+
+export struct BoardSummaryStr {
+    total_tickets: int,
+    unassigned_tickets: int,
+    queues: [QueueStatStr],
+    users: [UserStatStr],
+    avg_lead_time: string,
+    avg_cycle_time: string,
+}
+
+export struct SprintStr {
+    number: int,
+    name: string,
+    start_date: string,
+    end_date: string,
+}
+
 // Centralized color palette for the application.
 // Use these instead of hardcoded hex values for consistency.
 export global Theme {

@@ -89,6 +89,13 @@ pub enum Commands {
         date_to: Option<String>,
     },
 
+    /// Show board statistics
+    Stats {
+        /// Filter by user
+        #[arg(long)]
+        user: Option<String>,
+    },
+
     /// Change configuration
     Configure {
         /// Set active user
@@ -135,6 +142,12 @@ pub enum Commands {
         id: String,
     },
 
+    /// Manage sprints
+    Sprint {
+        #[command(subcommand)]
+        action: SprintAction,
+    },
+
     /// Add a comment to a ticket
     Comment {
         /// Ticket ID (short ID)
@@ -167,5 +180,40 @@ pub enum Commands {
         /// Open the attachments directory in the file manager
         #[arg(short, long)]
         open: bool,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum SprintAction {
+    /// List all sprints
+    List,
+    /// Show the current sprint (by today's date)
+    Current,
+    /// Add a new sprint
+    Add {
+        #[arg(long)]
+        number: Option<u32>,
+        #[arg(long)]
+        name: String,
+        #[arg(long)]
+        start: String,
+        #[arg(long)]
+        end: String,
+    },
+    /// Update an existing sprint
+    Update {
+        #[arg(long)]
+        number: u32,
+        #[arg(long)]
+        name: Option<String>,
+        #[arg(long)]
+        start: Option<String>,
+        #[arg(long)]
+        end: Option<String>,
+    },
+    /// Remove a sprint
+    Remove {
+        #[arg(long)]
+        number: u32,
     },
 }

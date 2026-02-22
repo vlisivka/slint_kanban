@@ -4,7 +4,7 @@
 //! Includes: AppController struct and methods for handling UI actions.
 
 use crate::model::{Board, Config};
-use crate::{sync_board_to_ui, App, TicketStr, UserGlobal};
+use crate::{sync_board_to_ui, App, SprintStr, TicketStr, UserGlobal};
 use slint::{ComponentHandle, Model, SharedString, VecModel, Weak};
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -104,6 +104,19 @@ impl AppController {
             .map(SharedString::from)
             .collect();
         app.set_search_history(Rc::new(VecModel::from(history)).into());
+
+        // Sync sprint info
+        if let Some(sprint) = board.config.get_current_sprint() {
+            app.set_active_sprint(SprintStr {
+                number: sprint.number as i32,
+                name: sprint.name.clone().into(),
+                start_date: sprint.start_date.clone().into(),
+                end_date: sprint.end_date.clone().into(),
+            });
+            app.set_has_active_sprint(true);
+        } else {
+            app.set_has_active_sprint(false);
+        }
     }
 
     fn load_board(&self, action: &str) -> Option<Board> {
@@ -409,6 +422,44 @@ impl AppController {
             }
         } else {
             self.show_error(&format!("Ticket NOT FOUND: {}", target_id));
+        }
+    }
+
+    pub fn handle_request_stats(&self) {
+        let board = match self.load_board("stats") {
+            Some(b) => b,
+            None => return,
+        };
+
+        if let Some(app) = self.app_weak.upgrade() {
+            let summary = crate::model::stats::get_board_summary(&board);
+            let slint_summary = crate::into_slint_summary(summary);
+            app.set_board_stats(slint_summary);
+            app.set_show_stats_view(true);
+        }
+    }
+
+    pub fn handle_request_sprints_view(&self) {
+        let board = match self.load_board("sprints") {
+            Some(b) => b,
+            None => return,
+        };
+
+        if let Some(app) = self.app_weak.upgrade() {
+            let slint_sprints: Vec<SprintStr> = board
+                .config
+                .kanban
+                .sprints
+                .iter()
+                .map(|s| SprintStr {
+                    number: s.number as i32,
+                    name: s.name.clone().into(),
+                    start_date: s.start_date.clone().into(),
+                    end_date: s.end_date.clone().into(),
+                })
+                .collect();
+            app.set_all_sprints(Rc::new(VecModel::from(slint_sprints)).into());
+            app.set_show_sprints_view(true);
         }
     }
 

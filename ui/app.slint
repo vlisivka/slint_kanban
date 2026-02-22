@@ -16,6 +16,8 @@ import {
     QueueStr,
     AppConfig,
     UserGlobal,
+    BoardSummaryStr,
+    SprintStr,
 } from "common.slint";
 
 export { UserGlobal }
@@ -28,6 +30,8 @@ import { SearchHistoryMenu } from "dialogs/search_history_menu.slint";
 import { TicketCard } from "components/ticket_card.slint";
 import { KanbanColumn } from "components/kanban_column.slint";
 import { DeleteConfirmDialog } from "dialogs/delete_confirm_dialog.slint";
+import { StatsView } from "stats_view.slint";
+import { SprintsView } from "sprints_view.slint";
 
 export component App inherits Window {
     in-out property <[QueueStr]> board_queues;
@@ -56,6 +60,8 @@ export component App inherits Window {
     callback navigate-to(string); // for cross-references
     callback attach-file(string) -> string; // ticket_id
     callback open-attachment-folder(string); // ticket_id
+    callback request-stats(); // loads data into board_stats and shows view
+    callback request-sprints-view(); // opens sprints list view
     
     callback test-trigger-add-ticket(string); // for testing
     callback test-trigger-close-view(); // for testing
@@ -104,6 +110,16 @@ export component App inherits Window {
     in-out property <bool> show_delete_confirm_dialog: false;
     in-out property <string> deleting_id: "";
     in-out property <string> deleting_title: "";
+
+    // Stats View
+    in-out property <bool> show_stats_view: false;
+    in-out property <BoardSummaryStr> board_stats;
+
+    // Sprint Info
+    in-out property <bool> has_active_sprint: false;
+    in-out property <SprintStr> active_sprint;
+    in-out property <bool> show_sprints_view: false;
+    in-out property <[SprintStr]> all_sprints;
 
     preferred-width: 1024px;
     preferred-height: 768px;
@@ -263,6 +279,35 @@ export component App inherits Window {
                             text: "Board Info";
                             clicked => {
                                 show-board-info();
+                            }
+                        }
+
+                        Button {
+                            text: "📊 Statistics";
+                            clicked => {
+                                request-stats();
+                            }
+                        }
+
+                        if (has_active_sprint): Rectangle {
+                            background: Palette.border;
+                            border-radius: 4px;
+                            HorizontalLayout {
+                                padding-left: 8px;
+                                padding-right: 8px;
+                                spacing: 4px;
+                                Text {
+                                    text: "🏃 Sprint " + active_sprint.number + ": " + active_sprint.name;
+                                    vertical-alignment: center;
+                                    font-weight: 600;
+                                    color: Palette.foreground;
+                                }
+                            }
+
+                            TouchArea {
+                                clicked => {
+                                    request-sprints-view();
+                                }
                             }
                         }
                     }
@@ -571,5 +616,19 @@ export component App inherits Window {
             return board_queues[3].tickets[0].id;
         }
         return "";
+    }
+
+    if (show_stats_view): StatsView {
+        stats: board_stats;
+        close => {
+            show_stats_view = false;
+        }
+    }
+
+    if (show_sprints_view): SprintsView {
+        sprints: all_sprints;
+        close => {
+            show_sprints_view = false;
+        }
     }
 }
