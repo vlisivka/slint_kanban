@@ -163,8 +163,10 @@ impl Config {
         &self.user.active_user
     }
 
-    pub fn get_current_sprint(&self) -> Option<&Sprint> {
-        let today = chrono::Local::now().naive_local().date().to_string();
+    pub fn get_current_sprint(&self, date: Option<&str>) -> Option<&Sprint> {
+        let today = date
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| chrono::Local::now().naive_local().date().to_string());
         self.kanban
             .sprints
             .iter()

@@ -108,6 +108,25 @@ fn test_get_board_summary() {
         Some(&0),
         "charlie should have 0 tickets"
     );
+
+    assert_eq!(summary.completion_rate, Some(0.0), "0/4 tickets are done");
+
+    // Add a done queue and re-check
+    let q3 = crate::model::queue::Queue {
+        id: "3".into(),
+        name: "Done".into(),
+        tickets: vec![Ticket::from_metadata(
+            "t5".into(),
+            Default::default(),
+            "".into(),
+        )],
+        limit: None,
+        visible: true,
+    };
+    board.queues.push(q3);
+
+    let summary = get_board_summary(&board);
+    assert_eq!(summary.completion_rate, Some(20.0), "1/5 tickets is done"); // (1) / (5 - 0) * 100 = 20%
 }
 
 #[test]

@@ -106,7 +106,7 @@ impl AppController {
         app.set_search_history(Rc::new(VecModel::from(history)).into());
 
         // Sync sprint info
-        if let Some(sprint) = board.config.get_current_sprint() {
+        if let Some(sprint) = board.config.get_current_sprint(None) {
             app.set_active_sprint(SprintStr {
                 number: sprint.number as i32,
                 name: sprint.name.clone().into(),

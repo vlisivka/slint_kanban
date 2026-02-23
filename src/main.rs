@@ -472,12 +472,21 @@ fn handle_command(
             )?;
             writeln!(
                 out,
-                "Avg Cycle Time: {}\n",
+                "Avg Cycle Time: {}",
                 summary
                     .avg_cycle_time_days
                     .map(|d| format!("{:.1} days", d))
                     .unwrap_or_else(|| "-".to_string())
             )?;
+            
+            if let Some(rate) = summary.completion_rate {
+                writeln!(out, "Completion Rate: {:.1}%", rate)?;
+            }
+
+            if let Some(rate) = summary.sprint_completion_rate {
+                writeln!(out, "Sprint Completion: {:.1}%", rate)?;
+            }
+            writeln!(out)?;
 
             writeln!(out, "== Tickets per Queue ==")?;
             writeln!(
@@ -672,7 +681,7 @@ fn handle_command(
                     }
                 }
                 SprintAction::Current => {
-                    if let Some(current) = sprint_board.config.get_current_sprint() {
+                    if let Some(current) = sprint_board.config.get_current_sprint(None) {
                         writeln!(
                             out,
                             "Current Sprint: {} - {} ({} to {})",
@@ -839,6 +848,15 @@ pub(crate) fn into_slint_summary(
         .map(|d| format!("{:.1} days", d))
         .unwrap_or_else(|| "-".to_string());
 
+    let completion_rate_str = summary
+        .completion_rate
+        .map(|r| format!("{:.1}%", r))
+        .unwrap_or_default();
+    let sprint_completion_rate_str = summary
+        .sprint_completion_rate
+        .map(|r| format!("{:.1}%", r))
+        .unwrap_or_default();
+
     crate::BoardSummaryStr {
         total_tickets: summary.total_tickets as i32,
         unassigned_tickets: summary.unassigned_tickets as i32,
@@ -846,6 +864,8 @@ pub(crate) fn into_slint_summary(
         users: std::rc::Rc::new(slint::VecModel::from(slint_users)).into(),
         avg_lead_time: lead_time_str.into(),
         avg_cycle_time: cycle_time_str.into(),
+        completion_rate: completion_rate_str.into(),
+        sprint_completion_rate: sprint_completion_rate_str.into(),
     }
 }
 

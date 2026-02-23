@@ -30,6 +30,8 @@ pub struct BoardSummary {
     pub users: Vec<UserStat>,
     pub avg_lead_time_days: Option<f64>,
     pub avg_cycle_time_days: Option<f64>,
+    pub completion_rate: Option<f64>,
+    pub sprint_completion_rate: Option<f64>,
 }
 
 pub fn get_board_summary(board: &Board) -> BoardSummary {
@@ -45,9 +47,42 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
         }
     }
 
+    // Default workflow if not configured
+    let default_workflow = crate::model::config::Workflow {
+        start_queues: vec!["3. Doing".to_string(), "Doing".to_string()],
+        done_queues: vec![
+            "6. Done".to_string(),
+            "Done".to_string(),
+            "7. Archive".to_string(),
+        ],
+    };
+
+    let workflow = board
+        .config
+        .kanban
+        .workflows
+        .get("default")
+        .unwrap_or(&default_workflow);
+
+    let done_queues = &workflow.done_queues;
+    let start_queues = &workflow.start_queues;
+
+    let mut done_tickets_count = 0;
+    let mut archived_tickets_count = 0;
+
     for queue in &board.queues {
         let count = queue.tickets.len();
         total_tickets += count;
+
+        if done_queues.contains(&queue.name) {
+            // Note: 7. Archive is in done_queues by default, but we should distinguish it
+            // for the completion rate formula: (Done) / (Total - Archive)
+            if queue.name.to_lowercase().contains("archive") {
+                archived_tickets_count += count;
+            } else {
+                done_tickets_count += count;
+            }
+        }
 
         queues.push(QueueStat {
             name: queue.name.clone(),
@@ -64,6 +99,12 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
         }
     }
 
+    let completion_rate = if total_tickets > archived_tickets_count {
+        Some((done_tickets_count as f64) / ((total_tickets - archived_tickets_count) as f64) * 100.0)
+    } else {
+        None
+    };
+
     let mut users: Vec<UserStat> = user_counts
         .into_iter()
         .map(|(name, count)| UserStat { name, count })
@@ -74,19 +115,12 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
 
     let mut avg_lead_time_days = None;
     let mut avg_cycle_time_days = None;
+    let mut sprint_completion_rate = None;
 
     if let Some(parent) = board.tickets_path.parent() {
         if let Ok(all_logs) = load_all_logs(parent) {
             let mut lead_times = Vec::new();
             let mut cycle_times = Vec::new();
-
-            // Hardcoded defaults for now, or use config if we add a "default" workflow
-            let start_queues = vec!["3. Doing".to_string(), "Doing".to_string()];
-            let done_queues = vec![
-                "6. Done".to_string(),
-                "Done".to_string(),
-                "7. Archive".to_string(),
-            ];
 
             let mut ticket_ids = std::collections::HashSet::new();
             for q in &board.queues {
@@ -96,10 +130,10 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
             }
 
             for id in ticket_ids {
-                if let Some(lt) = calculate_lead_time(&id, &all_logs, &done_queues) {
+                if let Some(lt) = calculate_lead_time(&id, &all_logs, done_queues) {
                     lead_times.push(lt);
                 }
-                if let Some(ct) = calculate_cycle_time(&id, &all_logs, &start_queues, &done_queues)
+                if let Some(ct) = calculate_cycle_time(&id, &all_logs, start_queues, done_queues)
                 {
                     cycle_times.push(ct);
                 }
@@ -113,6 +147,35 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
                 let sum: i64 = cycle_times.iter().sum();
                 avg_cycle_time_days = Some((sum as f64) / 86400.0 / (cycle_times.len() as f64));
             }
+
+            // Calculate Sprint Completion Rate if there is an active sprint
+            if let Some(sprint) = board.config.get_current_sprint(None) {
+                let mut active_in_sprint = std::collections::HashSet::new();
+                let mut completed_in_sprint = std::collections::HashSet::new();
+
+                for entry in &all_logs {
+                    if entry.timestamp >= sprint.start_date && entry.timestamp <= sprint.end_date {
+                        match &entry.payload {
+                            ActionPayload::CreateTicket { id, .. } => {
+                                active_in_sprint.insert(id.clone());
+                            }
+                            ActionPayload::ChangeStatus { id, to, .. } => {
+                                active_in_sprint.insert(id.clone());
+                                if done_queues.contains(to) {
+                                    completed_in_sprint.insert(id.clone());
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+
+                if !active_in_sprint.is_empty() {
+                    sprint_completion_rate = Some(
+                        (completed_in_sprint.len() as f64) / (active_in_sprint.len() as f64) * 100.0,
+                    );
+                }
+            }
         }
     }
 
@@ -123,6 +186,8 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
         users,
         avg_lead_time_days,
         avg_cycle_time_days,
+        completion_rate,
+        sprint_completion_rate,
     }
 }
 

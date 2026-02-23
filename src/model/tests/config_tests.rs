@@ -130,8 +130,14 @@ fn test_get_current_sprint() {
     ];
 
     let current = config
-        .get_current_sprint()
+        .get_current_sprint(None)
         .expect("Should find current sprint");
     assert_eq!(current.number, 2);
     assert_eq!(current.name, "Current Sprint");
+
+    // Test with specific date
+    let past = config
+        .get_current_sprint(Some(&config.kanban.sprints[0].start_date))
+        .expect("Should find past sprint");
+    assert_eq!(past.number, 1);
 }

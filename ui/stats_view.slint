@@ -65,6 +65,14 @@ export component StatsView inherits Rectangle {
                     Text {
                         text: "Average Cycle Time: " + stats.avg_cycle_time;
                     }
+
+                    if stats.completion_rate != "": Text {
+                        text: "Completion Rate: " + stats.completion_rate;
+                    }
+
+                    if stats.sprint_completion_rate != "": Text {
+                        text: "Sprint Completion Rate: " + stats.sprint_completion_rate;
+                    }
                 }
 
                 // Queues

@@ -153,13 +153,18 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Ticket count per queue
   - [x] Sprints (CLI CRUD + GUI display)
   - [x] Time tracking per ticket/queue (Lead/Cycle time calculations implemented)
-  - [ ] Completion rate calculations
+  - [x] Completion rate calculations
   - [ ] Trend visualization
   - [ ] Burndown charts
   - [ ] Export statistics to CSV
 
 ### Conflicts handling in multi-user multi-machine setup
   - [ ] Handle conflicts properly.
+
+### Separate GUI and CLI for baord admin
+  - [ ] Board initialization and setup.
+  - [ ] Resolving of conflicts.
+  - [ ] Fixing of problems.
 
 ### Export Functionality
 - [ ] Implement export features

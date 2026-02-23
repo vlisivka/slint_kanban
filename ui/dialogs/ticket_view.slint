@@ -24,6 +24,7 @@ export component TicketView inherits Rectangle {
     callback add-comment(string);
     callback attach-file(string) -> string;
     callback open-attachment-folder(string);
+    callback request-stats();
 
     ModalBackdrop {
         dismiss => {
@@ -61,6 +62,14 @@ export component TicketView inherits Rectangle {
                             height: 40px;
                             clicked => {
                                 open-attachment-folder(ticket.id);
+                            }
+                        }
+
+                        if ticket.id == "board-info": Button {
+                            text: "📊 Statistics";
+                            height: 40px;
+                            clicked => {
+                                request-stats();
                             }
                         }
                     }
