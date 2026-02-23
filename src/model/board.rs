@@ -22,6 +22,46 @@ const DEFAULT_QUEUES: &[&str] = &[
     "7. Archive",
 ];
 
+const DEFAULT_README: &str = r#"---
+title: Project Overview
+author: Kanban Authors
+created_at: 2026-01-01 00:00:00
+updated_at: 2026-01-01 00:00:00
+---
+# Board Overview
+
+Welcome to your new Kanban board! This system is designed for local-first, file-system-based project management.
+
+## Quality Process (Definition of Done)
+To ensure high quality and clarity:
+1. **Verification**: A ticket is considered "Done" only when the **original author** confirms that all tasks, conditions, and acceptance criteria have been fully met.
+2. **Review**: Tasks should move through the "Reviewing" and "Testing" queues before being finalized.
+3. **Closing**: Only after confirmation should a ticket be moved to the "Done" queue. "Archive" is reserved for completed tasks that are no longer needed for daily tracking.
+
+## Statistics & Analytics
+Detailed analytics are available via the **Board Info** -> **Statistics** button.
+
+### How Metrics are Calculated:
+- **Board Completion Rate**: `(Done Tickets) / (Total Tickets - Archived Tickets)`. This represents the overall progress of the project, excluding tasks that have been archived.
+- **Sprint Completion Rate**: This metric tracks performance during the active sprint. It is calculated as `(Completed in Sprint) / (Active in Sprint)`, where "Active" includes any ticket created or modified during the sprint period.
+- **Lead Time**: The total time elapsed from the moment a ticket is created until it reaches the "Done" queue. It measures the customer's perspective of time.
+- **Cycle Time**: The time spent actively working on a task. It measures the duration from when a ticket leaves the "starting" queues (e.g., ToDo) until it enters a "done" queue.
+
+## Sprints
+Sprints are time-boxed iterations (usually 1-2 weeks) that help the team focus on a specific set of tasks.
+- **Detection**: The system automatically detects the current sprint based on today's date.
+- **Tracking**: Use the "Sprint" display in the header to see the current sprint's progress.
+- **Management**: You can add, update, or remove sprints using the CLI: `kanban sprint add --name "Sprint Name" --start YYYY-MM-DD --end YYYY-MM-DD`.
+
+## Configuration
+Customize your board by editing `config.toml`:
+- **users**: Define team members to enable assignment.
+- **queue_limits**: Set WIP (Work In Progress) limits to prevent bottlenecks.
+- **workflows**: Customize which queues are considered "start" (e.g., ToDo) and "done" (e.g., Done, Archive) for accurate time tracking.
+
+Tip: The `config.toml` file uses the TOML format. The application will automatically reload when you save changes to this file.
+"#;
+
 /// File-system–backed Kanban board.
 ///
 /// Layout on disk:
@@ -73,8 +113,7 @@ impl Board {
             // Create default root README.md if it doesn't exist
             let readme_path = root_path.join("README.md");
             if !readme_path.exists() {
-                let default_readme = "---\ntitle: The Project\nauthor: Kanban authors\ncreated_at: 2026-01-01 00:00:00\nupdated_at: 2026-01-01 00:00:00\n---\n# Board Overview\n\nWelcome to your new Kanban board!\n\n## Rules\n1. Move tickets between queues.\n2. Respect WIP limits.\n";
-                std::fs::write(&readme_path, default_readme)?;
+                std::fs::write(&readme_path, DEFAULT_README)?;
             }
         }
 
@@ -83,24 +122,26 @@ impl Board {
 
     /// Loads the root README.md content and metadata.
     pub fn load_board_info(root_path: &Path) -> anyhow::Result<(TicketMetadata, String)> {
+        let readme_path = root_path.join("README.md");
+        let content = if readme_path.exists() {
+            std::fs::read_to_string(&readme_path)?
+        } else {
+            DEFAULT_README.to_string()
+        };
+
+        Ok(Self::parse_readme_content(&content))
+    }
+
+    fn parse_readme_content(content: &str) -> (TicketMetadata, String) {
         let default_meta = || TicketMetadata {
             title: "Board Overview".to_string(),
             ..Default::default()
         };
 
-        let readme_path = root_path.join("README.md");
-        if !readme_path.exists() {
-            return Ok((
-                default_meta(),
-                "# Board Overview\n\nRoot README.md not found.".to_string(),
-            ));
-        }
-
-        let content = std::fs::read_to_string(&readme_path)?;
         let parts: Vec<&str> = content.splitn(3, "---").collect();
 
         if parts.len() < 3 {
-            return Ok((default_meta(), content));
+            return (default_meta(), content.to_string());
         }
 
         let frontmatter = parts[1];
@@ -114,7 +155,7 @@ impl Board {
         if metadata.updated_at.is_empty() && !metadata.created_at.is_empty() {
             metadata.updated_at = metadata.created_at.clone();
         }
-        Ok((metadata, body))
+        (metadata, body)
     }
 
     pub fn queue_path(&self, queue_id: &str) -> PathBuf {

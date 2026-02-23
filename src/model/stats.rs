@@ -100,7 +100,9 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
     }
 
     let completion_rate = if total_tickets > archived_tickets_count {
-        Some((done_tickets_count as f64) / ((total_tickets - archived_tickets_count) as f64) * 100.0)
+        Some(
+            (done_tickets_count as f64) / ((total_tickets - archived_tickets_count) as f64) * 100.0,
+        )
     } else {
         None
     };
@@ -133,8 +135,7 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
                 if let Some(lt) = calculate_lead_time(&id, &all_logs, done_queues) {
                     lead_times.push(lt);
                 }
-                if let Some(ct) = calculate_cycle_time(&id, &all_logs, start_queues, done_queues)
-                {
+                if let Some(ct) = calculate_cycle_time(&id, &all_logs, start_queues, done_queues) {
                     cycle_times.push(ct);
                 }
             }
@@ -172,7 +173,8 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
 
                 if !active_in_sprint.is_empty() {
                     sprint_completion_rate = Some(
-                        (completed_in_sprint.len() as f64) / (active_in_sprint.len() as f64) * 100.0,
+                        (completed_in_sprint.len() as f64) / (active_in_sprint.len() as f64)
+                            * 100.0,
                     );
                 }
             }

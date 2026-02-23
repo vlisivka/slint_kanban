@@ -478,7 +478,16 @@ fn handle_command(
                     .map(|d| format!("{:.1} days", d))
                     .unwrap_or_else(|| "-".to_string())
             )?;
-            
+
+            if let Some(rate) = summary.completion_rate {
+                writeln!(out, "Completion Rate: {:.1}%", rate)?;
+            }
+
+            if let Some(rate) = summary.sprint_completion_rate {
+                writeln!(out, "Sprint Completion: {:.1}%", rate)?;
+            }
+            writeln!(out)?;
+
             if let Some(rate) = summary.completion_rate {
                 writeln!(out, "Completion Rate: {:.1}%", rate)?;
             }

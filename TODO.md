@@ -160,6 +160,12 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 
 ### Conflicts handling in multi-user multi-machine setup
   - [ ] Handle conflicts properly.
+  - [ ] Prevent conflicts by an option "manage my tickets only", turned on by default.
+
+### Create separate GUI and CLI for baord admin
+  - [ ] Board initialization and setup.
+  - [ ] Resolving of conflicts.
+  - [ ] Fixing of problems.
 
 ### Separate GUI and CLI for baord admin
   - [ ] Board initialization and setup.
