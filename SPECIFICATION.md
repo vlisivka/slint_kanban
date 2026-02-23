@@ -111,7 +111,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 
 ## Data Models
 -   **Ticket ID Generation**: Short hash/ID (up to 6 chars, lowercase latin letters + numbers) derived from Title + Creation Date. Id is the name of ticket directory in `~/Kanban/Tickets` directory.
--   **Ticket metainfo**: is stored in `README.md` file in YAML format. Contains `title`, `created_at`, `updated_at`, `assigned_to`, and `author`.
+-   **Ticket metainfo**: is stored in `README.md` file in YAML format. Contains `title`, `created_at`, `updated_at`, `assigned_to`, `author`, and `points`.
 -   **Ticket references**: Found in both the ticket description (`README.md`) and comments (`tc*.md`). They are extracted and displayed as clickable links in a row directly below the respective content (the description or the individual comment).
 -   **Ticket Comments**: Stored in separate files inside the ticket directory.
     -   **Filename**: `tc<NNN><UID>.md`. `NNN` is a 3-digit sequence (001, 002, etc.), and `UID` is a unique ID to avoid collisions.
@@ -119,6 +119,16 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
     -   **Content**: Markdown text.
 -   **Attachments**: Files stored in the `attachment/` sub-directory.
     -   Associated by Markdown links inserted into the description of `README.md` or comments `tc*.md`.
+- **Points (Estimation)**: Each ticket has a `points` field representing the complexity or effort required. The scale is defined as follows:
+    - `1`: 1 working day or less.
+    - `2`: 2 working days.
+    - `3`: 3-4 working days.
+    - `5`: 1 week.
+    - `6`: 2 weeks.
+    - `7`: 1 month.
+    - `8`: 2-3 months.
+    - `9`: 6 months.
+    - `10`: 1 year.
 - **Configuration Architecture**: Configuration is split into two files to separate shared board settings from local user preferences:
     - **Kanban Settings (`~/Kanban/config.toml`)**: Shared settings that should be synchronized (e.g., via Git).
         - `users`: List of shared user identities.

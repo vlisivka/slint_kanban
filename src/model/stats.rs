@@ -28,6 +28,8 @@ pub struct BoardSummary {
     pub unassigned_tickets: usize,
     pub queues: Vec<QueueStat>,
     pub users: Vec<UserStat>,
+    pub total_points: u32,
+    pub total_done_points: u32,
     pub avg_lead_time_days: Option<f64>,
     pub avg_cycle_time_days: Option<f64>,
     pub completion_rate: Option<f64>,
@@ -37,6 +39,8 @@ pub struct BoardSummary {
 pub fn get_board_summary(board: &Board) -> BoardSummary {
     let mut total_tickets = 0;
     let mut unassigned_tickets = 0;
+    let mut total_points = 0;
+    let mut total_done_points = 0;
     let mut queues = Vec::new();
     let mut user_counts: HashMap<String, usize> = HashMap::new();
 
@@ -91,6 +95,11 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
         });
 
         for ticket in &queue.tickets {
+            total_points += ticket.points;
+            if done_queues.contains(&queue.name) {
+                total_done_points += ticket.points;
+            }
+
             if ticket.assigned_to.is_empty() {
                 unassigned_tickets += 1;
             } else {
@@ -186,6 +195,8 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
         unassigned_tickets,
         queues,
         users,
+        total_points,
+        total_done_points,
         avg_lead_time_days,
         avg_cycle_time_days,
         completion_rate,

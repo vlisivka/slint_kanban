@@ -66,12 +66,54 @@ export component StatsView inherits Rectangle {
                         text: "Average Cycle Time: " + stats.avg_cycle_time;
                     }
 
-                    if stats.completion_rate != "": Text {
-                        text: "Completion Rate: " + stats.completion_rate;
+                    if stats.completion_rate != "": VerticalLayout {
+                        spacing: 4px;
+                        Text {
+                            text: "Ticket Completion Rate: " + stats.completion_rate;
+                        }
+
+                        Rectangle {
+                            height: 12px;
+                            background: Palette.alternate-background;
+                            border-radius: 6px;
+                            Rectangle {
+                                x: 0;
+                                width: parent.width * (stats.completion_rate.to-float() / 100.0);
+                                height: 100%;
+                                background: #4CAF50;
+                                border-radius: 6px;
+                            }
+                        }
+                    }
+
+                    VerticalLayout {
+                        spacing: 4px;
+                        Text {
+                            text: "Points: " + stats.total_done_points + " / " + stats.total_points;
+                        }
+
+                        if stats.total_points > 0: Rectangle {
+                            height: 12px;
+                            background: Palette.alternate-background;
+                            border-radius: 6px;
+                            Rectangle {
+                                x: 0;
+                                width: parent.width * (stats.total_done_points / stats.total_points);
+                                height: 100%;
+                                background: #2196F3;
+                                border-radius: 6px;
+                            }
+                        }
+                    }
+
+                    if stats.points_completion_rate != "": Text {
+                        text: "Points Completion Rate: " + stats.points_completion_rate;
+                        color: #2196F3;
+                        font-weight: 700;
                     }
 
                     if stats.sprint_completion_rate != "": Text {
-                        text: "Sprint Completion Rate: " + stats.sprint_completion_rate;
+                        text: "Sprint Completion Rate (Tickets): " + stats.sprint_completion_rate;
                     }
                 }
 

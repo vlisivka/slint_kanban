@@ -37,6 +37,10 @@ pub enum Commands {
         /// Assigned user
         #[arg(short, long, default_value = "")]
         assign_to: String,
+
+        /// Estimation points (1-10)
+        #[arg(short, long, default_value = "0")]
+        points: u32,
     },
 
     /// Update an existing ticket
@@ -60,6 +64,10 @@ pub enum Commands {
         /// Unassign user
         #[arg(short, long)]
         unassign: bool,
+
+        /// New estimation points (1-10)
+        #[arg(short, long)]
+        points: Option<u32>,
     },
 
     /// List tickets

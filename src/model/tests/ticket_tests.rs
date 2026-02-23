@@ -76,6 +76,7 @@ fn test_ticket_matches() {
         updated_at: "now".to_string(),
         assigned_to: "".to_string(),
         author: "me".to_string(),
+        points: 0,
         comments: vec![],
     };
 
@@ -104,6 +105,7 @@ fn test_ticket_matches_date_range() {
         updated_at: "2024-02-18 12:00:00".to_string(),
         assigned_to: "".to_string(),
         author: "me".to_string(),
+        points: 0,
         comments: vec![],
     };
 
@@ -194,6 +196,7 @@ fn test_extract_references() {
         updated_at: "now".to_string(),
         assigned_to: "".to_string(),
         author: "me".to_string(),
+        points: 0,
         description: "Check #abc123 and #def456. Also #123 is too short, and #abcdef78 is too long but should extract #abcdef. And #abc123 again.".to_string(),
         comments: vec![],
     };
@@ -227,6 +230,7 @@ fn test_update_ticket_unassign() {
         description: "Desc".to_string(),
         assigned_to: "Alice".to_string(),
         author: "Bob".to_string(),
+        points: 0,
         comments: vec![],
     };
     ticket.save(&ticket_path).unwrap();
@@ -242,4 +246,38 @@ fn test_update_ticket_unassign() {
     // Verify unassigned
     let reloaded = Ticket::load(&ticket_path).unwrap();
     assert_eq!(reloaded.assigned_to, "", "Should be unassigned");
+}
+#[test]
+fn test_ticket_points_serialization() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let ticket_path = temp_dir.path().join("TPoints");
+    std::fs::create_dir(&ticket_path).unwrap();
+
+    let ticket = Ticket {
+        id: "TPoints".to_string(),
+        title: "Point Test".to_string(),
+        created_at: "now".to_string(),
+        updated_at: "now".to_string(),
+        description: "Desc".to_string(),
+        assigned_to: "Alice".to_string(),
+        author: "Bob".to_string(),
+        points: 7,
+        comments: vec![],
+    };
+    ticket.save(&ticket_path).unwrap();
+
+    let loaded = Ticket::load(&ticket_path).unwrap();
+    assert_eq!(
+        loaded.points, 7,
+        "Points should be preserved after save/load"
+    );
+
+    // Test default points
+    let yaml_no_points = "
+title: No Points
+created_at: 2023-10-27
+";
+    let metadata: TicketMetadata =
+        serde_yaml::from_str(yaml_no_points).expect("Failed to parse YAML");
+    assert_eq!(metadata.points, 0, "Points should default to 0 if missing");
 }

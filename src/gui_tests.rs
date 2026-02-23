@@ -11,10 +11,10 @@ fn setup_test_app() -> (App, Arc<AppController>, PathBuf, tempfile::TempDir) {
     Board::ensure_initialized(&root_path).unwrap();
     let board = Board::load(root_path.clone()).unwrap();
     board
-        .create_ticket("Ticket 1", "Desc 1", "2. ToDo", "user1", "author")
+        .create_ticket("Ticket 1", "Desc 1", "2. ToDo", "user1", "author", 3)
         .unwrap();
     board
-        .create_ticket("Ticket 2", "Desc 2", "6. Done", "user2", "author")
+        .create_ticket("Ticket 2", "Desc 2", "6. Done", "user2", "author", 5)
         .unwrap();
 
     let ui = App::new().unwrap();
@@ -55,6 +55,7 @@ fn run_gui_interaction_cycle(ui: &App, controller: &Arc<AppController>, _root_pa
         "Perf Task".into(),
         "Perf Details".into(),
         "user1".into(),
+        0,
     );
     controller.reload().unwrap();
 
@@ -76,6 +77,7 @@ fn run_gui_interaction_cycle(ui: &App, controller: &Arc<AppController>, _root_pa
         "Updated Perf Title".into(),
         t_edit.description.clone(),
         t_edit.assigned_to.clone(),
+        2,
     );
     ui.set_show_ticket_edit_dialog(false); // Reset editing state
     controller.reload().unwrap();

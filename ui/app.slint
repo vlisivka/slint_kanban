@@ -52,8 +52,8 @@ export component App inherits Window {
     callback toggle-queue-visibility(string, bool);
     callback move-ticket(string, string, string); // ticket_id, from_queue, index:...
     callback delete-ticket(string);
-    callback update-ticket(string, string, string, string); // id, title, desc, assigned_to
-    callback create-ticket(string, string, string, string); // queue_id, title, desc, assigned_to
+    callback update-ticket(string, string, string, string, int); // id, title, desc, assigned_to, points
+    callback create-ticket(string, string, string, string, int); // queue_id, title, desc, assigned_to, points
     callback add-comment(string, string); // ticket_id, content
     callback set-queue-limit(string, int); // queue_id, limit
     callback open-warning-dialog(string); // message
@@ -94,6 +94,7 @@ export component App inherits Window {
     in-out property <string> editing_ticket_description: "";
     in-out property <string> editing_ticket_assignee: "";
     in-out property <string> editing_ticket_author: "";
+    in-out property <int> editing_ticket_points: 0;
     in-out property <string> new_ticket_queue_id: "";
 
     // Warning dialog state
@@ -390,6 +391,7 @@ export component App inherits Window {
         editing_ticket_description = "";
         editing_ticket_assignee = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
         editing_ticket_author = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
+        editing_ticket_points = 0;
         new_ticket_queue_id = qid;
         show_ticket_edit_dialog = true;
     }
@@ -445,6 +447,7 @@ export component App inherits Window {
             editing_ticket_description = active_ticket.description;
             editing_ticket_assignee = active_ticket.assigned_to;
             editing_ticket_author = active_ticket.author;
+            editing_ticket_points = active_ticket.points;
             show_ticket_edit_dialog = true;
         }
         navigate-to(target) => {
@@ -480,17 +483,18 @@ export component App inherits Window {
         description_text: editing_ticket_description;
         assigned_to: editing_ticket_assignee;
         author: editing_ticket_author;
+        points: editing_ticket_points;
         users: UserGlobal.users;
 
         cancel => {
             show_ticket_edit_dialog = false;
         }
-        save(id, title, desc, assigned) => {
+        save(id, title, desc, assigned, pts) => {
             show_ticket_edit_dialog = false;
             if (id == "") {
-                create-ticket(new_ticket_queue_id, title, desc, assigned);
+                create-ticket(new_ticket_queue_id, title, desc, assigned, pts);
             } else {
-                update-ticket(id, title, desc, assigned);
+                update-ticket(id, title, desc, assigned, pts);
             }
         }
         attach-file(id) => {

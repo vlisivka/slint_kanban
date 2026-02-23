@@ -1,394 +1,66 @@
-# Дослідження: Статистика та аналітика для Slint Kanban
-
-## Контекст проєкту
-
-Slint Kanban — це децентралізована Kanban-дошка на основі файлової системи (Rust + Slint GUI). Ключові особливості:
-- **Файлова архітектура:** Черги — це директорії, тікети — піддиректорії з `README.md` (YAML frontmatter + Markdown).
-- **Журнал дій:** Дії користувачів записуються у `Kanban/logs/log_{USER}_{MACHINE_ID}.md` у форматі Markdown-таблиці з JSON-стовпцем.
-- **Мульти-користувач:** Кілька користувачів можуть працювати одночасно. Кожен пише у свій файл журналу.
-- **CLI + GUI:** Додаток має як графічний інтерфейс (Slint), так і CLI (clap).
-
-## Гнучкість статистики (Спринти та Воркфлови)
-
-Оскільки проєкт дозволяє довільну кількість черг та підтримує паралельні воркфлови (наприклад, окремо для розробників, тестувальників або навіть окремий воркфлов для "заліза"), статистика не повинна жорстко прив'язуватися до конкретних назв черг (наприклад, "ToDo" чи "Done").
-
-### 1. Підтримка спринтів
-Багато користувачів працюють по спринтах. Тому необхідно:
-- Зберігати налаштування спринтів (номер, назва, дата початку, дата закінчення) у спільному файлі `Kanban/config.toml` (всередині `KanbanConfig`).
-- Надавати можливість рахувати статистику як в межах обраного спринта, так і за довільний діапазон дат, або взагалі без прив'язки до спринтів (All-time). Статистика повністю працює і без спринтів.
-- Керування спринтами виконується через **окрему CLI-команду `sprint`** (додавання, модифікація, перегляд). В GUI лише відображається номер і назва поточного спринта (без редагування).
-- CLI `stats` підтримує `--sprint <номер>`, який автоматично обирає діапазон дат з конфігурації.
-
-**Формат зберігання спринтів в `Kanban/config.toml`:**
-```toml
-[[sprints]]
-number = 1
-name = "MVP Release"
-start_date = "2026-02-01"
-end_date = "2026-02-14"
-
-[[sprints]]
-number = 2
-name = "Bug Fixes"
-start_date = "2026-02-15"
-end_date = "2026-02-28"
-```
-
-**CLI-команда `sprint`:**
-```
-# Перегляд усіх спринтів
-slint_kanban sprint list
-
-# Додавання нового спринта
-slint_kanban sprint add --number 3 --name "Performance" --start 2026-03-01 --end 2026-03-14
-
-# Модифікація існуючого
-slint_kanban sprint update --number 2 --end 2026-03-05
-
-# Видалення
-slint_kanban sprint remove --number 3
-
-# Поточний спринт (визначається автоматично за поточною датою)
-slint_kanban sprint current
-```
-
-**Відображення в GUI:**
-- Якщо існує поточний спринт (за поточною датою), показувати його номер та назву в toolbar (наприклад, "🏃 Sprint 2: Bug Fixes").
-- Якщо спринтів немає, індикатор не показується — статистика працює без спринтів.
-
-### 2. Мапінг черг (Гнучкі воркфлови)
-Оскільки початкових черг (пов'язаних зі створенням або беклогом) та кінцевих черг (завершення, відхилення, затримка) може бути декілька, потрібно зберігати семантику черг у `Kanban/config.toml` (наприклад, через категоризацію або межі State-ів). 
-```toml
-[workflows.main]
-start_queues = ["1. Incoming", "Incoming-Design"]
-done_queues = ["5. Done", "Rejected", "Done (Delayed)"]
-```
-Це дозволить коректно обчислювати *Lead Time*, *Cycle Time* та *Throughput*, знаючи, які переміщення вважати фінальними.
-
-### 3. Відкидання помилкових переміщень
-При використанні Drag-and-Drop користувачі можуть випадково перемістити тікет не в ту чергу, а потім швидко перетягнути його у правильну. 
-- **Рішення:** Під час парсингу журналів слід відкидати "шум" — такі переміщення (`CHANGE_STATUS`), якщо тікет перебував у цій черзі **менше 10 секунд** перед наступним переміщенням.
-
-## Проблема
-
-Специфікація проєкту визначає наступні вимоги до статистики:
-1. Кількість тікетів у кожній черзі.
-2. Час знаходження тікета у черзі (time tracking).
-3. Відсоток завершення (completion rate).
-4. Тренди (як змінюється кількість тікетів з часом).
-5. Burndown charts (для відстеження прогресу).
-6. Експорт статистики у CSV.
-
-##  Два джерела даних для статистики
-
-### Джерело 1: Поточний стан дошки (Board snapshot)
-
-**Що можна дізнатись:**
-- Кількість тікетів у кожній черзі (прямий підрахунок).
-- Розподіл тікетів за виконавцями (`assigned_to`).
-- Кількість коментарів та вкладень на тікет.
-- Середній вік тікетів (різниця між `created_at` і поточним часом).
-- Загальна кількість відкритих/незавершених тікетів.
-
-**Переваги:**
-- Інформація завжди актуальна, не залежить від логів.
-- Не потребує парсингу журналів.
-- Простий у реалізації (Board вже завантажується при старті).
-
-**Обмеження:**
-- Не дає **історичної** інформації: неможливо дізнатися, скільки тікетів було в черзі тиждень тому.
-- Не показує **час перебування** тікета в конкретній черзі.
-- Не дає **throughput** (кількість завершених тікетів за період).
-
-### Джерело 2: Журнали дій (Activity Logs)
-
-**Що можна дізнатись:**
-- Повну історію переміщень тікетів (`CHANGE_STATUS`): коли тікет увійшов до черги, коли вийшов.
-- Час знаходження тікета в кожній черзі (різниця між `CHANGE_STATUS` подіями).
-- Cycle time: час від створення до потрапляння в "Done".
-- Lead time: час від створення (`CREATE_TICKET`) до завершення.
-- Throughput: кількість тікетів, що потрапили до "Done"/"Archive" за період.
-- Хронологія всіх дій для побудови трендів та burndown.
-- Активність кожного користувача (скільки дій виконав).
-
-**Переваги:**
-- Повна історія, можливість побудувати графіки за будь-який період.
-- Множинні файли `log_*.md` об'єднуються у спільну хронологію.
-
-**Обмеження:**
-- Потрібно частково парсити Markdown-таблиці, витягуючи JSON.
-- При зміні формату логу потрібна міграція або підтримка кількох форматів.
-
-## Які метрики доцільно реалізувати
-
-### Етап 1: Миттєві метрики (Board snapshot)
-
-Ці метрики не потребують журналів і можуть бути реалізовані першими. Вони дають моментальну картину стану дошки.
-
-| Метрика | Опис | Джерело даних |
-| :--- | :--- | :--- |
-| **Tickets per queue** | Кількість тікетів у кожній черзі | `Board::queues` |
-| **Total tickets** | Загальна кількість тікетів на дошці | `Board::queues` |
-| **Tickets per user** | Кількість тікетів, призначених кожному користувачеві | `Ticket::assigned_to` |
-| **Unassigned tickets** | Кількість непризначених тікетів | `Ticket::assigned_to.is_empty()` |
-| **Average ticket age** | Середній вік тікетів (днів від створення) по чергах | `Ticket::created_at` |
-| **Queue utilization** | Відсоток заповнення черги відносно її ліміту, якщо є ліміт | `Queue::limit` vs `Queue::tickets.len()` |
-
-### Етап 2: Історичні метрики (Activity Logs)
-
-Після стабілізації журналів можна додати метрики, що залежать від хронології подій.
-
-| Метрика | Опис | Дія в журналі |
-| :--- | :--- | :--- |
-| **Cycle time** | Середній час від початку роботи до завершення | `CHANGE_STATUS` (між start/done) |
-| **Lead time** | Середній час від `CREATE_TICKET` до кінцевої черги | `CREATE_TICKET` + `CHANGE_STATUS` |
-| **Throughput** | Кількість тікетів, що завершені за період (день/тиждень/спринт) | `CHANGE_STATUS` у `done_queues` |
-| **User activity** | Кількість дій кожного користувача за період | username з імені лог-файлу |
-| **Burndown** | Кількість відкритих тікетів з часом | `CREATE_TICKET` - `CHANGE_STATUS` (to Done) |
-| **Trending (WIP)** | Зміна кількості тікетів у "Doing" за день | `CHANGE_STATUS` з/до Doing |
-
-## Парсинг журналів
-
-### Алгоритм читання
-
-1. Знайти всі файли `Kanban/logs/log_*.md` (глоб або `read_dir` + фільтр).
-2. Для кожного файлу:
-   a. Читати рядки, ігноруючи заголовки та пусті рядки.
-   b. Розбити рядок за `|` та витягти JSON структуру.
-   c. Десеріалізувати JSON у `ActionPayload`.
-3. Об'єднати всі події в один `Vec<LogEntry>`.
-4. Відсортувати за `date` (лексикографічно).
-5. **Очищення даних (Згладжування помилкових переміщень):**
-   - Пройти по подіях кожного тікета (`CHANGE_STATUS`).
-   - Якщо різниця в часі між подією входу в чергу та виходу з неї **< 10 секунд**, вилучити цей транзит як "випадковий".
-
-### Структура даних
-
-```rust
-pub struct LogEntry {
-    pub date: String,           // ISO 8601 (second precision)
-    pub action_name: String,    // "CREATE_TICKET", "CHANGE_STATUS", etc.
-    pub description: String,    // Human-readable description
-    pub payload: ActionPayload, // Deserialized JSON
-    pub source_user: String,    // Extracted from filename
-    pub source_machine: String, // Extracted from filename
-}
-```
-
-### Приклад парсингу рядка
-
-```
-| 2026-02-22T09:00:00+02:00 | CREATE_TICKET | Created ticket "Task" (#abc123) | `{"action":"CREATE_TICKET","id":"abc123","title":"Task"}` |
-```
-
-Після `split('|')` і `trim()`:
-- `[0]` = "" (пусто, перед першим `|`)
-- `[1]` = "2026-02-22T09:00:00+02:00"
-- `[2]` = "CREATE_TICKET"
-- `[3]` = "Created ticket \"Task\" (#abc123)"
-- `[4]` = `` `{"action":"CREATE_TICKET","id":"abc123","title":"Task"}` ``
-- `[5]` = "" (пусто, після останнього `|`)
-
-Потрібно прибрати `` ` `` з початку та кінця JSON-стовпця перед десеріалізацією.
-
-## Де показувати статистику
-
-### CLI: Команда `stats`
-
-Нова CLI-команда `stats` — найпростіший і найшвидший спосіб подати статистику.
-
-**Підкоманди / Опції:**
-- `stats` (без аргументів) — показує зведену таблицю загалом або для поточного спринта.
-- `stats --user <name>` — статистика конкретного користувача.
-- `stats --from <date> --to <date>` — обмеження за довільним періодом.
-- `stats --sprint <number>` — показати статистику для конкретного спринта (діапазон дат береться з конфігу).
-- `stats --csv` — вивести у CSV.
-
-**Приклад виводу CLI:**
-
-```
-== Board Summary ==
-Total tickets: 42
-Unassigned:    8
-
-== Tickets per Queue ==
-Queue              Count  Limit  Usage
-1. Incoming           12     -      -
-2. ToDo                8    21    38%
-3. Doing               3     5    60%
-4. Reviewing           2     -      -
-5. Testing             5     -      -
-6. Done               10     -      -
-7. Archive             2     -      -
-
-== Tickets per User ==
-User            Count
-<unassigned>        8
-Alice              15
-Bob                12
-Charlie             7
-```
-
-### GUI: Панель статистики
-
-**Варіант A: Окрема сторінка в UI** (рекомендований)
-- Кнопка "📊 Statistics" у toolbar.
-- Відкриває окремий full-window view (аналогічно до Board Info або Ticket View).
-- Показує текстову зведену таблицю (не потребує графіків для першої ітерації).
-- Для Burndown/Trend: графіки можна реалізувати пізніше через Slint Canvas або зчитування SVG.
-
-**Варіант B: Інформація в існуючих елементах**
-- Показувати `tickets_count / limit` безпосередньо в заголовку кожної колонки.
-- Це вже частково реалізовано: `QueueStr` має поля `ticket_count` і `limit`.
-
-**Рекомендація:** Починати з CLI `stats`, адже це не вимагає змін у UI та дає повну гнучкість. GUI-панель можна додати пізніше як адаптацію тих же даних.
-
-## Архітектура реалізації
-
-### Нові модулі
-
-```
-src/model/
-├── action.rs          # (існує) ActionPayload enum
-├── stats.rs           # (новий) Парсинг логів + обчислення метрик
-├── board.rs           # (існує) Додати методи для snapshot-метрик
-```
-
-### Модуль `stats.rs`
-
-```rust
-// Функції парсингу
-pub fn load_log_entries(root_path: &Path) -> anyhow::Result<Vec<LogEntry>>
-pub fn parse_log_file(path: &Path) -> anyhow::Result<Vec<LogEntry>>
-
-// Snapshot-метрики (з Board)
-pub fn tickets_per_queue(board: &Board) -> Vec<(String, usize, Option<usize>)>
-pub fn tickets_per_user(board: &Board) -> Vec<(String, usize)>
-pub fn board_summary(board: &Board) -> BoardSummary
-
-// Log-based метрики
-pub fn throughput(entries: &[LogEntry], from: &str, to: &str) -> usize
-pub fn cycle_time(entries: &[LogEntry], ticket_id: &str) -> Option<Duration>
-pub fn user_activity(entries: &[LogEntry]) -> Vec<(String, usize)>
-```
-
-### CLI: Нові команди
-
-```rust
-// В cli.rs
-#[derive(Subcommand)]
-enum Commands {
-    // ... існуючі команди ...
-
-    /// Show board statistics
-    Stats {
-        /// Filter by user
-        #[arg(long)]
-        user: Option<String>,
-        /// Start date for log-based stats
-        #[arg(long)]
-        from: Option<String>,
-        /// End date for log-based stats
-        #[arg(long)]
-        to: Option<String>,
-        /// Show stats for a specific sprint (dates from config)
-        #[arg(long)]
-        sprint: Option<u32>,
-        /// Output as CSV
-        #[arg(long)]
-        csv: bool,
-    },
-
-    /// Manage sprints
-    Sprint {
-        #[command(subcommand)]
-        action: SprintAction,
-    },
-}
-
-#[derive(Subcommand)]
-enum SprintAction {
-    /// List all sprints
-    List,
-    /// Show the current sprint (by today's date)
-    Current,
-    /// Add a new sprint
-    Add {
-        #[arg(long)]
-        number: u32,
-        #[arg(long)]
-        name: String,
-        #[arg(long)]
-        start: String,
-        #[arg(long)]
-        end: String,
-    },
-    /// Update an existing sprint
-    Update {
-        #[arg(long)]
-        number: u32,
-        #[arg(long)]
-        name: Option<String>,
-        #[arg(long)]
-        start: Option<String>,
-        #[arg(long)]
-        end: Option<String>,
-    },
-    /// Remove a sprint
-    Remove {
-        #[arg(long)]
-        number: u32,
-    },
-}
-```
-
-## План поетапної реалізації
-
-### Фаза 1: Snapshot-метрики + CLI `stats`
-1. Створити `stats.rs` з функціями для обчислення snapshot-метрик.
-2. Додати CLI-команду `stats` з виводом зведеної таблиці.
-3. Написати тести для snapshot-метрик.
-
-### Фаза 1.5: CLI `sprint` + конфігурація спринтів та воркфловів
-1. Додати `Sprint` структуру в `KanbanConfig` + `[[sprints]]` в `config.toml`.
-2. Додати `[workflows]` секцію в `config.toml` (для `start_queues` та `done_queues`).
-3. Реалізувати CLI-команду `sprint` (list, add, update, remove, current).
-4. Показати поточний спринт у GUI toolbar (тільки відображення, без редагування).
-5. Написати тести для CRUD спринтів та визначення поточного спринта.
-
-### Фаза 2: Парсинг логів
-1. Реалізувати `load_log_entries` та `parse_log_file` в `stats.rs`.
-2. Додати `LogEntry` структуру.
-3. Реалізувати згладжування помилкових переміщень (< 10 сек).
-4. Написати тести на парсинг.
-
-### Фаза 3: Log-based метрики
-1. Додати обчислення throughput, cycle time, user activity з використанням `done_queues`/`start_queues` з конфігу.
-2. Інтегрувати в CLI `stats --from --to` та `stats --sprint`.
-3. Додати `--csv` експорт.
-
-### Фаза 4: GUI-інтеграція (майбутнє)
-1. Додати кнопку "📊 Statistics" у toolbar.
-2. Створити `StatsView` компонент у Slint.
-3. Передавати дані з `stats.rs` через `StatsStr` binding.
-
-## Обробка крайніх випадків
-
-1. **Відсутність логів:** Якщо `Kanban/logs/` порожній або не існує, log-based метрики повертають порожні результати, але snapshot-метрики працюють нормально.
-2. **Пошкоджені рядки:** Рядки, які не парсяться, мовчки ігноруються (`continue` при помилці парсингу). Можна додати `--verbose` для відображення попереджень.
-3. **Часові зони:** Дати в ISO 8601, порівняння лексикографічне. Це працює коректно для однієї часової зони. Для порівняння дат з різних зон потрібно парсити в `chrono::DateTime`.
-4. **Старі тікети без логів:** Для тікетів, створених до введення журналювання, cycle time та lead time будуть невідомі. Snapshot-метрики працюватимуть коректно.
-5. **Конфліктні файли Syncthing:** Файли типу `log_user_abc123.sync-conflict-*.md` не матимуть стандартного імені, але можуть бути включені, якщо використовується глоб `log_*.md`.
-
-## Залежності
-
-Нові зовнішні залежності **не потрібні** для базової реалізації:
-- `serde_json` — вже додано.
-- `chrono` — вже є.
-- Парсинг Markdown-таблиць — ручний, кілька рядків коду (split + trim).
-
-## Висновок
-
-Статистика для Slint Kanban може бути реалізована поетапно, починаючи з простих snapshot-метрик через CLI і поступово додаючи log-based метрики. Найважливіший архітектурний момент — це модуль `stats.rs`, який інкапсулює всю логіку парсингу та обчислень, дозволяючи використовувати одні й ті ж дані як у CLI, так і згодом у GUI.
-
-Рекомендовано розпочати реалізацію з **Фази 1** (snapshot-метрики + CLI `stats`), оскільки вона не залежить від журналів, дає безпосередню користь, та створює каркас для подальших фаз.
+# Research: Implementing Ticket Points (Estimation)
+
+## Overview
+The goal is to add a "Points" field to tickets to represent complexity or effort. The scale is 1-10 with predefined time mappings.
+
+## Data Model Changes
+### `src/model/ticket.rs`
+1. **`TicketMetadata`**: Add `#[serde(default)] pub points: u32`.
+2. **`Ticket`**: Add `pub points: u32`.
+3. **`Ticket::from_metadata`**: Copy points from metadata.
+4. **`Ticket::save`**: Include `points` in the YAML frontmatter and `write!` call.
+5. **`Ticket::load`**: `points` will be automatically parsed by `serde_yaml` since it's in `TicketMetadata`.
+
+## UI Changes
+### `ui/common.slint`
+1. **`TicketStr`**: Add `points: int`.
+
+### `ui/dialogs/ticket_edit.slint`
+1. Add `in-out property <int> points`.
+2. Add a `ComboBox` for selecting points (1 to 10).
+3. Update the `save` callback signature: `callback save(string, string, string, string, int)`.
+
+### `ui/dialogs/ticket_view.slint`
+1. Display points in the header, preferably with the time mapping (e.g., "5 pts (~1 week)").
+
+### `ui/components/ticket_card.slint`
+1. Display a small badge or icon with the points count.
+
+### `ui/app.slint`
+1. Handle the updated `save` callback.
+2. Update the `active_ticket` synchronization.
+
+## Logic Changes
+### `src/main.rs`
+1. **`into_slint_ticket`**: Map `ticket.points` to `TicketStr.points`.
+2. **`handle_command`** (CLI): Add `--points` to `add` and `update` commands.
+3. Update `App` callbacks and state handling.
+
+### `src/controller.rs`
+1. Update `handle_create_ticket` and `handle_update_ticket` to accept and save points.
+
+### `src/model/stats.rs`
+1. Include `total_points` in `BoardSummary`.
+2. Calculate total points per user and per sprint.
+
+## Time Mapping (Helper for UI)
+| Points | Time Mapping |
+|--------|--------------|
+| 1      | 1 day or less|
+| 2      | 2 days       |
+| 3      | 3-4 days     |
+| 5      | 1 week       |
+| 6      | 2 weeks      |
+| 7      | 1 month      |
+| 8      | 2-3 months   |
+| 9      | 6 months     |
+| 10     | 1 year       |
+
+## Plan for Implementation
+1. **Step 1**: Update `model.rs` and `ticket.rs` (Data structures & serialization).
+2. **Step 2**: Update `common.slint` and `TicketStr` conversion in `main.rs`.
+3. **Step 3**: Update `TicketEdit` UI and save logic.
+4. **Step 4**: Update `TicketCard` and `TicketView` UI.
+5. **Step 5**: Implement CLI support.
+6. **Step 6**: Update statistics to include points.
+7. **Step 7**: Verify with tests.

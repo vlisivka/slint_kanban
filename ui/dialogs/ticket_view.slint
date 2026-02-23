@@ -100,6 +100,13 @@ export component TicketView inherits Rectangle {
                             horizontal-alignment: center;
                             opacity: 0.6;
                         }
+                        if ticket.points > 0: Text {
+                            text: "⭐ " + ticket.points + " pts (~" + (ticket.points == 1 ? "1 day" : ticket.points == 2 ? "2 days" : ticket.points == 3 ? "3 days" : ticket.points == 4 ? "4 days" : ticket.points == 5 ? "1 week" : ticket.points == 6 ? "2 weeks" : ticket.points == 7 ? "1 month" : ticket.points == 8 ? "2-3 months" : ticket.points == 9 ? "6 months" : ticket.points == 10 ? "1 year" : ticket.points + " pts") + ")";
+                            font-size: 16px;
+                            font-weight: 700;
+                            horizontal-alignment: center;
+                            color: (ticket.points == 1 ? Theme.point-1 : ticket.points == 2 ? Theme.point-2 : ticket.points == 3 ? Theme.point-3 : ticket.points == 4 ? Theme.point-4 : ticket.points == 5 ? Theme.point-5 : ticket.points == 6 ? Theme.point-6 : ticket.points == 7 ? Theme.point-7 : ticket.points == 8 ? Theme.point-8 : ticket.points == 9 ? Theme.point-9 : ticket.points == 10 ? Theme.point-10 : Theme.point-0);
+                        }
 
                         if ticket.author != "": Text {
                             text: "Author: " + ticket.author;
@@ -267,6 +274,8 @@ export component TicketView inherits Rectangle {
                                 spacing: 8px;
                                 Button {
                                     text: "Attach File";
+                                    height: 40px;
+                                    min-width: 120px;
                                     clicked => {
                                         let link = root.attach-file(ticket.id);
                                         if link != "" {
@@ -282,6 +291,8 @@ export component TicketView inherits Rectangle {
                                 Button {
                                     text: "Post Comment";
                                     primary: true;
+                                    height: 40px;
+                                    min-width: 120px;
                                     clicked => {
                                         if comment_input.text != "" {
                                             root.add-comment(comment_input.text);

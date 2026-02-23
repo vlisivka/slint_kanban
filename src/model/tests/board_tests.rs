@@ -288,7 +288,7 @@ fn test_create_ticket() -> anyhow::Result<()> {
     std::fs::create_dir_all(&q1_path)?;
 
     let board = Board::load(root_path.clone())?;
-    let tid = board.create_ticket("My New Task", "My Description", "Q1", "", "me")?;
+    let tid = board.create_ticket("My New Task", "My Description", "Q1", "", "me", 0)?;
 
     assert_eq!(tid.len(), 6, "New ticket ID should be 6 characters long");
     assert!(
@@ -327,6 +327,10 @@ fn test_create_ticket() -> anyhow::Result<()> {
         board2.queues[0].tickets[0].description, "My Description",
         "Ticket description should match input"
     );
+    assert_eq!(
+        board2.queues[0].tickets[0].points, 0,
+        "Ticket points should match input"
+    );
 
     Ok(())
 }
@@ -340,9 +344,9 @@ fn test_update_ticket() -> anyhow::Result<()> {
     std::fs::create_dir_all(root_path.join("Queue").join("Q1"))?;
 
     let board = Board::load(root_path.clone())?;
-    let tid = board.create_ticket("Original", "Original Description", "Q1", "", "me")?;
+    let tid = board.create_ticket("Original", "Original Description", "Q1", "", "me", 5)?;
 
-    board.update_ticket(&tid, "Updated Title", "Updated Description", "")?;
+    board.update_ticket(&tid, "Updated Title", "Updated Description", "", 3)?;
 
     let board2 = Board::load(root_path)?;
     let t = &board2.queues[0].tickets[0];
@@ -351,6 +355,7 @@ fn test_update_ticket() -> anyhow::Result<()> {
         t.description, "Updated Description",
         "Updated description should match input"
     );
+    assert_eq!(t.points, 3, "Updated points should match input");
 
     Ok(())
 }
@@ -405,10 +410,10 @@ fn test_queue_limit_creation() -> anyhow::Result<()> {
     let board = Board::load(root_path)?;
 
     // Create first ticket - should succeed
-    board.create_ticket("Task 1", "Desc 1", "2. ToDo", "", "me")?;
+    board.create_ticket("Task 1", "Desc 1", "2. ToDo", "", "me", 0)?;
 
     // Create second ticket - should fail
-    let result = board.create_ticket("Task 2", "Desc 2", "2. ToDo", "", "me");
+    let result = board.create_ticket("Task 2", "Desc 2", "2. ToDo", "", "me", 0);
     assert!(
         result.is_err(),
         "Should return an error if the queue has reached its limit"
@@ -439,8 +444,8 @@ fn test_queue_limit_moving() -> anyhow::Result<()> {
     let board = Board::load(root_path)?;
 
     // Create two tickets in ToDo
-    let tid1 = board.create_ticket("Task 1", "Desc 1", "2. ToDo", "", "me")?;
-    let tid2 = board.create_ticket("Task 2", "Desc 2", "2. ToDo", "", "me")?;
+    let tid1 = board.create_ticket("Task 1", "Desc 1", "2. ToDo", "", "me", 0)?;
+    let tid2 = board.create_ticket("Task 2", "Desc 2", "2. ToDo", "", "me", 0)?;
 
     // Move first ticket to Doing - should succeed
     board.move_ticket(&tid1, "2. ToDo", "3. Doing")?;
@@ -546,6 +551,7 @@ fn test_find_ticket_by_id() {
                     description: "".to_string(),
                     assigned_to: "".to_string(),
                     author: "".to_string(),
+                    points: 0,
                     comments: vec![],
                 }],
                 limit: None,
@@ -562,6 +568,7 @@ fn test_find_ticket_by_id() {
                     description: "".to_string(),
                     assigned_to: "".to_string(),
                     author: "".to_string(),
+                    points: 0,
                     comments: vec![],
                 }],
                 limit: None,
@@ -647,7 +654,7 @@ fn test_move_ticket_invalid_queue() -> anyhow::Result<()> {
     let root = tempdir()?;
     Board::ensure_initialized(root.path())?;
     let board = Board::load(root.path().to_path_buf())?;
-    let tid = board.create_ticket("T1", "D", "1. Incoming", "", "me")?;
+    let tid = board.create_ticket("T1", "D", "1. Incoming", "", "me", 0)?;
 
     let result = board.move_ticket(&tid, "invalid_src", "2. ToDo");
     assert!(result.is_err(), "Moving from invalid source should fail");
@@ -672,7 +679,7 @@ fn test_activity_logging() -> anyhow::Result<()> {
     let board = Board::load(root_path.clone())?;
 
     // Create ticket should produce a log entry
-    let tid = board.create_ticket("Log Task", "Log Desc", "2. ToDo", "user1", "author1")?;
+    let tid = board.create_ticket("Log Task", "Log Desc", "2. ToDo", "user1", "author1", 8)?;
 
     // Move ticket should produce a log entry
     board.move_ticket(&tid, "2. ToDo", "3. Doing")?;

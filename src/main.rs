@@ -91,6 +91,7 @@ pub fn into_slint_ticket(ticket: &model::Ticket, board: &Board) -> TicketStr {
         references: Rc::new(VecModel::from(refs)).into(),
         comments: Rc::new(VecModel::from(slint_comments)).into(),
         attachment_count,
+        points: ticket.points as i32,
     }
 }
 
@@ -136,6 +137,7 @@ pub fn sync_board_to_ui(
         let ticket_count = slint_tickets.len() as i32;
         let limit = queue.limit.map(|l| l as i32).unwrap_or(-1);
 
+        let total_points: i32 = slint_tickets.iter().map(|t| t.points).sum();
         let tickets_model = Rc::new(VecModel::from(slint_tickets));
 
         slint_queues.push(QueueStr {
@@ -144,6 +146,7 @@ pub fn sync_board_to_ui(
             tickets: tickets_model.into(),
             limit,
             ticket_count,
+            total_points,
             visible: queue.visible,
         });
     }
@@ -243,22 +246,24 @@ pub(crate) fn init_callbacks(ui: &App, controller: Arc<AppController>) {
     });
 
     let c = controller.clone();
-    ui.on_create_ticket(move |queue_id, title, description, assigned_to| {
+    ui.on_create_ticket(move |queue_id, title, description, assigned_to, points| {
         c.handle_create_ticket(
             queue_id.into(),
             title.into(),
             description.into(),
             assigned_to.into(),
+            points,
         );
     });
 
     let c = controller.clone();
-    ui.on_update_ticket(move |ticket_id, title, description, assigned_to| {
+    ui.on_update_ticket(move |ticket_id, title, description, assigned_to, points| {
         c.handle_update_ticket(
             ticket_id.into(),
             title.into(),
             description.into(),
             assigned_to.into(),
+            points,
         );
     });
 
@@ -367,10 +372,15 @@ fn handle_command(
             description,
             queue,
             assign_to,
+            points,
         } => {
-            writeln!(out, "Adding ticket: {} to queue: {}", title, queue)?;
+            writeln!(
+                out,
+                "Adding ticket: {} to queue: {} with {} points",
+                title, queue, points
+            )?;
             let author = board.config.active_user();
-            board.create_ticket(&title, &description, &queue, &assign_to, author)?;
+            board.create_ticket(&title, &description, &queue, &assign_to, author, points)?;
         }
         Commands::Update {
             id,
@@ -378,6 +388,7 @@ fn handle_command(
             description,
             assign_to,
             unassign,
+            points,
         } => {
             writeln!(out, "Updating ticket: {}", id)?;
             let ticket = board
@@ -391,7 +402,8 @@ fn handle_command(
             } else {
                 assign_to.unwrap_or(ticket.assigned_to.clone())
             };
-            board.update_ticket(&id, &title, &description, &assign_to)?;
+            let points = points.unwrap_or(ticket.points);
+            board.update_ticket(&id, &title, &description, &assign_to, points)?;
         }
         Commands::List {
             assigned_to_user,
@@ -429,7 +441,16 @@ fn handle_command(
                         } else {
                             t.assigned_to.clone()
                         };
-                        writeln!(out, "[{}] {} (Assigned: {})", t.id, t.title, user_display)?;
+                        let points_display = if t.points > 0 {
+                            format!(" [{} pts]", t.points)
+                        } else {
+                            "".to_string()
+                        };
+                        writeln!(
+                            out,
+                            "[{}]{} {} (Assigned: {})",
+                            t.id, points_display, t.title, user_display
+                        )?;
                     }
                 }
             }
@@ -483,8 +504,16 @@ fn handle_command(
                 writeln!(out, "Completion Rate: {:.1}%", rate)?;
             }
 
+            writeln!(out, "Total Points:    {}", summary.total_points)?;
+            writeln!(out, "Done Points:     {}", summary.total_done_points)?;
+            if summary.total_points > 0 {
+                let p_rate =
+                    (summary.total_done_points as f64 / summary.total_points as f64) * 100.0;
+                writeln!(out, "Points Completion Rate: {:.1}%", p_rate)?;
+            }
+
             if let Some(rate) = summary.sprint_completion_rate {
-                writeln!(out, "Sprint Completion: {:.1}%", rate)?;
+                writeln!(out, "Sprint Completion: {:.1}% (Tickets)", rate)?;
             }
             writeln!(out)?;
 
@@ -583,6 +612,7 @@ fn handle_command(
 
             writeln!(out, "ID:          {}", ticket.id)?;
             writeln!(out, "Title:       {}", ticket.title)?;
+            writeln!(out, "Points:      {}", ticket.points)?;
             writeln!(out, "Status:      {}", queue_name)?;
             writeln!(
                 out,
@@ -866,11 +896,23 @@ pub(crate) fn into_slint_summary(
         .map(|r| format!("{:.1}%", r))
         .unwrap_or_default();
 
+    let points_completion_rate_str = if summary.total_points > 0 {
+        format!(
+            "{:.1}%",
+            (summary.total_done_points as f64 / summary.total_points as f64) * 100.0
+        )
+    } else {
+        "-".to_string()
+    };
+
     crate::BoardSummaryStr {
         total_tickets: summary.total_tickets as i32,
         unassigned_tickets: summary.unassigned_tickets as i32,
         queues: std::rc::Rc::new(slint::VecModel::from(slint_queues)).into(),
         users: std::rc::Rc::new(slint::VecModel::from(slint_users)).into(),
+        total_points: summary.total_points as i32,
+        total_done_points: summary.total_done_points as i32,
+        points_completion_rate: points_completion_rate_str.into(),
         avg_lead_time: lead_time_str.into(),
         avg_cycle_time: cycle_time_str.into(),
         completion_rate: completion_rate_str.into(),

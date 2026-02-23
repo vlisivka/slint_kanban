@@ -140,6 +140,15 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 - [x] Display attachment count and add button to open attachments parent directory in `TicketView`
 - [x] Implement attach functionality via CLI command
 
+### Points (Estimation)
+- [x] Implement ticket estimation using "Points"
+  - [x] Add `points` field to `Ticket` and `TicketMetadata` model (int or float)
+  - [x] Support scale from 1 to 10 with time mapping (1=1d, 5=1w, 7=1mo, 10=1y)
+  - [x] Update `TicketEdit` UI to allow selecting points
+  - [x] Update `TicketCard` and `TicketView` to display points
+  - [x] Add CLI support for setting/updating points
+  - [x] Include points in `stats` command (e.g., total points per user/sprint)
+
 ### Statistics and Analytics
 - [x] Implement journaling of user actions into `Kanban/logs/log_${USER}_${MACHINE_ID}.md` using Markdown table format with JSON arguments.
   - [x] Generate and store `machine_id` in user config on first run.

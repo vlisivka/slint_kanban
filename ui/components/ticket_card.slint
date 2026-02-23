@@ -92,6 +92,21 @@ export component TicketCard inherits Rectangle {
                     font-weight: 500;
                     color: Palette.accent-background;
                 }
+
+                if ticket.points > 0: Rectangle {
+                    height: 18px;
+                    width: pts_txt.preferred-width + 12px;
+                    background: ticket.points == 1 ? Theme.point-1 : ticket.points == 2 ? Theme.point-2 : ticket.points == 3 ? Theme.point-3 : ticket.points == 4 ? Theme.point-4 : ticket.points == 5 ? Theme.point-5 : ticket.points == 6 ? Theme.point-6 : ticket.points == 7 ? Theme.point-7 : ticket.points == 8 ? Theme.point-8 : ticket.points == 9 ? Theme.point-9 : ticket.points == 10 ? Theme.point-10 : Theme.point-0;
+                    border-radius: 9px;
+                    pts_txt := Text {
+                        text: "⭐ " + ticket.points;
+                        font-size: 10px;
+                        font-weight: 800;
+                        color: white;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
             }
 
             VerticalLayout {

@@ -18,6 +18,8 @@ pub struct TicketMetadata {
     pub assigned_to: String,
     #[serde(default)]
     pub author: String,
+    #[serde(default)]
+    pub points: u32,
 }
 
 #[derive(Debug, Clone)]
@@ -29,6 +31,7 @@ pub struct Ticket {
     pub description: String,
     pub assigned_to: String,
     pub author: String,
+    pub points: u32,
     pub comments: Vec<crate::model::Comment>,
 }
 
@@ -42,6 +45,7 @@ impl Ticket {
             description,
             assigned_to: metadata.assigned_to,
             author: metadata.author,
+            points: metadata.points,
             comments: Vec::new(),
         }
     }
@@ -187,8 +191,8 @@ impl Ticket {
         use std::io::Write;
         write!(
             f,
-            "---\ntitle: {}\ncreated_at: {}\nupdated_at: {}\nassigned_to: \"{}\"\nauthor: \"{}\"\n---\n{}",
-            self.title, self.created_at, self.updated_at, self.assigned_to, self.author, self.description
+            "---\ntitle: {}\ncreated_at: {}\nupdated_at: {}\nassigned_to: \"{}\"\nauthor: \"{}\"\npoints: {}\n---\n{}",
+            self.title, self.created_at, self.updated_at, self.assigned_to, self.author, self.points, self.description
         )?;
         Ok(())
     }

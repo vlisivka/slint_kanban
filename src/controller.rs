@@ -189,6 +189,7 @@ impl AppController {
                     references: Rc::new(VecModel::default()).into(),
                     comments: Rc::new(VecModel::default()).into(),
                     attachment_count: 0,
+                    points: metadata.points as i32,
                 };
                 app.set_active_ticket(info);
                 app.set_show_ticket_view_dialog(true);
@@ -217,6 +218,7 @@ impl AppController {
         title: String,
         description: String,
         assigned_to: String,
+        points: i32,
     ) {
         let board = match self.load_board("create") {
             Some(b) => b,
@@ -225,7 +227,14 @@ impl AppController {
 
         println!("Controller: Creating ticket in {}", queue_id);
         let author = board.config.active_user();
-        if let Err(e) = board.create_ticket(&title, &description, &queue_id, &assigned_to, author) {
+        if let Err(e) = board.create_ticket(
+            &title,
+            &description,
+            &queue_id,
+            &assigned_to,
+            author,
+            points as u32,
+        ) {
             self.show_error(&e.to_string());
         }
     }
@@ -236,6 +245,7 @@ impl AppController {
         title: String,
         description: String,
         assigned_to: String,
+        points: i32,
     ) {
         let board = match self.load_board("save") {
             Some(b) => b,
@@ -243,7 +253,13 @@ impl AppController {
         };
 
         println!("Controller: Saving ticket {}", ticket_id);
-        if let Err(e) = board.update_ticket(&ticket_id, &title, &description, &assigned_to) {
+        if let Err(e) = board.update_ticket(
+            &ticket_id,
+            &title,
+            &description,
+            &assigned_to,
+            points as u32,
+        ) {
             eprintln!("Error saving ticket: {:?}", e);
         }
     }

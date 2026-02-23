@@ -58,6 +58,20 @@ Customize your board by editing `config.toml`:
 - **users**: Define team members to enable assignment.
 - **queue_limits**: Set WIP (Work In Progress) limits to prevent bottlenecks.
 - **workflows**: Customize which queues are considered "start" (e.g., ToDo) and "done" (e.g., Done, Archive) for accurate time tracking.
+- **points_scale**: Customize point values and their meaning (default setup is 1-10).
+
+## Estimation (Points)
+Each ticket can be assigned a "Point" value (from 0 to 10) to represent the estimated effort or complexity:
+- **0 pts**: No estimation or trivial task.
+- **1-4 pts**: Tasks taking 1 to 4 days.
+- **5 pts**: 1 week.
+- **6 pts**: 2 weeks.
+- **7 pts**: 1 month.
+- **8 pts**: 2-3 months.
+- **9 pts**: 6 months.
+- **10 pts**: 1 year.
+
+The system uses these points to calculate the **Board Completion Rate (by points)**, which provides a more accurate view of progress than just ticket count.
 
 Tip: The `config.toml` file uses the TOML format. The application will automatically reload when you save changes to this file.
 "#;
@@ -385,6 +399,7 @@ impl Board {
         queue_id: &str,
         assigned_to: &str,
         author: &str,
+        points: u32,
     ) -> anyhow::Result<String> {
         use rand::Rng;
 
@@ -424,6 +439,7 @@ impl Board {
             description: description.to_string(),
             assigned_to: assigned_to.to_string(),
             author: author.to_string(),
+            points,
             comments: vec![],
         };
         ticket.save(&ticket_dir)?;
@@ -454,6 +470,7 @@ impl Board {
         title: &str,
         description: &str,
         assigned_to: &str,
+        points: u32,
     ) -> anyhow::Result<()> {
         let ticket_dir = self.ticket_path(ticket_id);
         let mut ticket = Ticket::load(&ticket_dir)?;
@@ -464,6 +481,7 @@ impl Board {
         ticket.title = title.to_string();
         ticket.description = description.to_string();
         ticket.assigned_to = assigned_to.to_string();
+        ticket.points = points;
 
         ticket.save(&ticket_dir)?;
 
