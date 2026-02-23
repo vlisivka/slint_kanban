@@ -23,6 +23,15 @@ pub struct UserStat {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct TrendPoint {
+    pub timestamp: String,
+    pub total_tickets: usize,
+    pub done_tickets: usize,
+    pub total_points: u32,
+    pub done_points: u32,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct BoardSummary {
     pub total_tickets: usize,
     pub unassigned_tickets: usize,
@@ -34,6 +43,7 @@ pub struct BoardSummary {
     pub avg_cycle_time_days: Option<f64>,
     pub completion_rate: Option<f64>,
     pub sprint_completion_rate: Option<f64>,
+    pub trend: Vec<TrendPoint>,
 }
 
 pub fn get_board_summary(board: &Board) -> BoardSummary {
@@ -163,8 +173,12 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
                 let mut active_in_sprint = std::collections::HashSet::new();
                 let mut completed_in_sprint = std::collections::HashSet::new();
 
+                // Compare just the YYYY-MM-DD prefix if possible, or handle carefully
+                let sprint_start = sprint.start_date.clone();
+                let sprint_end = format!("{}T23:59:59Z", sprint.end_date); // Include the whole end day
+
                 for entry in &all_logs {
-                    if entry.timestamp >= sprint.start_date && entry.timestamp <= sprint.end_date {
+                    if entry.timestamp >= sprint_start && entry.timestamp <= sprint_end {
                         match &entry.payload {
                             ActionPayload::CreateTicket { id, .. } => {
                                 active_in_sprint.insert(id.clone());
@@ -190,6 +204,13 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
         }
     }
 
+    let mut trend = Vec::new();
+    if let Some(parent) = board.tickets_path.parent() {
+        if let Ok(all_logs) = load_all_logs(parent) {
+            trend = get_trend_data(&all_logs, done_queues, 15); // 15 intervals for the chart
+        }
+    }
+
     BoardSummary {
         total_tickets,
         unassigned_tickets,
@@ -201,6 +222,7 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
         avg_cycle_time_days,
         completion_rate,
         sprint_completion_rate,
+        trend,
     }
 }
 
@@ -300,7 +322,7 @@ pub fn get_ticket_lifecycle(ticket_id: &str, all_entries: &[LogEntry]) -> Ticket
 
     let ticket_entries = all_entries.iter().filter(|e| match &e.payload {
         ActionPayload::CreateTicket { id, .. } => id == ticket_id,
-        ActionPayload::UpdateTicket { id } => id == ticket_id,
+        ActionPayload::UpdateTicket { id, .. } => id == ticket_id,
         ActionPayload::ChangeStatus { id, .. } => id == ticket_id,
         ActionPayload::AddComment { id, .. } => id == ticket_id,
         ActionPayload::AssignTicket { id, .. } => id == ticket_id,
@@ -398,5 +420,156 @@ pub fn calculate_cycle_time(
         Some(end.signed_duration_since(start).num_seconds())
     } else {
         None
+    }
+}
+
+pub fn get_trend_data(
+    all_logs: &[LogEntry],
+    done_queues: &[String],
+    intervals: usize,
+) -> Vec<TrendPoint> {
+    if all_logs.is_empty() || intervals == 0 {
+        return Vec::new();
+    }
+
+    let first_ts = if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&all_logs[0].timestamp) {
+        dt
+    } else {
+        return Vec::new();
+    };
+    let last_ts = chrono::Utc::now();
+    let duration = last_ts
+        .signed_duration_since(first_ts.with_timezone(&chrono::Utc))
+        .num_seconds();
+
+    if duration <= 0 {
+        return Vec::new();
+    }
+
+    let step = duration / (intervals as i64);
+    let mut trend = Vec::new();
+
+    for i in 1..=intervals {
+        let current_target_ts =
+            first_ts.with_timezone(&chrono::Utc) + chrono::Duration::seconds(step * (i as i64));
+
+        // Simulate board state at this timestamp
+        let mut ticket_states: HashMap<String, (String, u32)> = HashMap::new(); // ID -> (Queue, Points)
+
+        for entry in all_logs {
+            let entry_ts = if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&entry.timestamp) {
+                dt.with_timezone(&chrono::Utc)
+            } else {
+                continue;
+            };
+
+            if entry_ts > current_target_ts {
+                break;
+            }
+
+            match &entry.payload {
+                ActionPayload::CreateTicket {
+                    id, queue, points, ..
+                } => {
+                    ticket_states.insert(id.clone(), (queue.clone(), *points));
+                }
+                ActionPayload::ChangeStatus { id, to, .. } => {
+                    if let Some(state) = ticket_states.get_mut(id) {
+                        state.0 = to.clone();
+                    }
+                }
+                ActionPayload::UpdateTicket { id, points } => {
+                    if let Some(state) = ticket_states.get_mut(id) {
+                        state.1 = *points;
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        let mut total_tickets = 0;
+        let mut done_tickets = 0;
+        let mut total_points = 0;
+        let mut done_points = 0;
+
+        for (queue, points) in ticket_states.values() {
+            total_tickets += 1;
+            total_points += *points;
+            if done_queues.contains(queue) {
+                done_tickets += 1;
+                done_points += *points;
+            }
+        }
+
+        trend.push(TrendPoint {
+            timestamp: current_target_ts.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+            total_tickets,
+            done_tickets,
+            total_points,
+            done_points,
+        });
+    }
+
+    trend
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::action::ActionPayload;
+
+    #[test]
+    fn test_get_trend_data() {
+        let now = chrono::Utc::now();
+        let first_ts = (now - chrono::Duration::minutes(60))
+            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        let mid_ts = (now - chrono::Duration::minutes(15))
+            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+
+        let logs = vec![
+            LogEntry {
+                timestamp: first_ts.clone(),
+                action: "CREATE_TICKET".to_string(),
+                description: "Created T1".to_string(),
+                payload: ActionPayload::CreateTicket {
+                    id: "t1".to_string(),
+                    title: "T1".to_string(),
+                    queue: "ToDo".to_string(),
+                    points: 5,
+                },
+            },
+            LogEntry {
+                timestamp: mid_ts.clone(),
+                action: "CHANGE_STATUS".to_string(),
+                description: "Moved T1".to_string(),
+                payload: ActionPayload::ChangeStatus {
+                    id: "t1".to_string(),
+                    from: "ToDo".to_string(),
+                    to: "Done".to_string(),
+                },
+            },
+        ];
+
+        let done_queues = vec!["Done".to_string()];
+        // 2 intervals over 60 minutes:
+        // Point 1: now - 30 min
+        // Point 2: now
+        let trend = get_trend_data(&logs, &done_queues, 2);
+
+        assert_eq!(trend.len(), 2);
+
+        // Point 1 (now - 30 min)
+        // Tickets: 1 (created at -60 min)
+        // Done: 0 (not done until -15 min)
+        assert_eq!(trend[0].total_tickets, 1);
+        assert_eq!(trend[0].done_tickets, 0);
+
+        // Point 2 (now)
+        // Tickets: 1
+        // Done: 1
+        assert_eq!(trend[1].total_tickets, 1);
+        assert_eq!(trend[1].done_tickets, 1);
+        assert_eq!(trend[1].total_points, 5);
+        assert_eq!(trend[1].done_points, 5);
     }
 }

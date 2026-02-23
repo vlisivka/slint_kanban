@@ -452,6 +452,7 @@ impl Board {
             id: ticket_id.clone(),
             title: title.to_string(),
             queue: queue_id.to_string(),
+            points,
         };
         let _ = self.append_log_entry(
             payload,
@@ -504,6 +505,7 @@ impl Board {
 
         let payload = ActionPayload::UpdateTicket {
             id: ticket_id.to_string(),
+            points,
         };
         let _ = self.append_log_entry(payload, &format!("Updated ticket #{}", ticket_id));
 

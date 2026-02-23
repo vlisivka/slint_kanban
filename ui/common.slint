@@ -51,6 +51,14 @@ export struct UserStatStr {
     count: int,
 }
 
+export struct TrendPointStr {
+    timestamp: string,
+    total_tickets: int,
+    done_tickets: int,
+    total_points: int,
+    done_points: int,
+}
+
 export struct BoardSummaryStr {
     total_tickets: int,
     unassigned_tickets: int,
@@ -63,6 +71,13 @@ export struct BoardSummaryStr {
     avg_cycle_time: string,
     completion_rate: string,
     sprint_completion_rate: string,
+    
+    // Numeric values for progress bars
+    f_completion_rate: float,
+    f_points_completion_rate: float,
+    f_sprint_completion_rate: float,
+    
+    trend: [TrendPointStr],
 }
 
 export struct SprintStr {

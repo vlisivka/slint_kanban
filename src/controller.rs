@@ -449,7 +449,7 @@ impl AppController {
 
         if let Some(app) = self.app_weak.upgrade() {
             let summary = crate::model::stats::get_board_summary(&board);
-            let slint_summary = crate::into_slint_summary(summary);
+            let slint_summary = crate::into_slint_summary(&summary);
             app.set_board_stats(slint_summary);
             app.set_show_stats_view(true);
         }

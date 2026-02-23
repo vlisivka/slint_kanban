@@ -5,155 +5,17 @@
 //!           and NO_COLOR support (https://no-color.org/).
 //! Constraints: Business logic should be in the model module, not here.
 
-mod cli;
-mod controller;
-mod model;
-
-use cli::{CliArgs, Commands, SprintAction};
-use controller::AppController;
-use model::Board;
 use notify::{RecursiveMode, Watcher};
-use slint::{ComponentHandle, SharedString, VecModel};
+use slint::ComponentHandle;
+use slint_kanban::cli::{CliArgs, Commands, SprintAction};
+use slint_kanban::controller::AppController;
+use slint_kanban::model::Board;
+use slint_kanban::*;
 use std::path::PathBuf;
-use std::rc::Rc;
 use std::sync::Arc;
-
-slint::include_modules!();
-
-/// Converts a domain Ticket into the Slint-generated TicketStr for UI binding.
-/// `snippet` is the first line of the description, shown on the card preview.
-pub fn into_slint_ticket(ticket: &model::Ticket, board: &Board) -> TicketStr {
-    let snippet = ticket.description.lines().next().unwrap_or("").to_string();
-    let refs: Vec<RefStr> = ticket
-        .extract_references()
-        .into_iter()
-        .map(|id_with_hash| {
-            let id = id_with_hash.trim_start_matches('#');
-            let title = board
-                .find_ticket_by_id(id)
-                .map(|t| t.title.clone())
-                .unwrap_or_else(|| "Unknown Ticket".to_string());
-            RefStr {
-                id: SharedString::from(id_with_hash),
-                title: SharedString::from(title),
-            }
-        })
-        .collect();
-
-    let slint_comments: Vec<CommentStr> = ticket
-        .comments
-        .iter()
-        .map(|c| {
-            let crefs: Vec<RefStr> = c
-                .references
-                .iter()
-                .map(|id_with_hash| {
-                    let id = id_with_hash.trim_start_matches('#');
-                    let title = board
-                        .find_ticket_by_id(id)
-                        .map(|t| t.title.clone())
-                        .unwrap_or_else(|| "Unknown Ticket".to_string());
-                    RefStr {
-                        id: SharedString::from(id_with_hash),
-                        title: SharedString::from(title),
-                    }
-                })
-                .collect();
-            CommentStr {
-                id: SharedString::from(&c.id),
-                author: SharedString::from(&c.metadata.author),
-                created_at: SharedString::from(&c.metadata.created_at),
-                updated_at: SharedString::from(&c.metadata.updated_at),
-                content: SharedString::from(&c.content),
-                references: Rc::new(VecModel::from(crefs)).into(),
-            }
-        })
-        .collect();
-
-    let mut attachment_count = 0;
-    let attach_dir = board.ticket_path(&ticket.id).join("attachment");
-    if let Ok(entries) = std::fs::read_dir(attach_dir) {
-        attachment_count = entries
-            .flatten()
-            .filter(|e| e.file_type().map(|ft| ft.is_file()).unwrap_or(false))
-            .count() as i32;
-    }
-
-    TicketStr {
-        id: SharedString::from(&ticket.id),
-        title: SharedString::from(&ticket.title),
-        description: SharedString::from(&ticket.description),
-        snippet: SharedString::from(snippet),
-        created_at: SharedString::from(&ticket.created_at),
-        updated_at: SharedString::from(&ticket.updated_at),
-        assigned_to: SharedString::from(&ticket.assigned_to),
-        author: SharedString::from(&ticket.author),
-        references: Rc::new(VecModel::from(refs)).into(),
-        comments: Rc::new(VecModel::from(slint_comments)).into(),
-        attachment_count,
-        points: ticket.points as i32,
-    }
-}
 
 /// Pushes the full board state into the UI, applying search/date/user filters.
 /// Called on every reload (initial load, file watcher event, or filter change).
-pub fn sync_board_to_ui(
-    ui: &App,
-    board: &Board,
-    query: &str,
-    date_from: &str,
-    date_to: &str,
-    show_only_mine: bool,
-    active_user: &str,
-) {
-    let mut slint_queues: Vec<QueueStr> = vec![];
-
-    for queue in &board.queues {
-        let mut filtered_tickets: Vec<&model::Ticket> = queue
-            .tickets
-            .iter()
-            .filter(|t| {
-                let user_filter = if show_only_mine {
-                    Some(if active_user == "<unassigned>" {
-                        ""
-                    } else {
-                        active_user
-                    })
-                } else {
-                    None
-                };
-                t.matches_all(query, date_from, date_to, user_filter)
-            })
-            .collect();
-
-        // Sort by updated_at: older at the top, newer at the bottom
-        filtered_tickets.sort_by(|a, b| a.updated_at.cmp(&b.updated_at));
-
-        let slint_tickets: Vec<TicketStr> = filtered_tickets
-            .into_iter()
-            .map(|t| into_slint_ticket(t, board))
-            .collect();
-
-        let ticket_count = slint_tickets.len() as i32;
-        let limit = queue.limit.map(|l| l as i32).unwrap_or(-1);
-
-        let total_points: i32 = slint_tickets.iter().map(|t| t.points).sum();
-        let tickets_model = Rc::new(VecModel::from(slint_tickets));
-
-        slint_queues.push(QueueStr {
-            id: SharedString::from(&queue.id),
-            name: SharedString::from(&queue.name),
-            tickets: tickets_model.into(),
-            limit,
-            ticket_count,
-            total_points,
-            visible: queue.visible,
-        });
-    }
-
-    let queues_model = Rc::new(VecModel::from(slint_queues));
-    ui.set_board_queues(queues_model.into());
-}
 
 fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
     let ui = App::new()?;
@@ -180,7 +42,7 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
         }
 
         // Also watch user config file if possible
-        if let Some(user_path) = model::Config::user_config_path() {
+        if let Some(user_path) = slint_kanban::model::Config::user_config_path() {
             if let Some(parent) = user_path.parent() {
                 let _ = std::fs::create_dir_all(parent);
                 if let Err(e) = watcher.watch(parent, RecursiveMode::NonRecursive) {
@@ -233,7 +95,7 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub(crate) fn init_callbacks(ui: &App, controller: Arc<AppController>) {
+fn init_callbacks(ui: &App, controller: Arc<AppController>) {
     // Set up callbacks
     let c = controller.clone();
     ui.on_move_ticket(move |ticket_id, source_id, target_id| {
@@ -418,7 +280,7 @@ fn handle_command(
             let date_to_str = date_to.unwrap_or_default();
 
             for queue in &board.queues {
-                let filtered_tickets: Vec<&model::Ticket> = queue
+                let filtered_tickets: Vec<&slint_kanban::model::Ticket> = queue
                     .tickets
                     .iter()
                     .filter(|t| {
@@ -478,7 +340,7 @@ fn handle_command(
             config.write(&root_path)?;
         }
         Commands::Stats { user } => {
-            let summary = crate::model::stats::get_board_summary(&board);
+            let summary = slint_kanban::model::stats::get_board_summary(&board);
 
             writeln!(out, "== Board Summary ==")?;
             writeln!(out, "Total tickets: {}", summary.total_tickets)?;
@@ -763,7 +625,7 @@ fn handle_command(
                         .config
                         .kanban
                         .sprints
-                        .push(crate::model::config::Sprint {
+                        .push(slint_kanban::model::config::Sprint {
                             number: next_number,
                             name: name.clone(),
                             start_date: start.clone(),
@@ -818,8 +680,6 @@ fn handle_command(
     Ok(())
 }
 
-/// Resolves the root path and dispatches to GUI or CLI command handler.
-/// Root path priority: --root flag > KANBAN_HOME env var > ~/Kanban default.
 fn run_cli(args: CliArgs, out: &mut dyn std::io::Write) -> anyhow::Result<()> {
     let root_path = if let Some(path) = args.root {
         path
@@ -837,86 +697,6 @@ fn run_cli(args: CliArgs, out: &mut dyn std::io::Write) -> anyhow::Result<()> {
         handle_command(root_path, command, out)
     } else {
         run_gui(root_path)
-    }
-}
-
-pub(crate) fn into_slint_summary(
-    summary: crate::model::stats::BoardSummary,
-) -> crate::BoardSummaryStr {
-    let slint_queues: Vec<crate::QueueStatStr> = summary
-        .queues
-        .into_iter()
-        .map(|q| {
-            let limit_str = q
-                .limit
-                .map(|l| l.to_string())
-                .unwrap_or_else(|| "-".to_string());
-            let usage_str = if let Some(limit) = q.limit {
-                if limit > 0 {
-                    format!("{}%", (q.count * 100) / limit)
-                } else {
-                    "-".to_string()
-                }
-            } else {
-                "-".to_string()
-            };
-            crate::QueueStatStr {
-                name: q.name.into(),
-                count: q.count as i32,
-                limit: limit_str.into(),
-                usage: usage_str.into(),
-            }
-        })
-        .collect();
-
-    let slint_users: Vec<crate::UserStatStr> = summary
-        .users
-        .into_iter()
-        .map(|u| crate::UserStatStr {
-            name: u.name.into(),
-            count: u.count as i32,
-        })
-        .collect();
-
-    let lead_time_str = summary
-        .avg_lead_time_days
-        .map(|d| format!("{:.1} days", d))
-        .unwrap_or_else(|| "-".to_string());
-    let cycle_time_str = summary
-        .avg_cycle_time_days
-        .map(|d| format!("{:.1} days", d))
-        .unwrap_or_else(|| "-".to_string());
-
-    let completion_rate_str = summary
-        .completion_rate
-        .map(|r| format!("{:.1}%", r))
-        .unwrap_or_default();
-    let sprint_completion_rate_str = summary
-        .sprint_completion_rate
-        .map(|r| format!("{:.1}%", r))
-        .unwrap_or_default();
-
-    let points_completion_rate_str = if summary.total_points > 0 {
-        format!(
-            "{:.1}%",
-            (summary.total_done_points as f64 / summary.total_points as f64) * 100.0
-        )
-    } else {
-        "-".to_string()
-    };
-
-    crate::BoardSummaryStr {
-        total_tickets: summary.total_tickets as i32,
-        unassigned_tickets: summary.unassigned_tickets as i32,
-        queues: std::rc::Rc::new(slint::VecModel::from(slint_queues)).into(),
-        users: std::rc::Rc::new(slint::VecModel::from(slint_users)).into(),
-        total_points: summary.total_points as i32,
-        total_done_points: summary.total_done_points as i32,
-        points_completion_rate: points_completion_rate_str.into(),
-        avg_lead_time: lead_time_str.into(),
-        avg_cycle_time: cycle_time_str.into(),
-        completion_rate: completion_rate_str.into(),
-        sprint_completion_rate: sprint_completion_rate_str.into(),
     }
 }
 

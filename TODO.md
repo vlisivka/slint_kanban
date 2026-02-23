@@ -163,7 +163,7 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Sprints (CLI CRUD + GUI display)
   - [x] Time tracking per ticket/queue (Lead/Cycle time calculations implemented)
   - [x] Completion rate calculations
-  - [ ] Trend visualization
+  - [x] Trend visualization
   - [ ] Burndown charts
   - [ ] Export statistics to CSV
 

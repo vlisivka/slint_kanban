@@ -8,9 +8,15 @@ pub enum ActionPayload {
         id: String,
         title: String,
         queue: String,
+        #[serde(default)]
+        points: u32,
     },
     #[serde(rename = "UPDATE_TICKET")]
-    UpdateTicket { id: String },
+    UpdateTicket {
+        id: String,
+        #[serde(default)]
+        points: u32,
+    },
     #[serde(rename = "CHANGE_STATUS")]
     ChangeStatus {
         id: String,

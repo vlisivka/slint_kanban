@@ -15,6 +15,7 @@ pub mod ticket;
 pub use board::Board;
 pub use comment::Comment;
 pub use config::Config;
+pub use queue::Queue;
 pub use ticket::Ticket;
 
 #[cfg(test)]
