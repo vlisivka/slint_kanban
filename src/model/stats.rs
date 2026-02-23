@@ -254,8 +254,12 @@ pub fn load_all_logs(root_path: &Path) -> anyhow::Result<Vec<LogEntry>> {
         }
     }
 
-    // Sort by timestamp
-    all_entries.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+    // Sort by timestamp (parsed)
+    all_entries.sort_by(|a, b| {
+        let da = chrono::DateTime::parse_from_rfc3339(&a.timestamp).ok();
+        let db = chrono::DateTime::parse_from_rfc3339(&b.timestamp).ok();
+        da.cmp(&db)
+    });
 
     Ok(all_entries)
 }

@@ -146,41 +146,99 @@ export component StatsView inherits Rectangle {
                         height: 200px;
                         background: Palette.alternate-background;
                         border-radius: 4px;
+                        property <length> chart-h: 160px;
 
                         HorizontalLayout {
                             padding: 10px;
                             spacing: 4px;
+                            alignment: space-around;
 
                             for tp in stats.trend: VerticalLayout {
                                 alignment: end;
                                 spacing: 2px;
                                 horizontal-stretch: 1;
 
-                                // Total Points Bar
+                                // Tooltip-like value
+                                if tp.total_points > 0: Text {
+                                    text: tp.done_points + "/" + tp.total_points;
+                                    font-size: 7px;
+                                    horizontal-alignment: center;
+                                    opacity: 0.5;
+                                }
+
+                                // Bar container
                                 Rectangle {
-                                    width: 100%;
-                                    height: (stats.total_points > 0) ? (parent.height - 20px) * (tp.total_points / (stats.total_points * 1.0)) : 2px;
+                                    horizontal-stretch: 1;
+                                    height: (stats.total_points > 0) ? Math.max(chart-h * (tp.total_points / (stats.total_points * 1.0)), 4px) : 2px;
                                     background: #2196F340;
                                     border-radius: 2px;
+                                    border-width: 1px;
+                                    border-color: Palette.border;
+                                    clip: true;
 
-                                    // Done Points Bar (inner)
+                                    // Done Points Bar
                                     Rectangle {
                                         y: parent.height - self.height;
                                         width: 100%;
                                         height: (tp.total_points > 0) ? parent.height * (tp.done_points / (tp.total_points * 1.0)) : 0px;
-                                        background: #2196F3;
-                                        border-radius: 2px;
+                                        background: #4CAF50;
+                                        border-radius: 1px;
                                     }
                                 }
                                 
                                 // Mini label for date
                                 Text {
                                     text: tp.timestamp;
-                                    font-size: 8px;
+                                    font-size: 9px;
                                     horizontal-alignment: center;
+                                    color: Palette.foreground;
                                 }
                             }
                         }
+                    }
+
+                    // Legend for the chart
+                    HorizontalLayout {
+                        spacing: 20px;
+                        alignment: center;
+                        HorizontalLayout {
+                            spacing: 6px;
+                            Rectangle {
+                                width: 14px;
+                                height: 14px;
+                                background: #2196F340;
+                                border-radius: 2px;
+                            }
+
+                            Text {
+                                text: "Total Points (Scope)";
+                                font-size: 11px;
+                                vertical-alignment: center;
+                            }
+                        }
+
+                        HorizontalLayout {
+                            spacing: 6px;
+                            Rectangle {
+                                width: 14px;
+                                height: 14px;
+                                background: #4CAF50;
+                                border-radius: 2px;
+                            }
+
+                            Text {
+                                text: "Done Points (Completed)";
+                                font-size: 11px;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+
+                    Text {
+                        text: "Early stages show only Total Points as work needs time to be completed.";
+                        font-size: 10px;
+                        opacity: 0.6;
+                        horizontal-alignment: center;
                     }
                 }
 

@@ -114,12 +114,11 @@ fn main() -> anyhow::Result<()> {
         while i < active_tickets.len() {
             let (id, current_q, points, last_move) = active_tickets[i].clone();
 
-            // Heuristic: Chance to move depends on points
-            // 1 point = fast, 10 points = slow
+            // Increase move chance and lower threshold for faster progress in simulation
             let days_since_move = (current_date - last_move).num_days();
-            let move_threshold = (points as f64 * 0.5).max(1.0);
-
-            if days_since_move >= move_threshold as i64 && rng.gen_bool(0.4) {
+            let move_threshold = (points as f64 * 0.3).max(0.0);
+            
+            if days_since_move >= move_threshold as i64 && rng.gen_bool(0.6) {
                 let current_idx = queues.iter().position(|&q| q == current_q).unwrap();
                 if current_idx < queues.len() - 1 {
                     let next_q = queues[current_idx + 1].to_string();

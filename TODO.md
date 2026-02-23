@@ -176,11 +176,6 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [ ] Resolving of conflicts.
   - [ ] Fixing of problems.
 
-### Separate GUI and CLI for baord admin
-  - [ ] Board initialization and setup.
-  - [ ] Resolving of conflicts.
-  - [ ] Fixing of problems.
-
 ### Export Functionality
 - [ ] Implement export features
   - [ ] Export single ticket with comments and attachment (names only) to PDF (including it queue name)

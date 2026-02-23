@@ -339,7 +339,7 @@ fn handle_command(
             }
             config.write(&root_path)?;
         }
-        Commands::Stats { user } => {
+        Commands::Stats { user: _ } => {
             let summary = slint_kanban::model::stats::get_board_summary(&board);
 
             writeln!(out, "== Board Summary ==")?;
@@ -379,13 +379,6 @@ fn handle_command(
             }
             writeln!(out)?;
 
-            if let Some(rate) = summary.completion_rate {
-                writeln!(out, "Completion Rate: {:.1}%", rate)?;
-            }
-
-            if let Some(rate) = summary.sprint_completion_rate {
-                writeln!(out, "Sprint Completion: {:.1}%", rate)?;
-            }
             writeln!(out)?;
 
             writeln!(out, "== Tickets per Queue ==")?;
@@ -415,14 +408,19 @@ fn handle_command(
                 )?;
             }
             writeln!(out)?;
-
             writeln!(out, "== Tickets per User ==")?;
             writeln!(out, "{:<20} {:>5}", "User", "Count")?;
             for u in summary.users {
-                if user.as_ref().is_some_and(|f| f != &u.name) {
-                    continue;
-                }
                 writeln!(out, "{:<20} {:>5}", u.name, u.count)?;
+            }
+            writeln!(out)?;
+
+            writeln!(out, "== Trends (Debug) ==")?;
+            writeln!(out, "{:<10} {:>8} {:>8} {:>8} {:>8}", "Date", "TotalT", "DoneT", "TotalP", "DoneP")?;
+            for tp in summary.trend {
+                writeln!(out, "{:<10} {:>8} {:>8} {:>8} {:>8}", 
+                    if tp.timestamp.len() >= 10 { &tp.timestamp[5..10] } else { &tp.timestamp },
+                    tp.total_tickets, tp.done_tickets, tp.total_points, tp.done_points)?;
             }
         }
         Commands::Move { id, queue } => {
