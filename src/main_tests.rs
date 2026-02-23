@@ -167,7 +167,7 @@ fn test_cli_comment() -> anyhow::Result<()> {
     env.run(&["comment", "-i", &id, "-c", "CLI created comment"])?;
 
     let board = env.board()?;
-    let ticket = board.find_ticket_by_id(&id).unwrap();
+    let ticket = board.load_full_ticket(&id).unwrap();
     assert_eq!(ticket.comments.len(), 1);
     assert_eq!(ticket.comments[0].content, "CLI created comment");
 

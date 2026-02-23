@@ -8,8 +8,17 @@ use crate::model::action::ActionPayload;
 use crate::model::config::Config;
 use crate::model::queue::Queue;
 use crate::model::ticket::{Ticket, TicketMetadata};
+use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, OnceLock};
+use std::time::SystemTime;
+
+static TICKET_CACHE: OnceLock<Mutex<HashMap<PathBuf, (SystemTime, Ticket)>>> = OnceLock::new();
+
+fn get_ticket_cache() -> &'static Mutex<HashMap<PathBuf, (SystemTime, Ticket)>> {
+    TICKET_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
 
 /// Default queue names created when initializing a new board.
 const DEFAULT_QUEUES: &[&str] = &[
@@ -89,6 +98,7 @@ pub struct Board {
     pub tickets_path: PathBuf,
     pub queues_path: PathBuf,
     pub config: Config,
+    pub ticket_index: std::collections::HashMap<String, Ticket>,
 }
 
 impl Board {
@@ -183,7 +193,7 @@ impl Board {
     /// Loads a ticket from disk. Thin wrapper over [`Ticket::load`] kept
     /// for backward-compatibility with existing tests.
     pub fn load_ticket(&self, path: &Path) -> anyhow::Result<Ticket> {
-        Ticket::load(path)
+        Ticket::load_full(path)
     }
 
     pub fn load(root_path: PathBuf) -> anyhow::Result<Self> {
@@ -196,6 +206,7 @@ impl Board {
             tickets_path,
             queues_path,
             config,
+            ticket_index: std::collections::HashMap::new(),
         };
 
         if board.queues_path.exists() {
@@ -215,6 +226,16 @@ impl Board {
         }
         queues.sort_by(|a, b| a.id.cmp(&b.id));
         self.queues = queues;
+
+        // Populate ticket index for O(1) lookup
+        self.ticket_index.clear();
+        for queue in &self.queues {
+            for ticket in &queue.tickets {
+                // In case of duplicates (which shouldn't happen), last one wins
+                self.ticket_index.insert(ticket.id.clone(), ticket.clone());
+            }
+        }
+
         Ok(())
     }
 
@@ -241,8 +262,24 @@ impl Board {
                 match resolved_result {
                     Ok(resolved_path) => {
                         if resolved_path.exists() && resolved_path.is_dir() {
+                            let mut cache = get_ticket_cache().lock().unwrap();
+                            let readme_path = resolved_path.join("README.md");
+                            let mtime = std::fs::metadata(&readme_path)
+                                .and_then(|m| m.modified())
+                                .unwrap_or(SystemTime::UNIX_EPOCH);
+
+                            if let Some((cached_mtime, ticket)) = cache.get(&resolved_path) {
+                                if *cached_mtime == mtime {
+                                    tickets.push(ticket.clone());
+                                    continue;
+                                }
+                            }
+
                             match Ticket::load(&resolved_path) {
-                                Ok(ticket) => tickets.push(ticket),
+                                Ok(ticket) => {
+                                    cache.insert(resolved_path.clone(), (mtime, ticket.clone()));
+                                    tickets.push(ticket);
+                                }
                                 Err(e) => eprintln!(
                                     "Warning: Failed to load ticket at {:?}: {}",
                                     resolved_path, e
@@ -440,6 +477,7 @@ impl Board {
             assigned_to: assigned_to.to_string(),
             author: author.to_string(),
             points,
+            attachment_count: 0,
             comments: vec![],
         };
         ticket.save(&ticket_dir)?;
@@ -631,6 +669,13 @@ impl Board {
 
         std::fs::copy(source_path, &target_path)?;
 
+        // Update ticket's attachment_count and updated_at
+        if let Ok(mut ticket) = Ticket::load(&ticket_dir) {
+            ticket.attachment_count += 1;
+            ticket.updated_at = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+            let _ = ticket.save(&ticket_dir);
+        }
+
         let payload = ActionPayload::AttachFile {
             id: ticket_id.to_string(),
             filename: target_name.clone(),
@@ -661,13 +706,13 @@ impl Board {
         target_id.to_string()
     }
 
+    pub fn load_full_ticket(&self, ticket_id: &str) -> anyhow::Result<Ticket> {
+        let path = self.ticket_path(ticket_id);
+        Ticket::load_full(&path)
+    }
+
     pub fn find_ticket_by_id(&self, id: &str) -> Option<&Ticket> {
-        for queue in &self.queues {
-            if let Some(ticket) = queue.tickets.iter().find(|t| t.id == id) {
-                return Some(ticket);
-            }
-        }
-        None
+        self.ticket_index.get(id)
     }
 
     pub fn check_queue_limit(&self, queue_id: &str) -> anyhow::Result<()> {

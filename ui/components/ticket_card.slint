@@ -1,4 +1,4 @@
-import { VerticalBox, HorizontalBox, Palette } from "std-widgets.slint";
+import { Palette } from "std-widgets.slint";
 import { TicketStr, IdCopy, CloseButton, Theme } from "../common.slint";
 
 export component TicketCard inherits Rectangle {
@@ -14,10 +14,14 @@ export component TicketCard inherits Rectangle {
 
     border-radius: 8px;
     border-width: 1px;
+    border-color: touch-area.has-hover ? Palette.border : Palette.border.transparentize(70%);
     height: 140px;
-    drop-shadow-blur: touch-area.has-hover ? 8px : 2px;
-    drop-shadow-offset-y: touch-area.has-hover ? 4px : 1px;
-    drop-shadow-color: #00000020;
+    
+    // Performance optimization: only render shadows on hover.
+    // Drop shadows are expensive to render during scrolling.
+    drop-shadow-blur: touch-area.has-hover ? 6px : 0px;
+    drop-shadow-offset-y: touch-area.has-hover ? 3px : 0px;
+    drop-shadow-color: touch-area.has-hover ? #00000040 : transparent;
     animate background, border-color, drop-shadow-blur, drop-shadow-offset-y { duration: 150ms; }
 
     touch-area := TouchArea {
@@ -39,19 +43,21 @@ export component TicketCard inherits Rectangle {
         }
     }
 
-    VerticalBox {
+    property <color> point-color: ticket.points == 1 ? Theme.point-1 : ticket.points == 2 ? Theme.point-2 : ticket.points == 3 ? Theme.point-3 : ticket.points == 4 ? Theme.point-4 : ticket.points == 5 ? Theme.point-5 : ticket.points == 6 ? Theme.point-6 : ticket.points == 7 ? Theme.point-7 : ticket.points == 8 ? Theme.point-8 : ticket.points == 9 ? Theme.point-9 : ticket.points == 10 ? Theme.point-10 : Theme.point-0;
+
+    VerticalLayout {
         padding: 12px;
         spacing: 8px;
 
-        HorizontalBox {
-            padding: 0px;
-            alignment: space-between;
+        HorizontalLayout {
+            spacing: 8px;
 
             Text {
                 text: ticket.title;
                 font-weight: 700;
                 font-size: 15px;
                 overflow: elide;
+                horizontal-stretch: 1;
             }
 
             CloseButton {
@@ -96,7 +102,7 @@ export component TicketCard inherits Rectangle {
                 if ticket.points > 0: Rectangle {
                     height: 18px;
                     width: pts_txt.preferred-width + 12px;
-                    background: ticket.points == 1 ? Theme.point-1 : ticket.points == 2 ? Theme.point-2 : ticket.points == 3 ? Theme.point-3 : ticket.points == 4 ? Theme.point-4 : ticket.points == 5 ? Theme.point-5 : ticket.points == 6 ? Theme.point-6 : ticket.points == 7 ? Theme.point-7 : ticket.points == 8 ? Theme.point-8 : ticket.points == 9 ? Theme.point-9 : ticket.points == 10 ? Theme.point-10 : Theme.point-0;
+                    background: root.point-color;
                     border-radius: 9px;
                     pts_txt := Text {
                         text: "⭐ " + ticket.points;
@@ -111,14 +117,17 @@ export component TicketCard inherits Rectangle {
 
             VerticalLayout {
                 spacing: 2px;
+                alignment: end;
                 Text {
                     text: "C: " + ticket.created_at;
                     font-size: 9px;
+                    opacity: 0.6;
                 }
 
                 Text {
                     text: "U: " + ticket.updated_at;
                     font-size: 9px;
+                    opacity: 0.6;
                 }
             }
         }

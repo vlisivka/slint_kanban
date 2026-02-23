@@ -19,6 +19,7 @@ fn setup_test_app() -> (App, Arc<AppController>, PathBuf, tempfile::TempDir) {
 
     let ui = App::new().unwrap();
     let controller = Arc::new(AppController::new(ui.as_weak(), root_path.clone()));
+    ui.set_board_queues(controller.board_queues_model().into());
 
     // Initialize logic
     controller.reload().unwrap();
@@ -232,7 +233,7 @@ fn test_gui_add_comment() {
 
     // 3. Verify it was written to Board
     let board = Board::load(root_path).unwrap();
-    let ticket = board.find_ticket_by_id(&id).unwrap();
+    let ticket = board.load_full_ticket(&id).unwrap();
 
     assert_eq!(
         ticket.comments.len(),

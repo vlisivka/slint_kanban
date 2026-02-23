@@ -1,7 +1,5 @@
 import {
     ScrollView,
-    VerticalBox,
-    HorizontalBox,
     Palette,
 } from "std-widgets.slint";
 import { QueueStr, TicketStr, Theme } from "../common.slint";
@@ -24,11 +22,11 @@ export component KanbanColumn inherits Rectangle {
     border-radius: 12px;
     background: Palette.alternate-background;
 
-    VerticalBox {
+    VerticalLayout {
         padding: 16px;
         spacing: 12px;
 
-        HorizontalBox {
+        HorizontalLayout {
             padding: 0px;
             alignment: space-between;
 

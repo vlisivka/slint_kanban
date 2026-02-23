@@ -167,6 +167,20 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [ ] Burndown charts
   - [ ] Export statistics to CSV
 
+### Performance Optimization
+- [x] Implement Quick Wins
+  - [x] Add `HashMap` index for O(1) ticket lookup (fixes cross-reference lag)
+  - [x] Optimize `get_board_summary` to load logs only once
+  - [x] Add debounce to search input
+- [ ] Implement I/O Reduction
+  - [x] Lazy load comments (only on ticket click)
+  - [x] Use header-only loading for board view (YAML + snippet)
+  - [x] Cache attachment count
+- [x] Scaling Improvements
+  - [x] Single-pass log processing for Lead/Cycle time (O(L) complexity)
+  - [x] Implement ticket and metadata caching (mtime based)
+  - [x] Incremental UI updates for Slint models
+
 ### Conflicts handling in multi-user multi-machine setup
   - [ ] Handle conflicts properly.
   - [ ] Prevent conflicts by an option "manage my tickets only", turned on by default.

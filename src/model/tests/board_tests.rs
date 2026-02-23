@@ -489,6 +489,7 @@ fn test_resolve_queue_id() -> anyhow::Result<()> {
                 visible: true,
             },
         ],
+        ticket_index: std::collections::HashMap::new(),
     };
 
     assert_eq!(board.resolve_queue_id("Q1"), "Q1");
@@ -525,6 +526,7 @@ fn test_resolve_queue_id() -> anyhow::Result<()> {
                 visible: true,
             },
         ],
+        ticket_index: std::collections::HashMap::new(),
     };
 
     assert_eq!(board_hidden.resolve_queue_id("index:0"), "Q1");
@@ -535,6 +537,38 @@ fn test_resolve_queue_id() -> anyhow::Result<()> {
 
 #[test]
 fn test_find_ticket_by_id() {
+    let tickets = vec![
+        Ticket {
+            id: "T1".to_string(),
+            title: "T1".to_string(),
+            created_at: "".to_string(),
+            updated_at: "".to_string(),
+            description: "".to_string(),
+            assigned_to: "".to_string(),
+            author: "".to_string(),
+            points: 0,
+            attachment_count: 0,
+            comments: vec![],
+        },
+        Ticket {
+            id: "T2".to_string(),
+            title: "T2".to_string(),
+            created_at: "".to_string(),
+            updated_at: "".to_string(),
+            description: "".to_string(),
+            assigned_to: "".to_string(),
+            author: "".to_string(),
+            points: 0,
+            attachment_count: 0,
+            comments: vec![],
+        },
+    ];
+
+    let mut ticket_index = std::collections::HashMap::new();
+    for t in &tickets {
+        ticket_index.insert(t.id.clone(), t.clone());
+    }
+
     let board = Board {
         tickets_path: PathBuf::new(),
         queues_path: PathBuf::new(),
@@ -543,38 +577,19 @@ fn test_find_ticket_by_id() {
             Queue {
                 id: "Q1".to_string(),
                 name: "Q1".to_string(),
-                tickets: vec![Ticket {
-                    id: "T1".to_string(),
-                    title: "T1".to_string(),
-                    created_at: "".to_string(),
-                    updated_at: "".to_string(),
-                    description: "".to_string(),
-                    assigned_to: "".to_string(),
-                    author: "".to_string(),
-                    points: 0,
-                    comments: vec![],
-                }],
+                tickets: vec![tickets[0].clone()],
                 limit: None,
                 visible: true,
             },
             Queue {
                 id: "Q2".to_string(),
                 name: "Q2".to_string(),
-                tickets: vec![Ticket {
-                    id: "T2".to_string(),
-                    title: "T2".to_string(),
-                    created_at: "".to_string(),
-                    updated_at: "".to_string(),
-                    description: "".to_string(),
-                    assigned_to: "".to_string(),
-                    author: "".to_string(),
-                    points: 0,
-                    comments: vec![],
-                }],
+                tickets: vec![tickets[1].clone()],
                 limit: None,
                 visible: true,
             },
         ],
+        ticket_index,
     };
 
     assert!(board.find_ticket_by_id("T1").is_some());
@@ -593,6 +608,7 @@ fn test_load_ticket_missing_readme() -> anyhow::Result<()> {
         queues_path: root.path().join("Queue"),
         queues: vec![],
         config: Config::default(),
+        ticket_index: std::collections::HashMap::new(),
     };
     let result = board.load_ticket(&ticket_path);
     assert!(result.is_err());
@@ -611,6 +627,7 @@ fn test_load_ticket_invalid_format() -> anyhow::Result<()> {
         queues_path: root.path().join("Queue"),
         queues: vec![],
         config: Config::default(),
+        ticket_index: std::collections::HashMap::new(),
     };
     let result = board.load_ticket(&ticket_path);
     assert!(result.is_err());
@@ -632,6 +649,7 @@ fn test_load_ticket_invalid_yaml() -> anyhow::Result<()> {
         queues_path: root.path().join("Queue"),
         queues: vec![],
         config: Config::default(),
+        ticket_index: std::collections::HashMap::new(),
     };
     let result = board.load_ticket(&ticket_path);
     assert!(result.is_err());

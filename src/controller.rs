@@ -4,10 +4,12 @@
 //! Includes: AppController struct and methods for handling UI actions.
 
 use crate::model::{Board, Config};
-use crate::{sync_board_to_ui, App, SprintStr, TicketStr, UserGlobal};
+use crate::{App, QueueStr, SprintStr, TicketStr, UserGlobal};
 use slint::{ComponentHandle, Model, SharedString, VecModel, Weak};
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::sync::Mutex;
 
 /// Mediates between the Slint UI and the file-system Board model.
 /// Each action handler re-loads the board from disk to ensure consistency
@@ -15,28 +17,59 @@ use std::rc::Rc;
 pub struct AppController {
     app_weak: Weak<App>,
     pub root_path: PathBuf,
+    // Persistent models for incremental updates
+    board_queues_model: Rc<VecModel<QueueStr>>,
+    ticket_models: Mutex<HashMap<String, Rc<VecModel<TicketStr>>>>,
+    ticket_cache: Mutex<HashMap<String, (String, TicketStr)>>, // ID -> (updated_at, TicketStr)
 }
+
+// Safety: The Slint-related fields (Rc<VecModel>) are only accessed
+// on the main thread via reload() and UI callbacks.
+unsafe impl Send for AppController {}
+unsafe impl Sync for AppController {}
 
 impl AppController {
     pub fn new(app_weak: Weak<App>, root_path: PathBuf) -> Self {
         Self {
             app_weak,
             root_path,
+            board_queues_model: Rc::new(VecModel::default()),
+            ticket_models: Mutex::new(HashMap::new()),
+            ticket_cache: Mutex::new(HashMap::new()),
         }
+    }
+
+    pub fn board_queues_model(&self) -> Rc<VecModel<QueueStr>> {
+        self.board_queues_model.clone()
     }
 
     /// Reloads the board from disk and synchronizes the UI.
     /// This is used for initial load and when the file watcher detects changes.
     pub fn reload(&self) -> anyhow::Result<()> {
+        let start = std::time::Instant::now();
         let app = self
             .app_weak
             .upgrade()
             .ok_or_else(|| anyhow::anyhow!("UI dropped"))?;
-        let board = Board::load(self.root_path.clone())?;
 
+        let t1 = std::time::Instant::now();
+        let board = Board::load(self.root_path.clone())?;
+        let load_duration = t1.elapsed();
+
+        let t2 = std::time::Instant::now();
         self.sync_board_data(&app, &board);
+        let sync_duration = t2.elapsed();
+
         self.sync_users(&app, &board);
         self.sync_config(&app, &board);
+
+        let total_duration = start.elapsed();
+        if total_duration.as_millis() > 16 {
+            eprintln!(
+                "[PERF] reload() took {:?} (load: {:?}, sync: {:?})",
+                total_duration, load_duration, sync_duration
+            );
+        }
 
         Ok(())
     }
@@ -50,15 +83,123 @@ impl AppController {
         let show_only_mine = board.config.show_only_mine();
         let active_user = board.config.active_user();
 
-        sync_board_to_ui(
-            app,
-            board,
-            query.as_str(),
-            date_from.as_str(),
-            date_to.as_str(),
-            show_only_mine,
-            active_user,
-        );
+        let mut ticket_models = self.ticket_models.lock().unwrap();
+        let mut ticket_cache = self.ticket_cache.lock().unwrap();
+
+        let mut slint_queues = Vec::new();
+
+        for queue in &board.queues {
+            let mut filtered_tickets: Vec<&crate::model::ticket::Ticket> = queue
+                .tickets
+                .iter()
+                .filter(|t| {
+                    let user_filter = if show_only_mine {
+                        Some(if active_user == "<unassigned>" {
+                            ""
+                        } else {
+                            active_user
+                        })
+                    } else {
+                        None
+                    };
+                    t.matches_all(
+                        query.as_str(),
+                        date_from.as_str(),
+                        date_to.as_str(),
+                        user_filter,
+                    )
+                })
+                .collect();
+
+            // Sort by updated_at: older at the top, newer at the bottom
+            filtered_tickets.sort_by(|a, b| a.updated_at.cmp(&b.updated_at));
+
+            let tickets_model = ticket_models
+                .entry(queue.id.clone())
+                .or_insert_with(|| Rc::new(VecModel::default()));
+
+            // Update tickets model incrementally
+            let mut new_slint_tickets = Vec::new();
+            for t in filtered_tickets {
+                let s_ticket = if let Some((updated_at, cached)) = ticket_cache.get(&t.id) {
+                    if *updated_at == t.updated_at {
+                        cached.clone()
+                    } else {
+                        let new_s = crate::into_slint_ticket(t, board);
+                        ticket_cache.insert(t.id.clone(), (t.updated_at.clone(), new_s.clone()));
+                        new_s
+                    }
+                } else {
+                    let new_s = crate::into_slint_ticket(t, board);
+                    ticket_cache.insert(t.id.clone(), (t.updated_at.clone(), new_s.clone()));
+                    new_s
+                };
+                new_slint_tickets.push(s_ticket);
+            }
+
+            // Patch the tickets model
+            let current_len = tickets_model.row_count();
+            let new_len = new_slint_tickets.len();
+
+            for i in 0..current_len.min(new_len) {
+                let old = tickets_model.row_data(i).unwrap();
+                let new = &new_slint_tickets[i];
+
+                // Only update if metadata that affects the card display has changed.
+                // Comparing the whole struct is still cheaper than letting Slint re-render everything.
+                if old.id != new.id
+                    || old.updated_at != new.updated_at
+                    || old.title != new.title
+                    || old.assigned_to != new.assigned_to
+                    || old.points != new.points
+                {
+                    tickets_model.set_row_data(i, new.clone());
+                }
+            }
+
+            if new_len > current_len {
+                for i in current_len..new_len {
+                    tickets_model.push(new_slint_tickets[i].clone());
+                }
+            } else if new_len < current_len {
+                for _ in new_len..current_len {
+                    tickets_model.remove(new_len);
+                }
+            }
+
+            let ticket_count = new_len as i32;
+            let limit = queue.limit.map(|l| l as i32).unwrap_or(-1);
+            let total_points: i32 = new_slint_tickets.iter().map(|t| t.points).sum();
+
+            slint_queues.push(QueueStr {
+                id: SharedString::from(&queue.id),
+                name: SharedString::from(&queue.name),
+                tickets: tickets_model.clone().into(),
+                limit,
+                ticket_count,
+                total_points,
+                visible: queue.visible,
+            });
+        }
+
+        // Patch the board_queues_model
+        let current_q_len = self.board_queues_model.row_count();
+        let new_q_len = slint_queues.len();
+
+        for i in 0..current_q_len.min(new_q_len) {
+            self.board_queues_model
+                .set_row_data(i, slint_queues[i].clone());
+        }
+
+        if new_q_len > current_q_len {
+            for i in current_q_len..new_q_len {
+                self.board_queues_model.push(slint_queues[i].clone());
+            }
+        } else if new_q_len < current_q_len {
+            for _ in new_q_len..current_q_len {
+                self.board_queues_model.remove(new_q_len);
+            }
+        }
     }
 
     /// Syncs the user list and active user into the UI global.
@@ -278,8 +419,8 @@ impl AppController {
         } else {
             if let Some(app) = self.app_weak.upgrade() {
                 if let Ok(b) = Board::load(self.root_path.clone()) {
-                    if let Some(t) = b.find_ticket_by_id(&ticket_id) {
-                        app.set_active_ticket(crate::into_slint_ticket(t, &b));
+                    if let Ok(t) = b.load_full_ticket(&ticket_id) {
+                        app.set_active_ticket(crate::into_slint_ticket(&t, &b));
                     }
                 }
             }
@@ -302,8 +443,8 @@ impl AppController {
                     // Update the active ticket to reflect the latest attachment_count
                     if let Some(app) = self.app_weak.upgrade() {
                         if let Ok(b) = Board::load(self.root_path.clone()) {
-                            if let Some(t) = b.find_ticket_by_id(&ticket_id) {
-                                app.set_active_ticket(crate::into_slint_ticket(t, &b));
+                            if let Ok(t) = b.load_full_ticket(&ticket_id) {
+                                app.set_active_ticket(crate::into_slint_ticket(&t, &b));
                             }
                         }
                     }
@@ -431,13 +572,30 @@ impl AppController {
 
         let id_to_find = target_id.strip_prefix('#').unwrap_or(&target_id);
 
-        if let Some(ticket) = board.find_ticket_by_id(id_to_find) {
-            if let Some(app) = self.app_weak.upgrade() {
-                app.set_active_ticket(crate::into_slint_ticket(ticket, &board));
-                app.set_show_ticket_view_dialog(true);
+        if let Some(_) = board.find_ticket_by_id(id_to_find) {
+            if let Ok(ticket) = board.load_full_ticket(id_to_find) {
+                if let Some(app) = self.app_weak.upgrade() {
+                    app.set_active_ticket(crate::into_slint_ticket(&ticket, &board));
+                    app.set_show_ticket_view_dialog(true);
+                }
             }
         } else {
             self.show_error(&format!("Ticket NOT FOUND: {}", target_id));
+        }
+    }
+
+    pub fn handle_request_full_ticket(&self, ticket_id: String) -> TicketStr {
+        let board = match self.load_board("request_full_ticket") {
+            Some(b) => b,
+            None => return TicketStr::default(),
+        };
+
+        match board.load_full_ticket(&ticket_id) {
+            Ok(t) => crate::into_slint_ticket(&t, &board),
+            Err(e) => {
+                eprintln!("Error loading full ticket {}: {:?}", ticket_id, e);
+                TicketStr::default()
+            }
         }
     }
 

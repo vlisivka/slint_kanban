@@ -9,6 +9,7 @@ fn test_get_board_summary() {
         queues: vec![],
         tickets_path: "".into(),
         queues_path: "".into(),
+        ticket_index: HashMap::new(),
     };
 
     // Add some users to config to ensure they show up in stats

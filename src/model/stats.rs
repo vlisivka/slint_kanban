@@ -137,25 +137,82 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
     let mut avg_lead_time_days = None;
     let mut avg_cycle_time_days = None;
     let mut sprint_completion_rate = None;
+    let mut trend = Vec::new();
 
     if let Some(parent) = board.tickets_path.parent() {
         if let Ok(all_logs) = load_all_logs(parent) {
             let mut lead_times = Vec::new();
             let mut cycle_times = Vec::new();
 
-            let mut ticket_ids = std::collections::HashSet::new();
-            for q in &board.queues {
-                for t in &q.tickets {
-                    ticket_ids.insert(t.id.clone());
+            // Map to track ticket timing: ID -> (created, started, completed) in seconds
+            let mut ticket_timings: HashMap<String, (Option<i64>, Option<i64>, Option<i64>)> =
+                HashMap::new();
+
+            let sprint = board.config.get_current_sprint(None);
+            let mut active_in_sprint = std::collections::HashSet::new();
+            let mut completed_in_sprint = std::collections::HashSet::new();
+
+            let (sprint_start, sprint_end) = if let Some(s) = &sprint {
+                (
+                    Some(s.start_date.clone()),
+                    Some(format!("{}T23:59:59Z", s.end_date)),
+                )
+            } else {
+                (None, None)
+            };
+
+            for entry in &all_logs {
+                let ts = chrono::DateTime::parse_from_rfc3339(&entry.timestamp)
+                    .ok()
+                    .map(|dt| dt.timestamp());
+
+                let in_sprint = if let (Some(start), Some(end)) = (&sprint_start, &sprint_end) {
+                    &entry.timestamp >= start && &entry.timestamp <= end
+                } else {
+                    false
+                };
+
+                match &entry.payload {
+                    ActionPayload::CreateTicket { id, .. } => {
+                        let timing = ticket_timings
+                            .entry(id.clone())
+                            .or_insert((None, None, None));
+                        timing.0 = ts;
+                        if in_sprint {
+                            active_in_sprint.insert(id.clone());
+                        }
+                    }
+                    ActionPayload::ChangeStatus { id, to, .. } => {
+                        let timing = ticket_timings
+                            .entry(id.clone())
+                            .or_insert((None, None, None));
+                        if start_queues.contains(to) && timing.1.is_none() {
+                            timing.1 = ts;
+                        }
+                        if done_queues.contains(to) && timing.2.is_none() {
+                            timing.2 = ts;
+                        } else if !done_queues.contains(to) {
+                            timing.2 = None;
+                        }
+
+                        if in_sprint {
+                            active_in_sprint.insert(id.clone());
+                            if done_queues.contains(to) {
+                                completed_in_sprint.insert(id.clone());
+                            }
+                        }
+                    }
+                    _ => {}
                 }
             }
 
-            for id in ticket_ids {
-                if let Some(lt) = calculate_lead_time(&id, &all_logs, done_queues) {
-                    lead_times.push(lt);
+            // After single pass, collect results
+            for (created, started, completed) in ticket_timings.values() {
+                if let (Some(c), Some(comp)) = (created, completed) {
+                    lead_times.push(comp - c);
                 }
-                if let Some(ct) = calculate_cycle_time(&id, &all_logs, start_queues, done_queues) {
-                    cycle_times.push(ct);
+                if let (Some(s), Some(comp)) = (started, completed) {
+                    cycle_times.push(comp - s);
                 }
             }
 
@@ -168,46 +225,14 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
                 avg_cycle_time_days = Some((sum as f64) / 86400.0 / (cycle_times.len() as f64));
             }
 
-            // Calculate Sprint Completion Rate if there is an active sprint
-            if let Some(sprint) = board.config.get_current_sprint(None) {
-                let mut active_in_sprint = std::collections::HashSet::new();
-                let mut completed_in_sprint = std::collections::HashSet::new();
-
-                // Compare just the YYYY-MM-DD prefix if possible, or handle carefully
-                let sprint_start = sprint.start_date.clone();
-                let sprint_end = format!("{}T23:59:59Z", sprint.end_date); // Include the whole end day
-
-                for entry in &all_logs {
-                    if entry.timestamp >= sprint_start && entry.timestamp <= sprint_end {
-                        match &entry.payload {
-                            ActionPayload::CreateTicket { id, .. } => {
-                                active_in_sprint.insert(id.clone());
-                            }
-                            ActionPayload::ChangeStatus { id, to, .. } => {
-                                active_in_sprint.insert(id.clone());
-                                if done_queues.contains(to) {
-                                    completed_in_sprint.insert(id.clone());
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                }
-
-                if !active_in_sprint.is_empty() {
-                    sprint_completion_rate = Some(
-                        (completed_in_sprint.len() as f64) / (active_in_sprint.len() as f64)
-                            * 100.0,
-                    );
-                }
+            if !active_in_sprint.is_empty() {
+                sprint_completion_rate = Some(
+                    (completed_in_sprint.len() as f64) / (active_in_sprint.len() as f64) * 100.0,
+                );
             }
-        }
-    }
 
-    let mut trend = Vec::new();
-    if let Some(parent) = board.tickets_path.parent() {
-        if let Ok(all_logs) = load_all_logs(parent) {
-            trend = get_trend_data(&all_logs, done_queues, 15); // 15 intervals for the chart
+            // Trend calculation - reusing pre-loaded logs
+            trend = get_trend_data(&all_logs, done_queues, 15);
         }
     }
 
@@ -437,14 +462,12 @@ pub fn get_trend_data(
     }
 
     let first_ts = if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&all_logs[0].timestamp) {
-        dt
+        dt.with_timezone(&chrono::Utc)
     } else {
         return Vec::new();
     };
     let last_ts = chrono::Utc::now();
-    let duration = last_ts
-        .signed_duration_since(first_ts.with_timezone(&chrono::Utc))
-        .num_seconds();
+    let duration = last_ts.signed_duration_since(first_ts).num_seconds();
 
     if duration <= 0 {
         return Vec::new();
@@ -453,17 +476,19 @@ pub fn get_trend_data(
     let step = duration / (intervals as i64);
     let mut trend = Vec::new();
 
+    let mut ticket_states: HashMap<String, (String, u32)> = HashMap::new(); // ID -> (Queue, Points)
+    let mut log_idx = 0;
+
     for i in 1..=intervals {
-        let current_target_ts =
-            first_ts.with_timezone(&chrono::Utc) + chrono::Duration::seconds(step * (i as i64));
+        let current_target_ts = first_ts + chrono::Duration::seconds(step * (i as i64));
 
-        // Simulate board state at this timestamp
-        let mut ticket_states: HashMap<String, (String, u32)> = HashMap::new(); // ID -> (Queue, Points)
-
-        for entry in all_logs {
+        // Process logs up to this target timestamp
+        while log_idx < all_logs.len() {
+            let entry = &all_logs[log_idx];
             let entry_ts = if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&entry.timestamp) {
                 dt.with_timezone(&chrono::Utc)
             } else {
+                log_idx += 1;
                 continue;
             };
 
@@ -489,6 +514,7 @@ pub fn get_trend_data(
                 }
                 _ => {}
             }
+            log_idx += 1;
         }
 
         let mut total_tickets = 0;

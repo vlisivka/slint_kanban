@@ -4,7 +4,7 @@ pub mod model;
 
 slint::include_modules!();
 
-use model::{Board, Queue, Ticket};
+use model::{Board, Ticket};
 use slint::SharedString;
 
 /// Converts a domain Ticket into the Slint-generated TicketStr for UI binding.
@@ -58,14 +58,7 @@ pub fn into_slint_ticket(ticket: &Ticket, board: &Board) -> TicketStr {
         })
         .collect();
 
-    let mut attachment_count = 0;
-    let attach_dir = board.ticket_path(&ticket.id).join("attachment");
-    if let Ok(entries) = std::fs::read_dir(attach_dir) {
-        attachment_count = entries
-            .flatten()
-            .filter(|e| e.file_type().map(|ft| ft.is_file()).unwrap_or(false))
-            .count() as i32;
-    }
+    let attachment_count = ticket.attachment_count as i32;
 
     TicketStr {
         id: ticket.id.clone().into(),
@@ -80,84 +73,6 @@ pub fn into_slint_ticket(ticket: &Ticket, board: &Board) -> TicketStr {
         comments: std::rc::Rc::new(slint::VecModel::from(slint_comments)).into(),
         attachment_count,
         points: ticket.points as i32,
-    }
-}
-
-/// Pushes the full board state into the UI, applying search/date/user filters.
-/// Called on every reload (initial load, file watcher event, or filter change).
-pub fn sync_board_to_ui(
-    ui: &App,
-    board: &Board,
-    query: &str,
-    date_from: &str,
-    date_to: &str,
-    show_only_mine: bool,
-    active_user: &str,
-) {
-    let mut slint_queues: Vec<QueueStr> = vec![];
-
-    for queue in &board.queues {
-        let mut filtered_tickets: Vec<&Ticket> = queue
-            .tickets
-            .iter()
-            .filter(|t| {
-                let user_filter = if show_only_mine {
-                    Some(if active_user == "<unassigned>" {
-                        ""
-                    } else {
-                        active_user
-                    })
-                } else {
-                    None
-                };
-                t.matches_all(query, date_from, date_to, user_filter)
-            })
-            .collect();
-
-        // Sort by updated_at: older at the top, newer at the bottom
-        filtered_tickets.sort_by(|a, b| a.updated_at.cmp(&b.updated_at));
-
-        let slint_tickets: Vec<TicketStr> = filtered_tickets
-            .into_iter()
-            .map(|t| into_slint_ticket(t, board))
-            .collect();
-
-        let ticket_count = slint_tickets.len() as i32;
-        let limit = queue.limit.map(|l| l as i32).unwrap_or(-1);
-
-        let total_points: i32 = slint_tickets.iter().map(|t| t.points).sum();
-        let tickets_model = std::rc::Rc::new(slint::VecModel::from(slint_tickets));
-
-        slint_queues.push(QueueStr {
-            id: slint::SharedString::from(&queue.id),
-            name: slint::SharedString::from(&queue.name),
-            tickets: tickets_model.into(),
-            limit,
-            ticket_count,
-            total_points,
-            visible: queue.visible,
-        });
-    }
-
-    let queues_model = std::rc::Rc::new(slint::VecModel::from(slint_queues));
-    ui.set_board_queues(queues_model.into());
-}
-
-pub fn into_slint_queue(queue: &Queue, board: &Board) -> QueueStr {
-    let tickets: Vec<TicketStr> = queue
-        .tickets
-        .iter()
-        .map(|t| into_slint_ticket(t, board))
-        .collect();
-
-    QueueStr {
-        id: queue.id.clone().into(),
-        name: queue.name.clone().into(),
-        tickets: std::rc::Rc::new(slint::VecModel::from(tickets)).into(),
-        limit: queue.limit.map(|l| l as i32).unwrap_or(-1),
-        ticket_count: queue.tickets.len() as i32,
-        total_points: queue.tickets.iter().map(|t| t.points).sum::<u32>() as i32,
-        visible: queue.visible,
     }
 }
 

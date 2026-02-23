@@ -18,9 +18,10 @@ import {
     UserGlobal,
     BoardSummaryStr,
     SprintStr,
+    Clipboard,
 } from "common.slint";
 
-export { UserGlobal }
+export { UserGlobal, Clipboard }
 import { TicketView } from "dialogs/ticket_view.slint";
 import { TicketEdit } from "dialogs/ticket_edit.slint";
 import { WarningDialog } from "dialogs/warning_dialog.slint";
@@ -60,6 +61,7 @@ export component App inherits Window {
     callback navigate-to(string); // for cross-references
     callback attach-file(string) -> string; // ticket_id
     callback open-attachment-folder(string); // ticket_id
+    callback request-full-ticket(string) -> TicketStr;
     callback request-stats(); // loads data into board_stats and shows view
     callback request-sprints-view(); // opens sprints list view
     
@@ -361,7 +363,7 @@ export component App inherits Window {
                             show_delete_confirm_dialog = true;
                         }
                         edit-ticket(ticket_metadata) => {
-                            active_ticket = ticket_metadata;
+                            active_ticket = request-full-ticket(ticket_metadata.id);
                             show_ticket_view_dialog = true;
                         }
                         open-new-ticket-dialog(queue_id) => {

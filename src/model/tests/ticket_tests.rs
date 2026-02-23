@@ -77,6 +77,7 @@ fn test_ticket_matches() {
         assigned_to: "".to_string(),
         author: "me".to_string(),
         points: 0,
+        attachment_count: 0,
         comments: vec![],
     };
 
@@ -106,6 +107,7 @@ fn test_ticket_matches_date_range() {
         assigned_to: "".to_string(),
         author: "me".to_string(),
         points: 0,
+        attachment_count: 0,
         comments: vec![],
     };
 
@@ -197,6 +199,7 @@ fn test_extract_references() {
         assigned_to: "".to_string(),
         author: "me".to_string(),
         points: 0,
+        attachment_count: 0,
         description: "Check #abc123 and #def456. Also #123 is too short, and #abcdef78 is too long but should extract #abcdef. And #abc123 again.".to_string(),
         comments: vec![],
     };
@@ -231,6 +234,7 @@ fn test_update_ticket_unassign() {
         assigned_to: "Alice".to_string(),
         author: "Bob".to_string(),
         points: 0,
+        attachment_count: 0,
         comments: vec![],
     };
     ticket.save(&ticket_path).unwrap();
@@ -262,6 +266,7 @@ fn test_ticket_points_serialization() {
         assigned_to: "Alice".to_string(),
         author: "Bob".to_string(),
         points: 7,
+        attachment_count: 0,
         comments: vec![],
     };
     ticket.save(&ticket_path).unwrap();

@@ -130,6 +130,10 @@ export global UserGlobal {
     callback toggle-show-only-mine(bool);
 }
 
+export global Clipboard {
+    callback copy-to-clipboard(string);
+}
+
 // Reusable "×" close/delete button with hover effects.
 export component CloseButton inherits Rectangle {
     callback clicked();
@@ -195,24 +199,23 @@ export component IdCopy inherits Rectangle {
             vertical-alignment: center;
         }
 
-        // Hidden TextEdit for copy functionality.
-        // It must be visible (though size 0) to allow copying.
-        edit := TextEdit {
-            text: "#" + root.id;
-            read-only: true;
-            width: 0px;
-            height: 0px;
-            opacity: 0;
-        }
-
-        Button {
-            text: "📋";
+        // Lightweight copy button using a simple Rectangle and TouchArea
+        Rectangle {
             width: 24px;
             height: 24px;
-            clicked => {
-                edit.focus();
-                edit.select-all();
-                edit.copy();
+            border-radius: 4px;
+            background: btn-touch.pressed ? Theme.id-hover-bg.darker(0.1) : (btn-touch.has-hover ? Theme.id-hover-bg : transparent);
+            Text {
+                text: "📋";
+                font-size: 14px;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+
+            btn-touch := TouchArea {
+                clicked => {
+                    Clipboard.copy-to-clipboard("#" + root.id);
+                }
             }
         }
     }

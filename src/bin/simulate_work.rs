@@ -83,6 +83,7 @@ fn main() -> anyhow::Result<()> {
                     assigned_to: assigned_to.to_string(),
                     author: "SystemSim".to_string(),
                     points,
+                    attachment_count: 0,
                     comments: vec![],
                 };
                 ticket.save(&board.tickets_path.join(&ticket_id))?;
@@ -117,7 +118,7 @@ fn main() -> anyhow::Result<()> {
             // Increase move chance and lower threshold for faster progress in simulation
             let days_since_move = (current_date - last_move).num_days();
             let move_threshold = (points as f64 * 0.3).max(0.0);
-            
+
             if days_since_move >= move_threshold as i64 && rng.gen_bool(0.6) {
                 let current_idx = queues.iter().position(|&q| q == current_q).unwrap();
                 if current_idx < queues.len() - 1 {

@@ -20,6 +20,8 @@ pub struct TicketMetadata {
     pub author: String,
     #[serde(default)]
     pub points: u32,
+    #[serde(default)]
+    pub attachment_count: u32,
 }
 
 #[derive(Debug, Clone)]
@@ -32,6 +34,7 @@ pub struct Ticket {
     pub assigned_to: String,
     pub author: String,
     pub points: u32,
+    pub attachment_count: u32,
     pub comments: Vec<crate::model::Comment>,
 }
 
@@ -46,6 +49,7 @@ impl Ticket {
             assigned_to: metadata.assigned_to,
             author: metadata.author,
             points: metadata.points,
+            attachment_count: metadata.attachment_count,
             comments: Vec::new(),
         }
     }
@@ -129,7 +133,92 @@ impl Ticket {
     /// ---
     /// <markdown body>
     /// ```
+    /// Loads a ticket header and body from its directory, WITHOUT comments.
     pub fn load(path: &std::path::Path) -> anyhow::Result<Self> {
+        let ticket_id = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(|| anyhow::anyhow!("Invalid ticket path: {:?}", path))?
+            .to_string();
+
+        let readme_path = path.join("README.md");
+        if !readme_path.exists() {
+            return Err(anyhow::anyhow!("README.md not found in {:?}", path));
+        }
+
+        let file = std::fs::File::open(&readme_path)
+            .map_err(|e| anyhow::anyhow!("Failed to open README.md in {:?}: {}", path, e))?;
+        let reader = std::io::BufReader::new(file);
+        use std::io::BufRead;
+
+        let mut frontmatter = String::new();
+        let mut body_snippet = String::new();
+        let mut state = 0; // 0: before first ---, 1: inside frontmatter, 2: after second --- (body)
+
+        for line in reader.lines() {
+            let line = line?;
+            if line.trim() == "---" {
+                state += 1;
+                if state == 3 {
+                    break;
+                }
+                continue;
+            }
+
+            match state {
+                1 => {
+                    frontmatter.push_str(&line);
+                    frontmatter.push('\n');
+                }
+                2 => {
+                    if !line.trim().is_empty() {
+                        body_snippet = line.trim().to_string();
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        if state < 2 {
+            return Err(anyhow::anyhow!(
+                "Invalid ticket format (missing frontmatter) in {:?}",
+                readme_path
+            ));
+        }
+
+        let mut metadata: TicketMetadata = serde_yaml::from_str(&frontmatter)
+            .map_err(|e| anyhow::anyhow!("Failed to parse YAML in {:?}: {}", readme_path, e))?;
+
+        // Backfill updated_at for tickets created before this field was added
+        if metadata.updated_at.is_empty() && !metadata.created_at.is_empty() {
+            metadata.updated_at = metadata.created_at.clone();
+        }
+
+        let ticket = Ticket::from_metadata(ticket_id, metadata, body_snippet);
+        Ok(ticket)
+    }
+
+    /// Loads comments for an already loaded ticket.
+    pub fn load_comments(&mut self, path: &std::path::Path) -> anyhow::Result<()> {
+        let mut comments = Vec::new();
+        if let Ok(entries) = std::fs::read_dir(path) {
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().into_owned();
+                if name.starts_with("tc") && name.ends_with(".md") {
+                    if let Ok(comment) = crate::model::Comment::load(&entry.path()) {
+                        comments.push(comment);
+                    }
+                }
+            }
+        }
+        comments.sort_by(|a, b| a.metadata.created_at.cmp(&b.metadata.created_at));
+        self.comments = comments;
+        Ok(())
+    }
+
+    /// Loads a ticket from its directory, including full body and all comments.
+    pub fn load_full(path: &std::path::Path) -> anyhow::Result<Self> {
         let ticket_id = path
             .file_name()
             .and_then(|n| n.to_str())
@@ -147,7 +236,7 @@ impl Ticket {
         let parts: Vec<&str> = content.splitn(3, "---").collect();
         if parts.len() < 3 {
             return Err(anyhow::anyhow!(
-                "Invalid ticket format in {:?}",
+                "Invalid ticket format (missing frontmatter) in {:?}",
                 readme_path
             ));
         }
@@ -164,21 +253,7 @@ impl Ticket {
         }
 
         let mut ticket = Ticket::from_metadata(ticket_id, metadata, body);
-
-        let mut comments = Vec::new();
-        if let Ok(entries) = std::fs::read_dir(path) {
-            for entry in entries.flatten() {
-                let name = entry.file_name().to_string_lossy().into_owned();
-                if name.starts_with("tc") && name.ends_with(".md") {
-                    if let Ok(comment) = crate::model::Comment::load(&entry.path()) {
-                        comments.push(comment);
-                    }
-                }
-            }
-        }
-        comments.sort_by(|a, b| a.metadata.created_at.cmp(&b.metadata.created_at));
-        ticket.comments = comments;
-
+        ticket.load_comments(path)?;
         Ok(ticket)
     }
 
@@ -191,8 +266,8 @@ impl Ticket {
         use std::io::Write;
         write!(
             f,
-            "---\ntitle: {}\ncreated_at: {}\nupdated_at: {}\nassigned_to: \"{}\"\nauthor: \"{}\"\npoints: {}\n---\n{}",
-            self.title, self.created_at, self.updated_at, self.assigned_to, self.author, self.points, self.description
+            "---\ntitle: {}\ncreated_at: {}\nupdated_at: {}\nassigned_to: \"{}\"\nauthor: \"{}\"\npoints: {}\nattachment_count: {}\n---\n{}",
+            self.title, self.created_at, self.updated_at, self.assigned_to, self.author, self.points, self.attachment_count, self.description
         )?;
         Ok(())
     }

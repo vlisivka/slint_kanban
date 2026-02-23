@@ -21,6 +21,8 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
     let ui = App::new()?;
     let controller = Arc::new(AppController::new(ui.as_weak(), root_path.clone()));
 
+    ui.set_board_queues(controller.board_queues_model().into());
+
     println!("Using Kanban root: {:?}", root_path);
 
     // Initial load
@@ -70,12 +72,13 @@ fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
                         continue;
                     }
 
-                    // Debounce: wait 100ms then drain any events that arrived
+                    // Debounce: wait 500ms then drain any events that arrived
                     // during the sleep, so rapid saves trigger only one reload.
-                    std::thread::sleep(Duration::from_millis(100));
+                    std::thread::sleep(Duration::from_millis(500));
                     while rx.try_recv().is_ok() {}
 
                     let c = c_watcher.clone();
+                    eprintln!("[WATCHER] Change detected, triggering reload...");
                     let _ = slint::invoke_from_event_loop(move || {
                         if let Err(e) = c.reload() {
                             eprintln!("Error reloading board: {:?}", e);
@@ -136,6 +139,9 @@ fn init_callbacks(ui: &App, controller: Arc<AppController>) {
 
     let c = controller.clone();
     ui.on_attach_file(move |ticket_id| c.handle_attach_file(ticket_id.into()).into());
+
+    let c = controller.clone();
+    ui.on_request_full_ticket(move |ticket_id| c.handle_request_full_ticket(ticket_id.into()));
 
     let c = controller.clone();
     ui.on_open_attachment_folder(move |ticket_id| {
@@ -206,8 +212,18 @@ fn init_callbacks(ui: &App, controller: Arc<AppController>) {
 
     // Search/filter callbacks trigger board reload to apply new filters
     let c = controller.clone();
+    let search_timer = std::rc::Rc::new(std::cell::RefCell::new(slint::Timer::default()));
     ui.on_search_edited(move |_| {
-        let _ = c.reload(); // Re-sync UI with new search query
+        let timer = search_timer.clone();
+        let c = c.clone();
+        timer.borrow().stop();
+        timer.borrow().start(
+            slint::TimerMode::SingleShot,
+            std::time::Duration::from_millis(300),
+            move || {
+                let _ = c.reload();
+            },
+        );
     });
 
     let c = controller.clone();
@@ -219,6 +235,24 @@ fn init_callbacks(ui: &App, controller: Arc<AppController>) {
     ui.on_select_history_item(move |_| {
         c.handle_select_history_item();
     });
+
+    // Clipboard integration
+    let clipboard = std::sync::Arc::new(std::sync::Mutex::new(arboard::Clipboard::new().ok()));
+    let cb_clone = clipboard.clone();
+    ui.global::<crate::Clipboard>()
+        .on_copy_to_clipboard(move |text| {
+            if let Ok(mut cb_lock) = cb_clone.lock() {
+                if let Some(cb) = cb_lock.as_mut() {
+                    if let Err(e) = cb.set_text(text.to_string()) {
+                        eprintln!("Failed to copy to clipboard: {:?}", e);
+                    } else {
+                        println!("Copied to clipboard: {}", text);
+                    }
+                } else {
+                    eprintln!("Clipboard not available");
+                }
+            }
+        });
 }
 
 fn handle_command(
@@ -339,8 +373,21 @@ fn handle_command(
             }
             config.write(&root_path)?;
         }
-        Commands::Stats { user: _ } => {
-            let summary = slint_kanban::model::stats::get_board_summary(&board);
+        Commands::Stats { user } => {
+            let mut filtered_board = board.clone();
+            if let Some(ref u) = user {
+                // Filter tickets by assigned user
+                for queue in &mut filtered_board.queues {
+                    queue.tickets.retain(|t| t.assigned_to == *u);
+                }
+                // Filter user list in config so the stats only show the requested user
+                filtered_board
+                    .config
+                    .kanban
+                    .users
+                    .retain(|user_id| user_id == u);
+            }
+            let summary = slint_kanban::model::stats::get_board_summary(&filtered_board);
 
             writeln!(out, "== Board Summary ==")?;
             writeln!(out, "Total tickets: {}", summary.total_tickets)?;
@@ -416,11 +463,25 @@ fn handle_command(
             writeln!(out)?;
 
             writeln!(out, "== Trends (Debug) ==")?;
-            writeln!(out, "{:<10} {:>8} {:>8} {:>8} {:>8}", "Date", "TotalT", "DoneT", "TotalP", "DoneP")?;
+            writeln!(
+                out,
+                "{:<10} {:>8} {:>8} {:>8} {:>8}",
+                "Date", "TotalT", "DoneT", "TotalP", "DoneP"
+            )?;
             for tp in summary.trend {
-                writeln!(out, "{:<10} {:>8} {:>8} {:>8} {:>8}", 
-                    if tp.timestamp.len() >= 10 { &tp.timestamp[5..10] } else { &tp.timestamp },
-                    tp.total_tickets, tp.done_tickets, tp.total_points, tp.done_points)?;
+                writeln!(
+                    out,
+                    "{:<10} {:>8} {:>8} {:>8} {:>8}",
+                    if tp.timestamp.len() >= 10 {
+                        &tp.timestamp[5..10]
+                    } else {
+                        &tp.timestamp
+                    },
+                    tp.total_tickets,
+                    tp.done_tickets,
+                    tp.total_points,
+                    tp.done_points
+                )?;
             }
         }
         Commands::Move { id, queue } => {
@@ -445,8 +506,8 @@ fn handle_command(
         }
         Commands::Show { id } => {
             let ticket = board
-                .find_ticket_by_id(&id)
-                .ok_or_else(|| anyhow::anyhow!("Ticket not found: {}", id))?;
+                .load_full_ticket(&id)
+                .map_err(|_| anyhow::anyhow!("Ticket not found: {}", id))?;
 
             let queue_name = board
                 .queues
