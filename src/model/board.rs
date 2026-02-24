@@ -129,7 +129,7 @@ impl Board {
             let config_path = root_path.join("config.toml");
             if !config_path.exists() {
                 let mut default_config = Config::default();
-                default_config.set_limit("2. To Dooo".to_string(), 21);
+                default_config.set_limit("2. To Do".to_string(), 21);
                 default_config.set_limit("3. Doing".to_string(), 5);
                 default_config.write(root_path)?;
             }
@@ -154,6 +154,150 @@ impl Board {
         };
 
         Ok(Self::parse_readme_content(&content))
+    }
+
+    pub fn update_board_readme(&self, content: &str) -> anyhow::Result<()> {
+        let root_path = self
+            .tickets_path
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("Invalid root path"))?;
+        let readme_path = root_path.join("README.md");
+        std::fs::write(&readme_path, content)?;
+        self.append_log_entry(ActionPayload::UpdateBoardInfo, "Updated board README.md")?;
+        Ok(())
+    }
+
+    pub fn add_queue(&self, name: &str) -> anyhow::Result<()> {
+        let root_path = self
+            .tickets_path
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("Invalid root path"))?;
+        let queue_path = root_path.join("Queue").join(name);
+        if queue_path.exists() {
+            anyhow::bail!("Queue already exists: {}", name);
+        }
+        std::fs::create_dir_all(&queue_path)?;
+        self.append_log_entry(
+            ActionPayload::ManageQueues {
+                op: "ADD".to_string(),
+                queue: name.to_string(),
+                new_name: None,
+            },
+            &format!("Added queue: {}", name),
+        )?;
+        Ok(())
+    }
+
+    pub fn rename_queue(&self, old_id: &str, new_name: &str) -> anyhow::Result<()> {
+        let root_path = self
+            .tickets_path
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("Invalid root path"))?;
+        let old_path = root_path.join("Queue").join(old_id);
+        let new_path = root_path.join("Queue").join(new_name);
+
+        if !old_path.exists() {
+            anyhow::bail!("Queue not found: {}", old_id);
+        }
+        if new_path.exists() {
+            anyhow::bail!("Queue already exists: {}", new_name);
+        }
+
+        std::fs::rename(&old_path, &new_path)?;
+
+        // Update limits if any
+        let mut config = self.config.clone();
+        if let Some(limit) = config.kanban.queue_limits.remove(old_id) {
+            config
+                .kanban
+                .queue_limits
+                .insert(new_name.to_string(), limit);
+            config.write(root_path)?;
+        }
+
+        self.append_log_entry(
+            ActionPayload::ManageQueues {
+                op: "RENAME".to_string(),
+                queue: old_id.to_string(),
+                new_name: Some(new_name.to_string()),
+            },
+            &format!("Renamed queue: {} -> {}", old_id, new_name),
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_queue(&self, id: &str) -> anyhow::Result<()> {
+        let root_path = self
+            .tickets_path
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("Invalid root path"))?;
+        let queue_path = root_path.join("Queue").join(id);
+
+        if !queue_path.exists() {
+            anyhow::bail!("Queue not found: {}", id);
+        }
+
+        // Check if empty (only files/symlinks)
+        if std::fs::read_dir(&queue_path)?.next().is_some() {
+            anyhow::bail!("Queue is not empty: {}", id);
+        }
+
+        std::fs::remove_dir(&queue_path)?;
+
+        // Update limits if any
+        let mut config = self.config.clone();
+        if config.kanban.queue_limits.remove(id).is_some() {
+            config.write(root_path)?;
+        }
+
+        self.append_log_entry(
+            ActionPayload::ManageQueues {
+                op: "DELETE".to_string(),
+                queue: id.to_string(),
+                new_name: None,
+            },
+            &format!("Deleted queue: {}", id),
+        )?;
+        Ok(())
+    }
+
+    pub fn add_user(&mut self, user: &str) -> anyhow::Result<()> {
+        if self.config.kanban.users.contains(&user.to_string()) {
+            return Ok(());
+        }
+        self.config.kanban.users.push(user.to_string());
+        let root_path = self
+            .tickets_path
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("Invalid root path"))?;
+        self.config.write(root_path)?;
+
+        self.append_log_entry(
+            ActionPayload::ManageUsers {
+                op: "ADD".to_string(),
+                user: user.to_string(),
+            },
+            &format!("Added user: {}", user),
+        )?;
+        Ok(())
+    }
+
+    pub fn remove_user(&mut self, user: &str) -> anyhow::Result<()> {
+        self.config.kanban.users.retain(|u| u != user);
+        let root_path = self
+            .tickets_path
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("Invalid root path"))?;
+        self.config.write(root_path)?;
+
+        self.append_log_entry(
+            ActionPayload::ManageUsers {
+                op: "REMOVE".to_string(),
+                user: user.to_string(),
+            },
+            &format!("Removed user: {}", user),
+        )?;
+        Ok(())
     }
 
     fn parse_readme_content(content: &str) -> (TicketMetadata, String) {

@@ -593,6 +593,15 @@ impl AppController {
         }
     }
 
+    pub fn handle_request_admin_data(&self) {
+        if let Some(_board) = self.load_board("admin data") {
+            if let Some(app) = self.app_weak.upgrade() {
+                let (_, readme) = Board::load_board_info(&self.root_path).unwrap_or_default();
+                app.set_board_readme_content(readme.into());
+            }
+        }
+    }
+
     pub fn handle_select_history_item(&self) {
         if let Some(app) = self.app_weak.upgrade() {
             app.set_show_search_history(false);
@@ -670,6 +679,64 @@ impl AppController {
                 .collect();
             app.set_all_sprints(Rc::new(VecModel::from(slint_sprints)).into());
             app.set_show_sprints_view(true);
+        }
+    }
+
+    pub fn handle_save_board_readme(&self, content: String) {
+        if let Some(board) = self.load_board("save readme") {
+            if let Err(e) = board.update_board_readme(&content) {
+                self.show_error(&format!("Failed to save board README: {}", e));
+            }
+        }
+    }
+
+    pub fn handle_add_queue(&self, name: String) {
+        if let Some(board) = self.load_board("add queue") {
+            if let Err(e) = board.add_queue(&name) {
+                self.show_error(&format!("Failed to add queue: {}", e));
+            } else {
+                let _ = self.reload();
+            }
+        }
+    }
+
+    pub fn handle_rename_queue(&self, id: String, new_name: String) {
+        if let Some(board) = self.load_board("rename queue") {
+            if let Err(e) = board.rename_queue(&id, &new_name) {
+                self.show_error(&format!("Failed to rename queue: {}", e));
+            } else {
+                let _ = self.reload();
+            }
+        }
+    }
+
+    pub fn handle_delete_queue(&self, id: String) {
+        if let Some(board) = self.load_board("delete queue") {
+            if let Err(e) = board.delete_queue(&id) {
+                self.show_error(&format!("Failed to delete queue: {}", e));
+            } else {
+                let _ = self.reload();
+            }
+        }
+    }
+
+    pub fn handle_add_user(&self, username: String) {
+        if let Some(mut board) = self.load_board("add user") {
+            if let Err(e) = board.add_user(&username) {
+                self.show_error(&format!("Failed to add user: {}", e));
+            } else {
+                let _ = self.reload();
+            }
+        }
+    }
+
+    pub fn handle_remove_user(&self, username: String) {
+        if let Some(mut board) = self.load_board("remove user") {
+            if let Err(e) = board.remove_user(&username) {
+                self.show_error(&format!("Failed to remove user: {}", e));
+            } else {
+                let _ = self.reload();
+            }
         }
     }
 

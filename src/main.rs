@@ -17,8 +17,9 @@ use std::sync::Arc;
 /// Pushes the full board state into the UI, applying search/date/user filters.
 /// Called on every reload (initial load, file watcher event, or filter change).
 
-fn run_gui(root_path: PathBuf) -> anyhow::Result<()> {
+fn run_gui(root_path: PathBuf, admin: bool) -> anyhow::Result<()> {
     let ui = App::new()?;
+    ui.set_is_admin(admin);
     let controller = Arc::new(AppController::new(ui.as_weak(), root_path.clone()));
 
     ui.set_board_queues(controller.board_queues_model().into());
@@ -259,6 +260,41 @@ fn init_callbacks(ui: &App, controller: Arc<AppController>) {
                 }
             }
         });
+
+    let c = controller.clone();
+    ui.on_request_admin_data(move || {
+        c.handle_request_admin_data();
+    });
+
+    let c = controller.clone();
+    ui.on_save_board_readme(move |content| {
+        c.handle_save_board_readme(content.into());
+    });
+
+    let c = controller.clone();
+    ui.on_admin_add_user(move |name| {
+        c.handle_add_user(name.into());
+    });
+
+    let c = controller.clone();
+    ui.on_admin_remove_user(move |name| {
+        c.handle_remove_user(name.into());
+    });
+
+    let c = controller.clone();
+    ui.on_admin_add_queue(move |name| {
+        c.handle_add_queue(name.into());
+    });
+
+    let c = controller.clone();
+    ui.on_admin_rename_queue(move |id, name| {
+        c.handle_rename_queue(id.into(), name.into());
+    });
+
+    let c = controller.clone();
+    ui.on_admin_delete_queue(move |id| {
+        c.handle_delete_queue(id.into());
+    });
 }
 
 fn handle_command(
@@ -532,7 +568,7 @@ fn handle_command(
         }
         Commands::Open { path } => {
             writeln!(out, "Opening GUI for path: {:?}", path)?;
-            run_gui(path)?;
+            run_gui(path, admin)?;
         }
         Commands::Show { id } => {
             let ticket = board
@@ -785,7 +821,7 @@ fn run_cli(args: CliArgs, out: &mut dyn std::io::Write) -> anyhow::Result<()> {
     if let Some(command) = args.command {
         handle_command(root_path, command, args.admin, out)
     } else {
-        run_gui(root_path)
+        run_gui(root_path, args.admin)
     }
 }
 

@@ -32,6 +32,16 @@ pub enum ActionPayload {
     },
     #[serde(rename = "ATTACH_FILE")]
     AttachFile { id: String, filename: String },
+    #[serde(rename = "UPDATE_BOARD_INFO")]
+    UpdateBoardInfo,
+    #[serde(rename = "MANAGE_USERS")]
+    ManageUsers { op: String, user: String },
+    #[serde(rename = "MANAGE_QUEUES")]
+    ManageQueues {
+        op: String,
+        queue: String,
+        new_name: Option<String>,
+    },
 }
 
 impl std::fmt::Display for ActionPayload {
@@ -43,6 +53,9 @@ impl std::fmt::Display for ActionPayload {
             Self::AddComment { .. } => "ADD_COMMENT",
             Self::AssignTicket { .. } => "ASSIGN_TICKET",
             Self::AttachFile { .. } => "ATTACH_FILE",
+            Self::UpdateBoardInfo => "UPDATE_BOARD_INFO",
+            Self::ManageUsers { .. } => "MANAGE_USERS",
+            Self::ManageQueues { .. } => "MANAGE_QUEUES",
         };
         write!(f, "{}", action_name)
     }

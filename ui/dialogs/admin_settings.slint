@@ -1,0 +1,253 @@
+import {
+    Button,
+    LineEdit,
+    TextEdit,
+    VerticalBox,
+    HorizontalBox,
+    Palette,
+    ScrollView,
+} from "std-widgets.slint";
+import { CloseButton, ModalBackdrop, Theme, QueueStr } from "../common.slint";
+
+export component AdminSettings inherits Rectangle {
+    in property <[string]> users;
+    in property <[QueueStr]> queues;
+    in-out property <string> board_readme;
+    callback close();
+    callback save_readme(string);
+    callback add_user(string);
+    callback remove_user(string);
+    callback add_queue(string);
+    callback rename_queue(string, string);
+    callback delete_queue(string);
+
+    property <string> new_user_name: "";
+    property <string> new_queue_name: "";
+    property <int> active_tab: 0;
+
+    ModalBackdrop {
+        dismiss => {
+            close();
+        }
+
+        Rectangle {
+            width: 90%;
+            height: 90%;
+            background: Palette.background;
+            border-radius: 8px;
+
+            TouchArea { } // Block clicks from reaching backdrop
+
+            VerticalBox {
+                padding: 32px;
+                spacing: 24px;
+
+                // Header
+                HorizontalLayout {
+                    alignment: space-between;
+                    Text {
+                        text: "Administrator Settings";
+                        font-size: 28px;
+                        font-weight: 800;
+                    }
+
+                    Button {
+                        text: "Close";
+                        width: 80px;
+                        clicked => {
+                            close();
+                        }
+                    }
+                }
+
+                // Tabs
+                HorizontalLayout {
+                    spacing: 8px;
+                    height: 40px;
+                    Button {
+                        text: "Documentation";
+                        primary: active_tab == 0;
+                        clicked => {
+                            active_tab = 0;
+                        }
+                    }
+
+                    Button {
+                        text: "Users";
+                        primary: active_tab == 1;
+                        clicked => {
+                            active_tab = 1;
+                        }
+                    }
+
+                    Button {
+                        text: "Queues";
+                        primary: active_tab == 2;
+                        clicked => {
+                            active_tab = 2;
+                        }
+                    }
+                }
+
+                // Tab Content
+                if active_tab == 0: VerticalBox {
+                    spacing: 12px;
+                    Text {
+                        text: "Edit Board Overview (README.md)";
+                        font-weight: 700;
+                        opacity: 0.7;
+                    }
+
+                    readme_editor := TextEdit {
+                        text <=> board_readme;
+                        preferred-height: 400px;
+                        vertical-stretch: 1;
+                    }
+
+                    HorizontalLayout {
+                        alignment: end;
+                        Button {
+                            text: "Save Documentation";
+                            primary: true;
+                            clicked => {
+                                save_readme(board_readme);
+                            }
+                        }
+                    }
+                }
+
+                if active_tab == 1: VerticalBox {
+                    spacing: 16px;
+                    Text {
+                        text: "Manage Shared Users";
+                        font-weight: 700;
+                        opacity: 0.7;
+                    }
+
+                    HorizontalLayout {
+                        spacing: 12px;
+                        LineEdit {
+                            text <=> new_user_name;
+                            placeholder-text: "Enter new username...";
+                            accepted => {
+                                if (new_user_name != "") {
+                                    add_user(new_user_name);
+                                    new_user_name = "";
+                                }
+                            }
+                        }
+
+                        Button {
+                            text: "Add User";
+                            enabled: new_user_name != "";
+                            clicked => {
+                                add_user(new_user_name);
+                                new_user_name = "";
+                            }
+                        }
+                    }
+
+                    ScrollView {
+                        VerticalLayout {
+                            spacing: 8px;
+                            alignment: start;
+                            for user in users: Rectangle {
+                                height: 50px;
+                                background: Palette.alternate-background;
+                                border-radius: 4px;
+                                HorizontalLayout {
+                                    padding-left: 16px;
+                                    padding-right: 16px;
+                                    alignment: space-between;
+                                    Text {
+                                        text: user;
+                                        vertical-alignment: center;
+                                        font-weight: 600;
+                                    }
+
+                                    if user != "<unassigned>" && user != "admin": CloseButton {
+                                        size: 24px;
+                                        clicked => {
+                                            remove_user(user);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if active_tab == 2: VerticalBox {
+                    spacing: 16px;
+                    Text {
+                        text: "Manage Board Queues";
+                        font-weight: 700;
+                        opacity: 0.7;
+                    }
+
+                    HorizontalLayout {
+                        spacing: 12px;
+                        LineEdit {
+                            text <=> new_queue_name;
+                            placeholder-text: "Enter new queue name (e.g., 8. Optional)...";
+                            accepted => {
+                                if (new_queue_name != "") {
+                                    add_queue(new_queue_name);
+                                    new_queue_name = "";
+                                }
+                            }
+                        }
+
+                        Button {
+                            text: "Add Queue";
+                            enabled: new_queue_name != "";
+                            clicked => {
+                                add_queue(new_queue_name);
+                                new_queue_name = "";
+                            }
+                        }
+                    }
+
+                    ScrollView {
+                        VerticalLayout {
+                            spacing: 8px;
+                            alignment: start;
+                            for q in queues: Rectangle {
+                                height: 60px;
+                                background: Palette.alternate-background;
+                                border-radius: 4px;
+                                HorizontalLayout {
+                                    padding-left: 16px;
+                                    padding-right: 16px;
+                                    spacing: 12px;
+                                    q_name_input := LineEdit {
+                                        text: q.name;
+                                        accepted(val) => {
+                                            if (val != q.name) {
+                                                rename_queue(q.id, val);
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        text: "(" + q.ticket_count + " tickets)";
+                                        vertical-alignment: center;
+                                        opacity: 0.6;
+                                        font-size: 12px;
+                                    }
+
+                                    if q.ticket_count == 0: CloseButton {
+                                        size: 24px;
+                                        clicked => {
+                                            delete_queue(q.id);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -33,6 +33,7 @@ import { KanbanColumn } from "components/kanban_column.slint";
 import { DeleteConfirmDialog } from "dialogs/delete_confirm_dialog.slint";
 import { StatsView } from "stats_view.slint";
 import { SprintsView } from "sprints_view.slint";
+import { AdminSettings } from "dialogs/admin_settings.slint";
 
 export component App inherits Window {
     in-out property <[QueueStr]> board_queues;
@@ -123,6 +124,19 @@ export component App inherits Window {
     in-out property <SprintStr> active_sprint;
     in-out property <bool> show_sprints_view: false;
     in-out property <[SprintStr]> all_sprints;
+
+    // Admin Mode
+    in-out property <bool> is_admin: false;
+    in-out property <bool> show_admin_settings: false;
+    in-out property <string> board_readme_content: "";
+
+    callback save-board-readme(string);
+    callback admin-add-user(string);
+    callback admin-remove-user(string);
+    callback admin-add-queue(string);
+    callback admin-rename-queue(string, string);
+    callback admin-delete-queue(string);
+    callback request-admin-data(); // Loads readme and other info
 
     preferred-width: 1024px;
     preferred-height: 768px;
@@ -312,6 +326,15 @@ export component App inherits Window {
                     HorizontalLayout {
                         alignment: end;
                         padding-right: 15px;
+                        spacing: 12px;
+                        if (is_admin): Button {
+                            text: "🛠 Admin";
+                            clicked => {
+                                request-admin-data();
+                                show_admin_settings = true;
+                            }
+                        }
+
                         settings-btn := Button {
                             text: "⚙"; // Gear icon for settings/filter
                             width: 40px;
@@ -631,6 +654,33 @@ export component App inherits Window {
         sprints: all_sprints;
         close => {
             show_sprints_view = false;
+        }
+    }
+
+    if (show_admin_settings): AdminSettings {
+        users: UserGlobal.users;
+        queues: board_queues;
+        board_readme <=> board_readme_content;
+        close => {
+            show_admin_settings = false;
+        }
+        save_readme(content) => {
+            save-board-readme(content);
+        }
+        add_user(name) => {
+            admin-add-user(name);
+        }
+        remove_user(name) => {
+            admin-remove-user(name);
+        }
+        add_queue(name) => {
+            admin-add-queue(name);
+        }
+        rename_queue(id, name) => {
+            admin-rename-queue(id, name);
+        }
+        delete_queue(id) => {
+            admin-delete-queue(id);
         }
     }
 }

@@ -209,12 +209,12 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 
 ### Administrator Mode ✅
 - [x] Implement administrator mode (top-level `--admin` flag in CLI, `admin` user name bypass)
-  - [ ] Edit board `README.md`
-  - [ ] Manage users (add/remove from `config.toml`)
-  - [ ] Manage queues (add, rename, delete)
-  - [ ] Manage shared board settings (queue limits)
-  - [ ] Board initialization and setup logic
-  - [ ] Internal tools for fixing data corruption or resolving conflicts
+  - [x] Edit board `README.md`
+  - [x] Manage users (add/remove from `config.toml`)
+  - [x] Manage queues (add, rename, delete)
+  - [x] Manage shared board settings (queue limits)
+  - [x] Board initialization and setup logic
+  - [x] Internal tools for fixing data corruption or resolving conflicts
 
 ### Export Functionality
 - [ ] Implement export features

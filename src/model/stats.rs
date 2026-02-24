@@ -356,6 +356,7 @@ pub fn get_ticket_lifecycle(ticket_id: &str, all_entries: &[LogEntry]) -> Ticket
         ActionPayload::AddComment { id, .. } => id == ticket_id,
         ActionPayload::AssignTicket { id, .. } => id == ticket_id,
         ActionPayload::AttachFile { id, .. } => id == ticket_id,
+        _ => false,
     });
 
     for entry in ticket_entries {

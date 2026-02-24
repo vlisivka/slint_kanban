@@ -367,7 +367,7 @@ fn test_cli_stats() -> anyhow::Result<()> {
 
     assert!(out.contains("== Tickets per Queue =="));
     assert!(out.contains("1. Incoming              2      -     -"));
-    assert!(out.contains("2. To Do                  1     21    4%"));
+    assert!(out.contains("2. To Do                 1     21    4%"));
 
     assert!(out.contains("== Tickets per User =="));
     assert!(out.contains("Alice                    1"));

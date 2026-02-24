@@ -410,10 +410,10 @@ fn test_queue_limit_creation() -> anyhow::Result<()> {
     let board = Board::load(root_path)?;
 
     // Create first ticket - should succeed
-    board.create_ticket("Task 1", "Desc 1", "2. To Doo", "", "me", 0)?;
+    board.create_ticket("Task 1", "Desc 1", "2. To Do", "", "me", 0)?;
 
     // Create second ticket - should fail
-    let result = board.create_ticket("Task 2", "Desc 2", "2. To Doo", "", "me", 0);
+    let result = board.create_ticket("Task 2", "Desc 2", "2. To Do", "", "me", 0);
     assert!(
         result.is_err(),
         "Should return an error if the queue has reached its limit"
@@ -444,8 +444,8 @@ fn test_queue_limit_moving() -> anyhow::Result<()> {
     let board = Board::load(root_path)?;
 
     // Create two tickets in To Dooo
-    let tid1 = board.create_ticket("Task 1", "Desc 1", "2. To Doo", "", "me", 0)?;
-    let tid2 = board.create_ticket("Task 2", "Desc 2", "2. To Doo", "", "me", 0)?;
+    let tid1 = board.create_ticket("Task 1", "Desc 1", "2. To Do", "", "me", 0)?;
+    let tid2 = board.create_ticket("Task 2", "Desc 2", "2. To Do", "", "me", 0)?;
 
     // Move first ticket to Doing - should succeed
     board.move_ticket(&tid1, "2. To Do", "3. Doing")?;
@@ -697,7 +697,7 @@ fn test_activity_logging() -> anyhow::Result<()> {
     let board = Board::load(root_path.clone())?;
 
     // Create ticket should produce a log entry
-    let tid = board.create_ticket("Log Task", "Log Desc", "2. To Doo", "user1", "author1", 8)?;
+    let tid = board.create_ticket("Log Task", "Log Desc", "2. To Do", "user1", "author1", 8)?;
 
     // Move ticket should produce a log entry
     board.move_ticket(&tid, "2. To Do", "3. Doing")?;
