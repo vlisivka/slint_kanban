@@ -165,8 +165,8 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Completion rate calculations (overall + per sprint)
   - [x] Trend visualization (bar chart, last 15 days)
   - [x] Points completion rate
-- [ ] Remaining analytics
-  - [ ] Burndown charts
+- [x] Remaining analytics
+  - [x] Burndown charts
   - [ ] Export statistics to CSV
 
 ### Performance Optimization ✅
@@ -216,6 +216,14 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Board initialization and setup logic
   - [x] Internal tools for fixing data corruption or resolving conflicts
 
+### Markdown Rendering
+- [/] Implement Markdown rendering in ticket detail view using Servo
+  - [ ] Copy WebView component from Slint "servo" example: https://github.com/slint-ui/slint/tree/master/examples/servo
+  - [ ] Integrate markdown rendering library (pulldown-cmark or similar)
+  - [ ] Create styled text rendering component
+  - [ ] Support for headings, lists, code blocks
+  - [ ] Support for links and images
+
 ### Export Functionality
 - [ ] Implement export features
   - [ ] Export single ticket with comments and attachments to PDF (including queue name)
@@ -231,14 +239,6 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [ ] Extract translatable strings into a `.pot` file
   - [ ] Translate `.pot` file into Ukrainian language
   - [ ] Compile in translation statically or load dynamically
-
-### Markdown Rendering
-- [/] Implement Markdown rendering in ticket detail view using Servo
-  - [ ] Copy WebView component from Slint "servo" example: https://github.com/slint-ui/slint/tree/master/examples/servo
-  - [ ] Integrate markdown rendering library (pulldown-cmark or similar)
-  - [ ] Create styled text rendering component
-  - [ ] Support for headings, lists, code blocks
-  - [ ] Support for links and images
 
 ---
 

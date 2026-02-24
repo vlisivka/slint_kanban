@@ -242,6 +242,115 @@ export component StatsView inherits Rectangle {
                     }
                 }
 
+                // Burndown Chart
+                if stats.burndown.length > 0: VerticalLayout {
+                    spacing: 8px;
+                    Text {
+                        text: "== Sprint Burndown Chart ==";
+                        font-weight: 700;
+                    }
+
+                    stats-burndown-rect := Rectangle {
+                        height: 200px;
+                        background: Palette.alternate-background;
+                        border-radius: 4px;
+                        property <length> chart-h: 160px;
+                        property <int> effective-max: (stats.max_burndown_points > 0) ? stats.max_burndown_points : 1;
+
+                        HorizontalLayout {
+                            padding: 10px;
+                            spacing: 4px;
+                            alignment: space-around;
+
+                            for bp in stats.burndown: VerticalLayout {
+                                alignment: end;
+                                spacing: 2px;
+                                horizontal-stretch: 1;
+
+                                // Tooltip-like value
+                                Text {
+                                    text: bp.remaining_points + "/" + bp.ideal_points;
+                                    font-size: 7px;
+                                    horizontal-alignment: center;
+                                    opacity: 0.5;
+                                }
+
+                                // Bar container
+                                Rectangle {
+                                    horizontal-stretch: 1;
+                                    height: chart-h;
+                                    background: transparent;
+                                    
+                                    // Actual Remaining Points Bar (rendered FIRST, so it's behind)
+                                    if bp.remaining_points > 0: Rectangle {
+                                        x: parent.width / 2 - 4px;
+                                        y: parent.height - self.height;
+                                        width: 8px;
+                                        height: Math.max(chart-h * (bp.remaining_points / (effective-max * 1.0)), 2px);
+                                        background: #2196F3;
+                                        border-radius: 2px;
+                                    }
+
+                                    // Ideal Line representation (thin bar, rendered LAST, so it's in front)
+                                    Rectangle {
+                                        x: parent.width / 2 - 1px;
+                                        y: parent.height - self.height;
+                                        width: 2px;
+                                        height: Math.max(chart-h * (bp.ideal_points / (effective-max * 1.0)), 1px);
+                                        background: #f44336; // Red for ideal
+                                        opacity: 1.0;
+                                    }
+                                }
+                                
+                                // Mini label for date
+                                Text {
+                                    text: bp.date;
+                                    font-size: 9px;
+                                    horizontal-alignment: center;
+                                    color: Palette.foreground;
+                                }
+                            }
+                        }
+                    }
+
+                    // Legend
+                    HorizontalLayout {
+                        spacing: 20px;
+                        alignment: center;
+                        HorizontalLayout {
+                            spacing: 6px;
+                            Rectangle {
+                                width: 14px;
+                                height: 14px;
+                                background: #2196F3;
+                                border-radius: 2px;
+                            }
+
+                            Text {
+                                text: "Remaining Points";
+                                font-size: 11px;
+                                vertical-alignment: center;
+                            }
+                        }
+
+                        HorizontalLayout {
+                            spacing: 6px;
+                            Rectangle {
+                                width: 14px;
+                                height: 2px;
+                                background: #f44336;
+                                opacity: 0.5;
+                            }
+
+                            Text {
+                                text: "Ideal Burndown";
+                                font-size: 11px;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+
                 // Queues
                 VerticalLayout {
                     spacing: 8px;

@@ -207,6 +207,5 @@ The following features are planned for future releases:
    - Snapshot-metrics (Ticket count per queue and per user) and Agile metrics (Average Lead Time, Average Cycle Time) are implemented and accessible via CLI `stats` command and the `📊 Statistics` button in the GUI.
    - Dashboard with ticket metrics
    - Time tracking per queue is implemented via log parsing.
-   - Completion rates and trends
-   - Burndown charts for project tracking
-
+    - Completion rates and trends
+    - Burndown charts are implemented for the current sprint, showing remaining vs ideal points.

@@ -23,6 +23,13 @@ pub struct UserStat {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct BurndownPoint {
+    pub date: String,
+    pub remaining_points: u32,
+    pub ideal_points: u32,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct TrendPoint {
     pub timestamp: String,
     pub total_tickets: usize,
@@ -44,6 +51,8 @@ pub struct BoardSummary {
     pub completion_rate: Option<f64>,
     pub sprint_completion_rate: Option<f64>,
     pub trend: Vec<TrendPoint>,
+    pub burndown: Vec<BurndownPoint>,
+    pub max_burndown_points: u32,
 }
 
 pub fn get_board_summary(board: &Board) -> BoardSummary {
@@ -138,6 +147,7 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
     let mut avg_cycle_time_days = None;
     let mut sprint_completion_rate = None;
     let mut trend = Vec::new();
+    let mut burndown = Vec::new();
 
     if let Some(parent) = board.tickets_path.parent() {
         if let Ok(all_logs) = load_all_logs(parent) {
@@ -233,6 +243,11 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
 
             // Trend calculation - reusing pre-loaded logs
             trend = get_trend_data(&all_logs, done_queues, 15);
+
+            // Burndown calculation
+            if let Some(s) = &sprint {
+                burndown = get_burndown_data(&all_logs, s, done_queues);
+            }
         }
     }
 
@@ -248,6 +263,12 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
         completion_rate,
         sprint_completion_rate,
         trend,
+        burndown: burndown.clone(),
+        max_burndown_points: burndown
+            .iter()
+            .map(|p| p.remaining_points.max(p.ideal_points))
+            .max()
+            .unwrap_or(0),
     }
 }
 
@@ -544,6 +565,189 @@ pub fn get_trend_data(
     trend
 }
 
+pub fn get_burndown_data(
+    all_logs: &[LogEntry],
+    sprint: &crate::model::config::Sprint,
+    done_queues: &[String],
+) -> Vec<BurndownPoint> {
+    use chrono::{Duration, NaiveDate, TimeZone, Utc};
+
+    if all_logs.is_empty() {
+        return Vec::new();
+    }
+
+    let start_dt = NaiveDate::parse_from_str(&sprint.start_date, "%Y-%m-%d")
+        .ok()
+        .and_then(|d| d.and_hms_opt(0, 0, 0))
+        .map(|dt| Utc.from_utc_datetime(&dt))
+        .unwrap_or_else(|| Utc::now());
+
+    let end_dt = NaiveDate::parse_from_str(&sprint.end_date, "%Y-%m-%d")
+        .ok()
+        .and_then(|d| d.and_hms_opt(23, 59, 59))
+        .map(|dt| Utc.from_utc_datetime(&dt))
+        .unwrap_or_else(|| Utc::now());
+
+    let today = Utc::now();
+    let total_days = (end_dt.signed_duration_since(start_dt).num_days() + 1).max(1);
+
+    // 1. Identify all tickets that are part of this sprint's scope.
+    // Definition: Any ticket that had ANY log entry during the sprint period.
+    let mut sprint_tickets = std::collections::HashSet::new();
+    let sprint_start_str = start_dt.to_rfc3339();
+    let sprint_end_str = end_dt.to_rfc3339();
+
+    for entry in all_logs {
+        if entry.timestamp >= sprint_start_str && entry.timestamp <= sprint_end_str {
+            match &entry.payload {
+                ActionPayload::CreateTicket { id, .. }
+                | ActionPayload::ChangeStatus { id, .. }
+                | ActionPayload::UpdateTicket { id, .. }
+                | ActionPayload::AddComment { id, .. }
+                | ActionPayload::AssignTicket { id, .. }
+                | ActionPayload::AttachFile { id, .. } => {
+                    sprint_tickets.insert(id.clone());
+                }
+                _ => {}
+            }
+        }
+    }
+
+    // 2. Replay logs once to calculate remaining points for each day.
+    let mut burndown_data = Vec::new();
+    let mut ticket_states: HashMap<String, (String, u32)> = HashMap::new(); // ID -> (Queue, Points)
+    let mut log_idx = 0;
+
+    for i in 0..total_days {
+        let current_day = start_dt + Duration::days(i);
+        let end_of_day = Utc.from_utc_datetime(
+            &current_day
+                .naive_utc()
+                .date()
+                .and_hms_opt(23, 59, 59)
+                .unwrap(),
+        );
+        let end_of_day_str = end_of_day.to_rfc3339();
+
+        // If this day is in the future, we might stop recording actuals, but we need the ideal line.
+        let is_future = current_day.naive_utc().date() > today.naive_utc().date();
+
+        // Process logs up to the end of this day
+        while log_idx < all_logs.len() {
+            if all_logs[log_idx].timestamp > end_of_day_str {
+                break;
+            }
+            let entry = &all_logs[log_idx];
+            match &entry.payload {
+                ActionPayload::CreateTicket {
+                    id, queue, points, ..
+                } => {
+                    ticket_states.insert(id.clone(), (queue.clone(), *points));
+                }
+                ActionPayload::ChangeStatus { id, to, .. } => {
+                    if let Some(state) = ticket_states.get_mut(id) {
+                        state.0 = to.clone();
+                    }
+                }
+                ActionPayload::UpdateTicket { id, points } => {
+                    if let Some(state) = ticket_states.get_mut(id) {
+                        state.1 = *points;
+                    }
+                }
+                _ => {}
+            }
+            log_idx += 1;
+        }
+
+        let remaining_points = if is_future {
+            0 // Or we could repeat last known value, but usually burndown charts don't show actuals for future
+        } else {
+            let mut sum = 0;
+            for id in &sprint_tickets {
+                if let Some((queue, points)) = ticket_states.get(id) {
+                    if !done_queues.contains(queue) {
+                        sum += *points;
+                    }
+                }
+            }
+            sum
+        };
+
+        burndown_data.push((
+            current_day.format("%Y-%m-%d").to_string(),
+            remaining_points,
+            is_future,
+        ));
+    }
+
+    // 3. Calculate ideal line based on the points at the START of the sprint.
+    // However, since scope can grow during the sprint, a common practice is to use the
+    // total scope points from the beginning as the starting point.
+
+    // Find points at start (replay logs up to start_dt)
+    let mut start_ticket_states: HashMap<String, (String, u32)> = HashMap::new();
+    for entry in all_logs {
+        if entry.timestamp >= sprint_start_str {
+            break;
+        }
+        match &entry.payload {
+            ActionPayload::CreateTicket {
+                id, queue, points, ..
+            } => {
+                start_ticket_states.insert(id.clone(), (queue.clone(), *points));
+            }
+            ActionPayload::ChangeStatus { id, to, .. } => {
+                if let Some(state) = start_ticket_states.get_mut(id) {
+                    state.0 = to.clone();
+                }
+            }
+            ActionPayload::UpdateTicket { id, points } => {
+                if let Some(state) = start_ticket_states.get_mut(id) {
+                    state.1 = *points;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let mut start_points = 0;
+    for id in &sprint_tickets {
+        if let Some((queue, points)) = start_ticket_states.get(id) {
+            if !done_queues.contains(queue) {
+                start_points += *points;
+            }
+        } else {
+            // Tickets created DURING sprint also count towards start_points for the "Initial Scope"
+            // if we want the ideal line to be a simple diagonal.
+            // Alternatively, we look at the ACTUAL starting points of all sprint tickets.
+        }
+    }
+
+    // If start_points is 0 (unlikely if sprint has tickets), we use the max remaining points recorded.
+    if start_points == 0 {
+        start_points = burndown_data.iter().map(|(_, p, _)| *p).max().unwrap_or(0);
+    }
+
+    let mut result = Vec::new();
+    for (i, (date, remaining, is_future)) in burndown_data.into_iter().enumerate() {
+        let ideal = if total_days > 1 {
+            let slope = start_points as f64 / (total_days - 1) as f64;
+            let val = start_points as f64 - (slope * i as f64);
+            val.max(0.0) as u32
+        } else {
+            0
+        };
+
+        result.push(BurndownPoint {
+            date,
+            remaining_points: if is_future { 0 } else { remaining },
+            ideal_points: ideal,
+        });
+    }
+
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -602,5 +806,71 @@ mod tests {
         assert_eq!(trend[1].done_tickets, 1);
         assert_eq!(trend[1].total_points, 5);
         assert_eq!(trend[1].done_points, 5);
+    }
+
+    #[test]
+    fn test_get_burndown_data() {
+        use crate::model::action::ActionPayload;
+        use crate::model::config::Sprint;
+
+        let sprint = Sprint {
+            number: 1,
+            name: "Sprint 1".to_string(),
+            start_date: "2024-01-01".to_string(),
+            end_date: "2024-01-03".to_string(), // 3 days
+        };
+
+        // Day 1: Created t1 (5pts)
+        // Day 2: nothing
+        // Day 3: Moved t1 to Done
+        let logs = vec![
+            LogEntry {
+                timestamp: "2024-01-01T10:00:00Z".to_string(),
+                action: "CREATE".into(),
+                description: "".into(),
+                payload: ActionPayload::CreateTicket {
+                    id: "t1".into(),
+                    title: "T1".into(),
+                    queue: "Todo".into(),
+                    points: 5,
+                },
+            },
+            LogEntry {
+                timestamp: "2024-01-03T10:00:00Z".to_string(),
+                action: "MOVE".into(),
+                description: "".into(),
+                payload: ActionPayload::ChangeStatus {
+                    id: "t1".into(),
+                    from: "Todo".into(),
+                    to: "Done".into(),
+                },
+            },
+        ];
+
+        let done_queues = vec!["Done".to_string()];
+        let burndown = get_burndown_data(&logs, &sprint, &done_queues);
+
+        assert_eq!(
+            burndown.len(),
+            3,
+            "Burndown should have 3 points for 3-day sprint"
+        );
+
+        // Point 0 (2024-01-01): t1 created, remaining = 5
+        assert_eq!(burndown[0].date, "2024-01-01");
+        assert_eq!(burndown[0].remaining_points, 5);
+
+        // Point 1 (2024-01-02): state remains same, remaining = 5
+        assert_eq!(burndown[1].date, "2024-01-02");
+        assert_eq!(burndown[1].remaining_points, 5);
+
+        // Point 2 (2024-01-03): t1 moved to Done, remaining = 0
+        assert_eq!(burndown[2].date, "2024-01-03");
+        assert_eq!(burndown[2].remaining_points, 0);
+
+        // Ideal line: starts at max points (5) and goes to 0
+        assert_eq!(burndown[0].ideal_points, 5);
+        assert_eq!(burndown[1].ideal_points, 2); // (5 - 5/(3-1)*1) = 5 - 2.5 = 2.5 -> 2
+        assert_eq!(burndown[2].ideal_points, 0);
     }
 }

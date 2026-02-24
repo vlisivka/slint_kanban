@@ -59,6 +59,12 @@ export struct TrendPointStr {
     done_points: int,
 }
 
+export struct BurndownPointStr {
+    date: string,
+    remaining_points: int,
+    ideal_points: int,
+}
+
 export struct BoardSummaryStr {
     total_tickets: int,
     unassigned_tickets: int,
@@ -78,6 +84,8 @@ export struct BoardSummaryStr {
     f_sprint_completion_rate: float,
     
     trend: [TrendPointStr],
+    burndown: [BurndownPointStr],
+    max_burndown_points: int,
 }
 
 export struct SprintStr {

@@ -147,6 +147,20 @@ pub fn into_slint_summary(summary: &model::stats::BoardSummary) -> BoardSummaryS
         })
         .collect();
 
+    let slint_burndown: Vec<BurndownPointStr> = summary
+        .burndown
+        .iter()
+        .map(|bp| BurndownPointStr {
+            date: if bp.date.len() >= 10 {
+                bp.date[5..10].to_string().into()
+            } else {
+                bp.date.clone().into()
+            },
+            remaining_points: bp.remaining_points as i32,
+            ideal_points: bp.ideal_points as i32,
+        })
+        .collect();
+
     BoardSummaryStr {
         total_tickets: summary.total_tickets as i32,
         unassigned_tickets: summary.unassigned_tickets as i32,
@@ -167,5 +181,7 @@ pub fn into_slint_summary(summary: &model::stats::BoardSummary) -> BoardSummaryS
         },
         f_sprint_completion_rate: summary.sprint_completion_rate.unwrap_or(0.0) as f32,
         trend: std::rc::Rc::new(slint::VecModel::from(slint_trend)).into(),
+        burndown: std::rc::Rc::new(slint::VecModel::from(slint_burndown)).into(),
+        max_burndown_points: summary.max_burndown_points as i32,
     }
 }
