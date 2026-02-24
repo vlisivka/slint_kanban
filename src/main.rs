@@ -441,7 +441,7 @@ fn handle_command(
             }
             config.write(&root_path)?;
         }
-        Commands::Stats { user } => {
+        Commands::Stats { user, csv } => {
             let mut filtered_board = board.clone();
             if let Some(ref u) = user {
                 // Filter tickets by assigned user
@@ -457,99 +457,10 @@ fn handle_command(
             }
             let summary = slint_kanban::model::stats::get_board_summary(&filtered_board);
 
-            writeln!(out, "== Board Summary ==")?;
-            writeln!(out, "Total tickets: {}", summary.total_tickets)?;
-            writeln!(out, "Unassigned:    {}", summary.unassigned_tickets)?;
-            writeln!(
-                out,
-                "Avg Lead Time: {}",
-                summary
-                    .avg_lead_time_days
-                    .map(|d| format!("{:.1} days", d))
-                    .unwrap_or_else(|| "-".to_string())
-            )?;
-            writeln!(
-                out,
-                "Avg Cycle Time: {}",
-                summary
-                    .avg_cycle_time_days
-                    .map(|d| format!("{:.1} days", d))
-                    .unwrap_or_else(|| "-".to_string())
-            )?;
-
-            if let Some(rate) = summary.completion_rate {
-                writeln!(out, "Completion Rate: {:.1}%", rate)?;
-            }
-
-            writeln!(out, "Total Points:    {}", summary.total_points)?;
-            writeln!(out, "Done Points:     {}", summary.total_done_points)?;
-            if summary.total_points > 0 {
-                let p_rate =
-                    (summary.total_done_points as f64 / summary.total_points as f64) * 100.0;
-                writeln!(out, "Points Completion Rate: {:.1}%", p_rate)?;
-            }
-
-            if let Some(rate) = summary.sprint_completion_rate {
-                writeln!(out, "Sprint Completion: {:.1}% (Tickets)", rate)?;
-            }
-            writeln!(out)?;
-
-            writeln!(out)?;
-
-            writeln!(out, "== Tickets per Queue ==")?;
-            writeln!(
-                out,
-                "{:<20} {:>5} {:>6} {:>5}",
-                "Queue", "Count", "Limit", "Usage"
-            )?;
-            for q in summary.queues {
-                let limit_str = q
-                    .limit
-                    .map(|l| l.to_string())
-                    .unwrap_or_else(|| "-".to_string());
-                let usage_str = if let Some(limit) = q.limit {
-                    if limit > 0 {
-                        format!("{}%", (q.count * 100) / limit)
-                    } else {
-                        "-".to_string()
-                    }
-                } else {
-                    "-".to_string()
-                };
-                writeln!(
-                    out,
-                    "{:<20} {:>5} {:>6} {:>5}",
-                    q.name, q.count, limit_str, usage_str
-                )?;
-            }
-            writeln!(out)?;
-            writeln!(out, "== Tickets per User ==")?;
-            writeln!(out, "{:<20} {:>5}", "User", "Count")?;
-            for u in summary.users {
-                writeln!(out, "{:<20} {:>5}", u.name, u.count)?;
-            }
-            writeln!(out)?;
-
-            writeln!(out, "== Trends (Debug) ==")?;
-            writeln!(
-                out,
-                "{:<10} {:>8} {:>8} {:>8} {:>8}",
-                "Date", "TotalT", "DoneT", "TotalP", "DoneP"
-            )?;
-            for tp in summary.trend {
-                writeln!(
-                    out,
-                    "{:<10} {:>8} {:>8} {:>8} {:>8}",
-                    if tp.timestamp.len() >= 10 {
-                        &tp.timestamp[5..10]
-                    } else {
-                        &tp.timestamp
-                    },
-                    tp.total_tickets,
-                    tp.done_tickets,
-                    tp.total_points,
-                    tp.done_points
-                )?;
+            if csv {
+                print_stats_csv(&summary, out)?;
+            } else {
+                print_stats_human_readable(&summary, out)?;
             }
         }
         Commands::Move { id, queue } => {
@@ -815,6 +726,211 @@ fn handle_command(
                 }
             }
         }
+    }
+
+    Ok(())
+}
+
+fn print_stats_human_readable(
+    summary: &slint_kanban::model::stats::BoardSummary,
+    out: &mut dyn std::io::Write,
+) -> anyhow::Result<()> {
+    writeln!(out, "== Board Summary ==")?;
+    writeln!(out, "Total tickets: {}", summary.total_tickets)?;
+    writeln!(out, "Unassigned:    {}", summary.unassigned_tickets)?;
+    writeln!(
+        out,
+        "Avg Lead Time: {}",
+        summary
+            .avg_lead_time_days
+            .map(|d| format!("{:.1} days", d))
+            .unwrap_or_else(|| "-".to_string())
+    )?;
+    writeln!(
+        out,
+        "Avg Cycle Time: {}",
+        summary
+            .avg_cycle_time_days
+            .map(|d| format!("{:.1} days", d))
+            .unwrap_or_else(|| "-".to_string())
+    )?;
+
+    if let Some(rate) = summary.completion_rate {
+        writeln!(out, "Completion Rate: {:.1}%", rate)?;
+    }
+
+    writeln!(out, "Total Points:    {}", summary.total_points)?;
+    writeln!(out, "Done Points:     {}", summary.total_done_points)?;
+    if summary.total_points > 0 {
+        let p_rate = (summary.total_done_points as f64 / summary.total_points as f64) * 100.0;
+        writeln!(out, "Points Completion Rate: {:.1}%", p_rate)?;
+    }
+
+    if let Some(rate) = summary.sprint_completion_rate {
+        writeln!(out, "Sprint Completion: {:.1}% (Tickets)", rate)?;
+    }
+    writeln!(out)?;
+
+    writeln!(out, "== Tickets per Queue ==")?;
+    writeln!(
+        out,
+        "{:<20} {:>5} {:>6} {:>5}",
+        "Queue", "Count", "Limit", "Usage"
+    )?;
+    for q in &summary.queues {
+        let limit_str = q
+            .limit
+            .map(|l| l.to_string())
+            .unwrap_or_else(|| "-".to_string());
+        let usage_str = if let Some(limit) = q.limit {
+            if limit > 0 {
+                format!("{}%", (q.count * 100) / limit)
+            } else {
+                "-".to_string()
+            }
+        } else {
+            "-".to_string()
+        };
+        writeln!(
+            out,
+            "{:<20} {:>5} {:>6} {:>5}",
+            q.name, q.count, limit_str, usage_str
+        )?;
+    }
+    writeln!(out)?;
+    writeln!(out, "== Tickets per User ==")?;
+    writeln!(out, "{:<20} {:>5}", "User", "Count")?;
+    for u in &summary.users {
+        writeln!(out, "{:<20} {:>5}", u.name, u.count)?;
+    }
+    writeln!(out)?;
+
+    writeln!(out, "== Trends (Debug) ==")?;
+    writeln!(
+        out,
+        "{:<10} {:>8} {:>8} {:>8} {:>8}",
+        "Date", "TotalT", "DoneT", "TotalP", "DoneP"
+    )?;
+    for tp in &summary.trend {
+        writeln!(
+            out,
+            "{:<10} {:>8} {:>8} {:>8} {:>8}",
+            if tp.timestamp.len() >= 10 {
+                &tp.timestamp[5..10]
+            } else {
+                &tp.timestamp
+            },
+            tp.total_tickets,
+            tp.done_tickets,
+            tp.total_points,
+            tp.done_points
+        )?;
+    }
+    Ok(())
+}
+
+fn print_stats_csv(
+    summary: &slint_kanban::model::stats::BoardSummary,
+    out: &mut dyn std::io::Write,
+) -> anyhow::Result<()> {
+    writeln!(out, "Type,Category/Date,Metric,Value,Unit")?;
+
+    // Summary
+    writeln!(
+        out,
+        "Summary,General,Total Tickets,{},count",
+        summary.total_tickets
+    )?;
+    writeln!(
+        out,
+        "Summary,General,Unassigned Tickets,{},count",
+        summary.unassigned_tickets
+    )?;
+    if let Some(d) = summary.avg_lead_time_days {
+        writeln!(out, "Summary,General,Avg Lead Time,{:.2},days", d)?;
+    }
+    if let Some(d) = summary.avg_cycle_time_days {
+        writeln!(out, "Summary,General,Avg Cycle Time,{:.2},days", d)?;
+    }
+    if let Some(r) = summary.completion_rate {
+        writeln!(out, "Summary,General,Completion Rate,{:.2},%", r)?;
+    }
+    writeln!(
+        out,
+        "Summary,General,Total Points,{},pts",
+        summary.total_points
+    )?;
+    writeln!(
+        out,
+        "Summary,General,Done Points,{},pts",
+        summary.total_done_points
+    )?;
+    if summary.total_points > 0 {
+        let p_rate = (summary.total_done_points as f64 / summary.total_points as f64) * 100.0;
+        writeln!(
+            out,
+            "Summary,General,Points Completion Rate,{:.2},%",
+            p_rate
+        )?;
+    }
+    if let Some(r) = summary.sprint_completion_rate {
+        writeln!(out, "Summary,General,Sprint Completion Rate,{:.2},%", r)?;
+    }
+
+    // Queues
+    for q in &summary.queues {
+        writeln!(out, "Queue,{},Count,{},tickets", q.name, q.count)?;
+        if let Some(l) = q.limit {
+            writeln!(out, "Queue,{},Limit,{},tickets", q.name, l)?;
+            if l > 0 {
+                writeln!(
+                    out,
+                    "Queue,{},Usage,{:.2},%",
+                    q.name,
+                    (q.count as f64 / l as f64) * 100.0
+                )?;
+            }
+        }
+    }
+
+    // Users
+    for u in &summary.users {
+        writeln!(out, "User,{},Count,{},tickets", u.name, u.count)?;
+    }
+
+    // Trends
+    for tp in &summary.trend {
+        let date = if tp.timestamp.len() >= 10 {
+            &tp.timestamp[0..10]
+        } else {
+            &tp.timestamp
+        };
+        writeln!(
+            out,
+            "Trend,{},Total Tickets,{},tickets",
+            date, tp.total_tickets
+        )?;
+        writeln!(
+            out,
+            "Trend,{},Done Tickets,{},tickets",
+            date, tp.done_tickets
+        )?;
+        writeln!(out, "Trend,{},Total Points,{},pts", date, tp.total_points)?;
+        writeln!(out, "Trend,{},Done Points,{},pts", date, tp.done_points)?;
+    }
+
+    // Burndown
+    for bp in &summary.burndown {
+        writeln!(
+            out,
+            "Burndown,{},Remaining Points,{},pts",
+            bp.date, bp.remaining_points
+        )?;
+        writeln!(
+            out,
+            "Burndown,{},Ideal Points,{},pts",
+            bp.date, bp.ideal_points
+        )?;
     }
 
     Ok(())

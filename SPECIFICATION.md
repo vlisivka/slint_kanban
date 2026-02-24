@@ -109,7 +109,8 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
         -   `move`: Move ticket to another queue (options: `--id`/`-i`, `--queue`/`-q`).
         -   `remove`: Delete ticket (options: `--id`/`-i`).
         -   `list`: List tickets with filters (options: `--assigned-to-user`, `--unassigned`, `--search`, `--id`, `--date-from`, `--date-to`).
-        -   `show`: Show detailed ticket info (options: `--id`/`-i`).
+        - `stats`: Show board statistics (options: `--user`, `--csv`).
+        - `show`: Show detailed ticket info (options: `--id`/`-i`).
         - `configure`: Change settings (options: `--active-user`, `--show-only-mine`, `--add-user`).
         - `open PATH`: Open specified directory in the GUI.
         - `admin PATH`: Open the specified board in Administrator Mode.

@@ -167,7 +167,7 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Points completion rate
 - [x] Remaining analytics
   - [x] Burndown charts
-  - [ ] Export statistics to CSV
+  - [x] Export statistics to CSV
 
 ### Performance Optimization ✅
 - [x] Quick Wins
@@ -217,7 +217,7 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Internal tools for fixing data corruption or resolving conflicts
 
 ### Markdown Rendering
-- [/] Implement Markdown rendering in ticket detail view using Servo
+- [ ] Implement Markdown rendering in ticket detail view using Servo
   - [ ] Copy WebView component from Slint "servo" example: https://github.com/slint-ui/slint/tree/master/examples/servo
   - [ ] Integrate markdown rendering library (pulldown-cmark or similar)
   - [ ] Create styled text rendering component

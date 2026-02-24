@@ -106,6 +106,10 @@ pub enum Commands {
         /// Filter by user
         #[arg(long)]
         user: Option<String>,
+
+        /// Export in CSV format
+        #[arg(long)]
+        csv: bool,
     },
 
     /// Change configuration

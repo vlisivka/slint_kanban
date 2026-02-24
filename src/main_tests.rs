@@ -382,6 +382,30 @@ fn test_cli_stats() -> anyhow::Result<()> {
 }
 
 #[test]
+fn test_cli_stats_csv() -> anyhow::Result<()> {
+    let env = TestEnv::new()?;
+    Board::ensure_initialized(&env.root)?;
+
+    env.run(&[
+        "add",
+        "-t",
+        "Task 1",
+        "-q",
+        "1. Incoming",
+        "--assign-to",
+        "Alice",
+    ])?;
+
+    let out = env.run(&["stats", "--csv"])?;
+    assert!(out.contains("Type,Category/Date,Metric,Value,Unit"));
+    assert!(out.contains("Summary,General,Total Tickets,1,count"));
+    assert!(out.contains("Queue,1. Incoming,Count,1,tickets"));
+    assert!(out.contains("User,Alice,Count,1,tickets"));
+
+    Ok(())
+}
+
+#[test]
 fn test_cli_sprint_crud() -> anyhow::Result<()> {
     let env = TestEnv::new()?;
     Board::ensure_initialized(&env.root)?;
