@@ -182,6 +182,19 @@ impl Board {
         (metadata, body)
     }
 
+    pub fn can_manage_ticket(&self, ticket: &Ticket, admin_bypass: bool) -> bool {
+        if admin_bypass || !self.config.manage_only_mine() {
+            return true;
+        }
+
+        let active_user = self.config.active_user();
+        if active_user == "admin" || active_user == "<unassigned>" {
+            return true;
+        }
+
+        ticket.assigned_to == active_user || ticket.author == active_user
+    }
+
     pub fn queue_path(&self, queue_id: &str) -> PathBuf {
         self.queues_path.join(queue_id)
     }
@@ -217,21 +230,80 @@ impl Board {
     }
 
     fn load_all_queues(&mut self) -> anyhow::Result<()> {
-        let mut queues = vec![];
-        for entry in std::fs::read_dir(&self.queues_path)?.flatten() {
-            let path = entry.path();
-            if path.is_dir() {
-                queues.push(self.load_queue(&path)?);
+        let mut sorted_queue_ids: Vec<String> = std::fs::read_dir(&self.queues_path)?
+            .flatten()
+            .filter(|e| e.path().is_dir())
+            .map(|e| e.file_name().to_string_lossy().to_string())
+            .collect();
+        sorted_queue_ids.sort();
+
+        let mut ticket_to_link: HashMap<String, PathBuf> = HashMap::new();
+
+        // 1. Scan queues for duplicates and broken links
+        for q_id in &sorted_queue_ids {
+            let q_path = self.queues_path.join(q_id);
+            if let Ok(entries) = std::fs::read_dir(&q_path) {
+                for entry in entries.flatten() {
+                    let link_path = entry.path();
+
+                    match Self::resolve_symlink(&q_path, &link_path).and_then(|p| p.canonicalize())
+                    {
+                        Ok(resolved_path) if resolved_path.exists() && resolved_path.is_dir() => {
+                            let actual_id = resolved_path
+                                .file_name()
+                                .and_then(|n| n.to_str())
+                                .unwrap_or_default()
+                                .to_string();
+                            if actual_id.is_empty() {
+                                continue;
+                            }
+
+                            if let Some(prev_link) = ticket_to_link.insert(actual_id, link_path) {
+                                // Duplicate: remove from previous (earlier in sorted list)
+                                let _ = std::fs::remove_file(prev_link);
+                            }
+                        }
+                        _ => {
+                            // Broken or target missing
+                            let _ = std::fs::remove_file(link_path);
+                        }
+                    }
+                }
             }
         }
-        queues.sort_by(|a, b| a.id.cmp(&b.id));
+
+        // 2. Scan Tickets/ for orphans
+        if let Some(first_q) = sorted_queue_ids.first() {
+            if let Ok(entries) = std::fs::read_dir(&self.tickets_path) {
+                for entry in entries.flatten() {
+                    let ticket_path = entry.path();
+                    if ticket_path.is_dir() {
+                        let ticket_id = entry.file_name().to_string_lossy().to_string();
+                        if !ticket_to_link.contains_key(&ticket_id) {
+                            // Orphan!
+                            let link_path = self.queues_path.join(first_q).join(&ticket_id);
+                            #[cfg(unix)]
+                            if std::os::unix::fs::symlink(&ticket_path, link_path.clone()).is_ok() {
+                                ticket_to_link.insert(ticket_id, link_path);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Build actual Queue objects
+        let mut queues = vec![];
+        for q_id in &sorted_queue_ids {
+            let path = self.queues_path.join(q_id);
+            queues.push(self.load_queue(&path)?);
+        }
         self.queues = queues;
 
         // Populate ticket index for O(1) lookup
         self.ticket_index.clear();
         for queue in &self.queues {
             for ticket in &queue.tickets {
-                // In case of duplicates (which shouldn't happen), last one wins
                 self.ticket_index.insert(ticket.id.clone(), ticket.clone());
             }
         }

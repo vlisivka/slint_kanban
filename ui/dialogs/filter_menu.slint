@@ -59,6 +59,14 @@ export component FilterMenu inherits Rectangle {
             }
         }
 
+        CheckBox {
+            text: "Manage only my tickets";
+            checked <=> UserGlobal.manage-only-mine;
+            toggled => {
+                UserGlobal.toggle-manage-only-mine(self.checked);
+            }
+        }
+
         Rectangle {
             height: 1px;
             background: Palette.border;

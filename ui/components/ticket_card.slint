@@ -1,5 +1,11 @@
 import { Palette } from "std-widgets.slint";
-import { TicketStr, IdCopy, CloseButton, Theme } from "../common.slint";
+import {
+    TicketStr,
+    IdCopy,
+    CloseButton,
+    Theme,
+    UserGlobal,
+} from "../common.slint";
 
 export component TicketCard inherits Rectangle {
     in property <TicketStr> ticket;
@@ -24,17 +30,21 @@ export component TicketCard inherits Rectangle {
     drop-shadow-color: touch-area.has-hover ? #00000040 : transparent;
     animate background, border-color, drop-shadow-blur, drop-shadow-offset-y { duration: 150ms; }
 
+    property <bool> can-manage: !UserGlobal.manage-only-mine || UserGlobal.active-user == ticket.assigned_to || UserGlobal.active-user == ticket.author || UserGlobal.active-user == "admin" || UserGlobal.active-user == "<unassigned>";
+
     touch-area := TouchArea {
         pointer-event(event) => {
             if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
-                start-dragging(ticket.id, from_queue_id, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                if (root.can-manage) {
+                    start-dragging(ticket.id, from_queue_id, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                }
             }
             if (event.kind == PointerEventKind.up) {
                 drop-ticket(self.absolute-position.x + self.mouse-x);
             }
         }
         moved => {
-            if (self.pressed) {
+            if (self.pressed && root.can-manage) {
                 move-dragging(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
             }
         }
@@ -61,6 +71,7 @@ export component TicketCard inherits Rectangle {
             }
 
             CloseButton {
+                visible: root.can-manage;
                 clicked => {
                     delete-ticket(ticket);
                 }

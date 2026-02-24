@@ -50,6 +50,8 @@ pub struct UserConfig {
     pub date_from: String,
     #[serde(default)]
     pub date_to: String,
+    #[serde(default = "default_manage_only_mine")]
+    pub manage_only_mine: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -64,6 +66,10 @@ fn default_users() -> Vec<String> {
 
 fn default_user() -> String {
     "user".to_string()
+}
+
+fn default_manage_only_mine() -> bool {
+    true
 }
 
 impl Default for KanbanConfig {
@@ -87,6 +93,7 @@ impl Default for UserConfig {
             search_history: Vec::new(),
             date_from: "".to_string(),
             date_to: "".to_string(),
+            manage_only_mine: default_manage_only_mine(),
         }
     }
 }
@@ -183,6 +190,9 @@ impl Config {
     }
     pub fn search_history(&self) -> &Vec<String> {
         &self.user.search_history
+    }
+    pub fn manage_only_mine(&self) -> bool {
+        self.user.manage_only_mine
     }
 
     pub fn get_limit(&self, queue_id: &str) -> Option<usize> {

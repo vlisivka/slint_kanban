@@ -12,6 +12,7 @@ import {
     IdCopy,
     ModalBackdrop,
     Theme,
+    UserGlobal,
 } from "../common.slint";
 
 export component TicketView inherits Rectangle {
@@ -25,6 +26,8 @@ export component TicketView inherits Rectangle {
     callback attach-file(string) -> string;
     callback open-attachment-folder(string);
     callback request-stats();
+
+    property <bool> can-manage: !UserGlobal.manage-only-mine || UserGlobal.active-user == ticket.assigned_to || UserGlobal.active-user == ticket.author || UserGlobal.active-user == "admin" || UserGlobal.active-user == "<unassigned>";
 
     ModalBackdrop {
         dismiss => {
@@ -50,6 +53,7 @@ export component TicketView inherits Rectangle {
                         spacing: 8px;
                         if ticket.id != "board-info": edit-btn := Button {
                             text: "Edit";
+                            enabled: root.can-manage;
                             width: 100px;
                             height: 40px;
                             clicked => {
@@ -258,6 +262,7 @@ export component TicketView inherits Rectangle {
 
                         // Add Comment form
                         if ticket.id != "board-info" && ticket.id != "": VerticalBox {
+                            visible: root.can-manage;
                             spacing: 8px;
                             padding: 0px;
                             Text {

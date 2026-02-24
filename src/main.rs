@@ -166,6 +166,12 @@ fn init_callbacks(ui: &App, controller: Arc<AppController>) {
         });
 
     let c = controller.clone();
+    ui.global::<UserGlobal>()
+        .on_toggle_manage_only_mine(move |enabled| {
+            c.handle_toggle_manage_only_mine(enabled);
+        });
+
+    let c = controller.clone();
     ui.on_show_board_info(move || {
         c.handle_show_board_info();
     });
@@ -258,6 +264,7 @@ fn init_callbacks(ui: &App, controller: Arc<AppController>) {
 fn handle_command(
     root_path: std::path::PathBuf,
     command: Commands,
+    admin: bool,
     out: &mut dyn std::io::Write,
 ) -> anyhow::Result<()> {
     let board = Board::load(root_path.clone())?;
@@ -290,6 +297,11 @@ fn handle_command(
             let ticket = board
                 .find_ticket_by_id(&id)
                 .ok_or_else(|| anyhow::anyhow!("Ticket not found: {}", id))?;
+
+            if !board.can_manage_ticket(ticket, admin) {
+                anyhow::bail!("Access Denied: You can only update tickets assigned to you. Use --admin to bypass.");
+            }
+
             // Fields not provided on CLI are preserved from the existing ticket
             let title = title.unwrap_or(ticket.title.clone());
             let description = description.unwrap_or(ticket.description.clone());
@@ -354,6 +366,7 @@ fn handle_command(
         Commands::Configure {
             active_user,
             show_only_mine,
+            manage_only_mine,
             add_user,
         } => {
             let mut config = board.config.clone();
@@ -364,6 +377,10 @@ fn handle_command(
             if let Some(mine) = show_only_mine {
                 writeln!(out, "Setting show_only_mine to: {}", mine)?;
                 config.user.show_only_mine = mine;
+            }
+            if let Some(manage) = manage_only_mine {
+                writeln!(out, "Setting manage_only_mine to: {}", manage)?;
+                config.user.manage_only_mine = manage;
             }
             if let Some(user) = add_user {
                 if !config.kanban.users.contains(&user) {
@@ -486,9 +503,14 @@ fn handle_command(
         }
         Commands::Move { id, queue } => {
             writeln!(out, "Moving ticket: {} to queue: {}", id, queue)?;
-            let _ticket = board
+            let ticket = board
                 .find_ticket_by_id(&id)
                 .ok_or_else(|| anyhow::anyhow!("Ticket not found: {}", id))?;
+
+            if !board.can_manage_ticket(ticket, admin) {
+                anyhow::bail!("Access Denied: You can only move tickets assigned to you. Use --admin to bypass.");
+            }
+
             let source_queue = board
                 .queues
                 .iter()
@@ -498,6 +520,14 @@ fn handle_command(
         }
         Commands::Remove { id } => {
             writeln!(out, "Removing ticket: {}", id)?;
+            let ticket = board
+                .find_ticket_by_id(&id)
+                .ok_or_else(|| anyhow::anyhow!("Ticket not found: {}", id))?;
+
+            if !board.can_manage_ticket(ticket, admin) {
+                anyhow::bail!("Access Denied: You can only remove tickets assigned to you. Use --admin to bypass.");
+            }
+
             board.delete_ticket(&id)?;
         }
         Commands::Open { path } => {
@@ -753,7 +783,7 @@ fn run_cli(args: CliArgs, out: &mut dyn std::io::Write) -> anyhow::Result<()> {
     Board::ensure_initialized(&root_path)?;
 
     if let Some(command) = args.command {
-        handle_command(root_path, command, out)
+        handle_command(root_path, command, args.admin, out)
     } else {
         run_gui(root_path)
     }

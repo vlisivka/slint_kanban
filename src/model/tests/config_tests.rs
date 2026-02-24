@@ -55,6 +55,7 @@ fn test_split_config_persistence() {
     config.user.active_user = "Alice".to_string();
     config.set_limit("ToDo".to_string(), 42);
     config.add_search_to_history("rust".to_string());
+    config.user.manage_only_mine = false; // Override default
 
     // Write it
     config.write(board_root).unwrap();
@@ -71,6 +72,7 @@ fn test_split_config_persistence() {
     assert_eq!(loaded.user.active_user, "Alice");
     assert_eq!(loaded.get_limit("ToDo"), Some(42));
     assert_eq!(loaded.user.search_history, vec!["rust"]);
+    assert_eq!(loaded.manage_only_mine(), false);
 }
 
 #[test]

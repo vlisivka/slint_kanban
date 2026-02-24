@@ -126,8 +126,10 @@ export global UserGlobal {
     in-out property <[string]> users: ["user"];
     in-out property <string> active-user: "user";
     in-out property <bool> show-only-mine: false;
+    in-out property <bool> manage-only-mine: true;
     callback change-active-user(string);
     callback toggle-show-only-mine(bool);
+    callback toggle-manage-only-mine(bool);
 }
 
 export global Clipboard {

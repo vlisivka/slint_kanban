@@ -30,8 +30,8 @@ tempfile = "3.10"
 
 [profile.dev]
 opt-level = 1
-debug = 1
-incremental = false
+debug = 0
+incremental = true
 
 [profile.release]
 opt-level = "z"

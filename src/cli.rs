@@ -14,6 +14,10 @@ pub struct CliArgs {
     #[arg(short, long)]
     pub root: Option<PathBuf>,
 
+    /// Administrator mode (bypasses manage_only_mine)
+    #[arg(long)]
+    pub admin: bool,
+
     #[command(subcommand)]
     pub command: Option<Commands>,
 }
@@ -113,6 +117,10 @@ pub enum Commands {
         /// Set show only mine tickets (true/false)
         #[arg(long)]
         show_only_mine: Option<bool>,
+
+        /// Set manage only mine tickets (true/false)
+        #[arg(long)]
+        manage_only_mine: Option<bool>,
 
         /// Add a new user to the list
         #[arg(long)]

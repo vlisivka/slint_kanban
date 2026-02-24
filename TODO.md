@@ -195,23 +195,20 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
 
 ---
 
-## Phase 8: Future Work
+### Conflicts Handling in Multi-User Multi-Machine Setup ✅
+- [x] Implement conflict prevention via "Manage Only My Tickets" option
+  - [x] Add `manage_only_mine` to `UserConfig` (default: true)
+  - [x] Enforce management restriction in GUI (disable drag/edit for unassigned tickets)
+  - [x] Enforce restriction in CLI commands
+  - [x] Add setting toggle in GUI and CLI
+- [x] Implement automatic queue conflict resolution
+  - [x] Detect if ticket exists in multiple queues
+  - [x] Keep ticket in the "furthest" queue (highest index) and cleanup others
+  - [x] Detect orphaned tickets (not in any queue)
+  - [x] Automatically link orphaned tickets to the first visible queue
 
-### Conflicts Handling in Multi-User Multi-Machine Setup
-- [ ] Implement conflict prevention via "Manage Only My Tickets" option
-  - [ ] Add `manage_only_mine` to `UserConfig` (default: true)
-  - [ ] Enforce management restriction in GUI (disable drag/edit for unassigned tickets)
-  - [ ] Enforce restriction in CLI commands
-  - [ ] Add setting toggle in GUI and CLI
-- [ ] Implement automatic queue conflict resolution
-  - [ ] Detect if ticket exists in multiple queues
-  - [ ] Keep ticket in the "furthest" queue (highest index) and cleanup others
-  - [ ] Detect orphaned tickets (not in any queue)
-  - [ ] Automatically link orphaned tickets to the first visible queue
-
-### Administrator Mode
-- [ ] Implement specialized `admin` CLI command
-- [ ] Add Board Admin UI mode
+### Administrator Mode ✅
+- [x] Implement administrator mode (top-level `--admin` flag in CLI, `admin` user name bypass)
   - [ ] Edit board `README.md`
   - [ ] Manage users (add/remove from `config.toml`)
   - [ ] Manage queues (add, rename, delete)

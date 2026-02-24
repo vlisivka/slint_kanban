@@ -235,8 +235,9 @@ impl AppController {
 
     /// Syncs config state (show_only_mine, search history) into the UI.
     fn sync_config(&self, app: &App, board: &Board) {
-        app.global::<UserGlobal>()
-            .set_show_only_mine(board.config.show_only_mine());
+        let user_global = app.global::<UserGlobal>();
+        user_global.set_show_only_mine(board.config.show_only_mine());
+        user_global.set_manage_only_mine(board.config.manage_only_mine());
 
         let history: Vec<SharedString> = board
             .config
@@ -287,6 +288,10 @@ impl AppController {
         }
     }
 
+    fn can_manage_ticket(&self, ticket: &crate::model::ticket::Ticket, board: &Board) -> bool {
+        board.can_manage_ticket(ticket, false)
+    }
+
     // --- Action Handlers ---
 
     pub fn handle_move_ticket(&self, ticket_id: String, source_id: String, target_id: String) {
@@ -305,6 +310,14 @@ impl AppController {
             "Controller: Moving {} from {} to {}",
             ticket_id, source_id, resolved_target_id
         );
+
+        if let Some(ticket) = board.find_ticket_by_id(&ticket_id) {
+            if !self.can_manage_ticket(ticket, &board) {
+                self.show_error("Access Denied: You can only manage tickets assigned to you.");
+                return;
+            }
+        }
+
         if let Err(e) = board.move_ticket(&ticket_id, &source_id, &resolved_target_id) {
             self.show_error(&e.to_string());
         }
@@ -348,6 +361,13 @@ impl AppController {
         };
 
         println!("Controller: Deleting ticket {}", ticket_id);
+        if let Some(ticket) = board.find_ticket_by_id(&ticket_id) {
+            if !self.can_manage_ticket(ticket, &board) {
+                self.show_error("Access Denied: You can only delete tickets assigned to you.");
+                return;
+            }
+        }
+
         if let Err(e) = board.delete_ticket(&ticket_id) {
             eprintln!("Error deleting: {:?}", e);
         }
@@ -394,6 +414,13 @@ impl AppController {
         };
 
         println!("Controller: Saving ticket {}", ticket_id);
+        if let Some(ticket) = board.find_ticket_by_id(&ticket_id) {
+            if !self.can_manage_ticket(ticket, &board) {
+                self.show_error("Access Denied: You can only update tickets assigned to you.");
+                return;
+            }
+        }
+
         if let Err(e) = board.update_ticket(
             &ticket_id,
             &title,
@@ -514,6 +541,15 @@ impl AppController {
         // waiting for the file watcher to trigger a full reload.
         if let Some(app) = self.app_weak.upgrade() {
             app.global::<UserGlobal>().set_show_only_mine(enabled);
+            let _ = self.reload();
+        }
+    }
+
+    pub fn handle_toggle_manage_only_mine(&self, enabled: bool) {
+        self.modify_config("toggle manage mine", |c| c.user.manage_only_mine = enabled);
+
+        if let Some(app) = self.app_weak.upgrade() {
+            app.global::<UserGlobal>().set_manage_only_mine(enabled);
             let _ = self.reload();
         }
     }
