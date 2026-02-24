@@ -300,6 +300,109 @@ impl Board {
         Ok(())
     }
 
+    pub fn add_sprint(
+        &mut self,
+        name: String,
+        start_date: String,
+        end_date: String,
+    ) -> anyhow::Result<()> {
+        let number = self
+            .config
+            .kanban
+            .sprints
+            .iter()
+            .map(|s| s.number)
+            .max()
+            .map(|n| n + 1)
+            .unwrap_or(1);
+
+        self.config
+            .kanban
+            .sprints
+            .push(crate::model::config::Sprint {
+                number,
+                name: name.clone(),
+                start_date: start_date.clone(),
+                end_date: end_date.clone(),
+            });
+        self.config.kanban.sprints.sort_by_key(|s| s.number);
+
+        let root_path = self
+            .tickets_path
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("Invalid root path"))?;
+        self.config.write(root_path)?;
+
+        self.append_log_entry(
+            ActionPayload::ManageSprints {
+                op: "ADD".to_string(),
+                sprint_number: number,
+            },
+            &format!("Added sprint: {} - {}", number, name),
+        )?;
+        Ok(())
+    }
+
+    pub fn update_sprint(
+        &mut self,
+        number: u32,
+        name: Option<String>,
+        start_date: Option<String>,
+        end_date: Option<String>,
+    ) -> anyhow::Result<()> {
+        let sprint = self
+            .config
+            .kanban
+            .sprints
+            .iter_mut()
+            .find(|s| s.number == number)
+            .ok_or_else(|| anyhow::anyhow!("Sprint {} not found", number))?;
+
+        if let Some(n) = name {
+            sprint.name = n;
+        }
+        if let Some(s) = start_date {
+            sprint.start_date = s;
+        }
+        if let Some(e) = end_date {
+            sprint.end_date = e;
+        }
+
+        let root_path = self
+            .tickets_path
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("Invalid root path"))?;
+        self.config.write(root_path)?;
+
+        self.append_log_entry(
+            ActionPayload::ManageSprints {
+                op: "UPDATE".to_string(),
+                sprint_number: number,
+            },
+            &format!("Updated sprint: {}", number),
+        )?;
+        Ok(())
+    }
+
+    pub fn remove_sprint(&mut self, number: u32) -> anyhow::Result<()> {
+        self.config.kanban.sprints.retain(|s| s.number != number);
+
+        let root_path = self
+            .tickets_path
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("Invalid root path"))?;
+        self.config.write(root_path)?;
+
+        self.append_log_entry(
+            ActionPayload::ManageSprints {
+                op: "REMOVE".to_string(),
+                sprint_number: number,
+            },
+            &format!("Removed sprint: {}", number),
+        )?;
+        Ok(())
+    }
+
     fn parse_readme_content(content: &str) -> (TicketMetadata, String) {
         let default_meta = || TicketMetadata {
             title: "Board Overview".to_string(),

@@ -259,6 +259,21 @@ impl AppController {
         } else {
             app.set_has_active_sprint(false);
         }
+
+        // Sync all sprints
+        let slint_sprints: Vec<SprintStr> = board
+            .config
+            .kanban
+            .sprints
+            .iter()
+            .map(|s| SprintStr {
+                number: s.number as i32,
+                name: s.name.clone().into(),
+                start_date: s.start_date.clone().into(),
+                end_date: s.end_date.clone().into(),
+            })
+            .collect();
+        app.set_all_sprints(std::rc::Rc::new(slint::VecModel::from(slint_sprints)).into());
     }
 
     fn load_board(&self, action: &str) -> Option<Board> {
@@ -594,10 +609,25 @@ impl AppController {
     }
 
     pub fn handle_request_admin_data(&self) {
-        if let Some(_board) = self.load_board("admin data") {
+        if let Some(board) = self.load_board("admin data") {
             if let Some(app) = self.app_weak.upgrade() {
                 let (_, readme) = Board::load_board_info(&self.root_path).unwrap_or_default();
                 app.set_board_readme_content(readme.into());
+
+                // Set sprints
+                let slint_sprints: Vec<SprintStr> = board
+                    .config
+                    .kanban
+                    .sprints
+                    .iter()
+                    .map(|s| SprintStr {
+                        number: s.number as i32,
+                        name: s.name.clone().into(),
+                        start_date: s.start_date.clone().into(),
+                        end_date: s.end_date.clone().into(),
+                    })
+                    .collect();
+                app.set_all_sprints(std::rc::Rc::new(slint::VecModel::from(slint_sprints)).into());
             }
         }
     }
@@ -734,6 +764,41 @@ impl AppController {
         if let Some(mut board) = self.load_board("remove user") {
             if let Err(e) = board.remove_user(&username) {
                 self.show_error(&format!("Failed to remove user: {}", e));
+            } else {
+                let _ = self.reload();
+            }
+        }
+    }
+
+    pub fn handle_add_sprint(&self, name: String, start: String, end: String) {
+        if let Some(mut board) = self.load_board("add sprint") {
+            if let Err(e) = board.add_sprint(name, start, end) {
+                self.show_error(&format!("Failed to add sprint: {}", e));
+            } else {
+                let _ = self.reload();
+            }
+        }
+    }
+
+    pub fn handle_update_sprint(&self, number: i32, name: String, start: String, end: String) {
+        if let Some(mut board) = self.load_board("update sprint") {
+            if let Err(e) = board.update_sprint(
+                number as u32,
+                if name.is_empty() { None } else { Some(name) },
+                if start.is_empty() { None } else { Some(start) },
+                if end.is_empty() { None } else { Some(end) },
+            ) {
+                self.show_error(&format!("Failed to update sprint: {}", e));
+            } else {
+                let _ = self.reload();
+            }
+        }
+    }
+
+    pub fn handle_remove_sprint(&self, number: i32) {
+        if let Some(mut board) = self.load_board("remove sprint") {
+            if let Err(e) = board.remove_sprint(number as u32) {
+                self.show_error(&format!("Failed to remove sprint: {}", e));
             } else {
                 let _ = self.reload();
             }

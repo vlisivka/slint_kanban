@@ -295,6 +295,21 @@ fn init_callbacks(ui: &App, controller: Arc<AppController>) {
     ui.on_admin_delete_queue(move |id| {
         c.handle_delete_queue(id.into());
     });
+
+    let c = controller.clone();
+    ui.on_admin_add_sprint(move |name, start, end| {
+        c.handle_add_sprint(name.into(), start.into(), end.into());
+    });
+
+    let c = controller.clone();
+    ui.on_admin_update_sprint(move |number, name, start, end| {
+        c.handle_update_sprint(number, name.into(), start.into(), end.into());
+    });
+
+    let c = controller.clone();
+    ui.on_admin_remove_sprint(move |number| {
+        c.handle_remove_sprint(number);
+    });
 }
 
 fn handle_command(

@@ -136,6 +136,9 @@ export component App inherits Window {
     callback admin-add-queue(string);
     callback admin-rename-queue(string, string);
     callback admin-delete-queue(string);
+    callback admin-add-sprint(string, string, string);
+    callback admin-update-sprint(int, string, string, string);
+    callback admin-remove-sprint(int);
     callback request-admin-data(); // Loads readme and other info
 
     preferred-width: 1024px;
@@ -660,6 +663,7 @@ export component App inherits Window {
     if (show_admin_settings): AdminSettings {
         users: UserGlobal.users;
         queues: board_queues;
+        sprints: all_sprints;
         board_readme <=> board_readme_content;
         close => {
             show_admin_settings = false;
@@ -681,6 +685,15 @@ export component App inherits Window {
         }
         delete_queue(id) => {
             admin-delete-queue(id);
+        }
+        add_sprint(name, start, end) => {
+            admin-add-sprint(name, start, end);
+        }
+        update_sprint(number, name, start, end) => {
+            admin-update-sprint(number, name, start, end);
+        }
+        remove_sprint(number) => {
+            admin-remove-sprint(number);
         }
     }
 }

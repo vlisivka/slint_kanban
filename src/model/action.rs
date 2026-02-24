@@ -42,6 +42,8 @@ pub enum ActionPayload {
         queue: String,
         new_name: Option<String>,
     },
+    #[serde(rename = "MANAGE_SPRINTS")]
+    ManageSprints { op: String, sprint_number: u32 },
 }
 
 impl std::fmt::Display for ActionPayload {
@@ -56,6 +58,7 @@ impl std::fmt::Display for ActionPayload {
             Self::UpdateBoardInfo => "UPDATE_BOARD_INFO",
             Self::ManageUsers { .. } => "MANAGE_USERS",
             Self::ManageQueues { .. } => "MANAGE_QUEUES",
+            Self::ManageSprints { .. } => "MANAGE_SPRINTS",
         };
         write!(f, "{}", action_name)
     }

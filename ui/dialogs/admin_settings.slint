@@ -7,11 +7,18 @@ import {
     Palette,
     ScrollView,
 } from "std-widgets.slint";
-import { CloseButton, ModalBackdrop, Theme, QueueStr } from "../common.slint";
+import {
+    CloseButton,
+    ModalBackdrop,
+    Theme,
+    QueueStr,
+    SprintStr,
+} from "../common.slint";
 
 export component AdminSettings inherits Rectangle {
     in property <[string]> users;
     in property <[QueueStr]> queues;
+    in property <[SprintStr]> sprints;
     in-out property <string> board_readme;
     callback close();
     callback save_readme(string);
@@ -20,9 +27,15 @@ export component AdminSettings inherits Rectangle {
     callback add_queue(string);
     callback rename_queue(string, string);
     callback delete_queue(string);
+    callback add_sprint(string, string, string);
+    callback update_sprint(int, string, string, string);
+    callback remove_sprint(int);
 
     property <string> new_user_name: "";
     property <string> new_queue_name: "";
+    property <string> new_sprint_name: "";
+    property <string> new_sprint_start: "";
+    property <string> new_sprint_end: "";
     property <int> active_tab: 0;
 
     ModalBackdrop {
@@ -85,6 +98,14 @@ export component AdminSettings inherits Rectangle {
                         primary: active_tab == 2;
                         clicked => {
                             active_tab = 2;
+                        }
+                    }
+
+                    Button {
+                        text: "Sprints";
+                        primary: active_tab == 3;
+                        clicked => {
+                            active_tab = 3;
                         }
                     }
                 }
@@ -240,6 +261,106 @@ export component AdminSettings inherits Rectangle {
                                         size: 24px;
                                         clicked => {
                                             delete_queue(q.id);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if active_tab == 3: VerticalBox {
+                    spacing: 16px;
+                    Text {
+                        text: "Manage Sprints";
+                        font-weight: 700;
+                        opacity: 0.7;
+                    }
+
+                    HorizontalLayout {
+                        spacing: 12px;
+                        LineEdit {
+                            text <=> new_sprint_name;
+                            placeholder-text: "Sprint Name";
+                            horizontal-stretch: 1;
+                        }
+
+                        LineEdit {
+                            text <=> new_sprint_start;
+                            placeholder-text: "Start (YYYY-MM-DD)";
+                            width: 150px;
+                        }
+
+                        LineEdit {
+                            text <=> new_sprint_end;
+                            placeholder-text: "End (YYYY-MM-DD)";
+                            width: 150px;
+                        }
+
+                        Button {
+                            text: "Add Sprint";
+                            enabled: new_sprint_name != "" && new_sprint_start != "" && new_sprint_end != "";
+                            clicked => {
+                                add_sprint(new_sprint_name, new_sprint_start, new_sprint_end);
+                                new_sprint_name = "";
+                                new_sprint_start = "";
+                                new_sprint_end = "";
+                            }
+                        }
+                    }
+
+                    ScrollView {
+                        VerticalLayout {
+                            spacing: 8px;
+                            alignment: start;
+                            for s in sprints: Rectangle {
+                                height: 60px;
+                                background: Palette.alternate-background;
+                                border-radius: 4px;
+                                HorizontalLayout {
+                                    padding-left: 16px;
+                                    padding-right: 16px;
+                                    spacing: 12px;
+                                    alignment: space-between;
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        horizontal-stretch: 1;
+                                        Text {
+                                            text: s.number;
+                                            vertical-alignment: center;
+                                            width: 30px;
+                                            font-weight: 700;
+                                        }
+
+                                        LineEdit {
+                                            text: s.name;
+                                            horizontal-stretch: 1;
+                                            accepted(val) => {
+                                                update_sprint(s.number, val, "", "");
+                                            }
+                                        }
+
+                                        LineEdit {
+                                            text: s.start_date;
+                                            width: 110px;
+                                            accepted(val) => {
+                                                update_sprint(s.number, "", val, "");
+                                            }
+                                        }
+
+                                        LineEdit {
+                                            text: s.end_date;
+                                            width: 110px;
+                                            accepted(val) => {
+                                                update_sprint(s.number, "", "", val);
+                                            }
+                                        }
+                                    }
+
+                                    CloseButton {
+                                        size: 24px;
+                                        clicked => {
+                                            remove_sprint(s.number);
                                         }
                                     }
                                 }
