@@ -92,6 +92,14 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
         -   Logs use a Markdown table format (e.g., `| **Date** | **Action** | **Action description** | **JSON** |`) so they are easy to read and parse. 
         -   The `JSON` column stores the machine-readable payload of the action in JSON format (including the action type itself, e.g. `{"action": "...", "id": "..."}`) to simplify parsing the whole event into a single Enum. Placed at the end of the row, it does not clutter the human-readable text.
         -   When creating the file for the first time, a Markdown header and table definition are added. Subsequent entries are simply appended to the file without reading its previous contents.
+    -   **Conflict Prevention and Resolution**:
+        -   **Prevention**: To minimize race conditions, a "Manage Only My Tickets" (`manage_only_mine`) option is provided.
+            -   When enabled (default for all non-admins), the user can only edit or move tickets assigned to them.
+            -   This option can be toggled in the user settings.
+            -   Administrators have this option disabled by default and can manage any ticket.
+        -   **Queue Conflict Resolution**: In a decentralized setup, a ticket might end up in multiple queues or no queues due to synchronization delays.
+            -   **Multiple Queues**: If a ticket symlink exists in multiple queue directories, the application resolves the conflict by keeping the symlink in the queue that is "furthest" from the start of the board (e.g., if it's in both "ToDo" and "Done", it stays in "Done"). It is automatically removed from all other queues.
+            -   **No Queues**: If a ticket exists in the `Tickets/` directory but is not referenced by any symlink in the `Queue/` directory, it is automatically added to the **first visible** queue on the board.
 
 8.  **Command Line Interface (CLI)**:
     -   Non-interactive interface controlled via arguments and options.
@@ -102,9 +110,17 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
         -   `remove`: Delete ticket (options: `--id`/`-i`).
         -   `list`: List tickets with filters (options: `--assigned-to-user`, `--unassigned`, `--search`, `--id`, `--date-from`, `--date-to`).
         -   `show`: Show detailed ticket info (options: `--id`/`-i`).
-        -   `configure`: Change settings (options: `--active-user`, `--show-only-mine`, `--add-user`).
-        -   `open PATH`: Open specified directory in the GUI.
-    -   **Recycle Bin Management**:
+        - `configure`: Change settings (options: `--active-user`, `--show-only-mine`, `--add-user`).
+        - `open PATH`: Open specified directory in the GUI.
+        - `admin PATH`: Open the specified board in Administrator Mode.
+    - **Administrator Mode**:
+        - A specialized mode for board management, triggered via CLI: `slint_kanban admin PATH_TO_BOARD`.
+        - Functional capabilities in this mode:
+            - **Edit Board Documentation**: Edit the root `README.md` of the board directly within the application.
+            - **User Management**: Add, remove, or modify the list of shared users in `config.toml`.
+            - **Queue Management**: Add new queues, rename existing ones, or delete empty queues.
+            - **Board Configuration**: Manage shared board settings like queue limits.
+    - **Recycle Bin Management**:
         -   When tickets are deleted, they are moved directly to the host OS's native Recycle Bin/Trash (using the `trash` crate).
         -   There is no custom `~/Kanban/Deleted` directory anymore. Users manage their deleted items via their standard OS interfaces.
     -   **Testability**: Core logic must be decoupled from the `main` function to allow automated CLI testing.
@@ -136,8 +152,9 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
     - **User Settings (`~/.config/APP_NAME/user.toml`)**: Local preferences unique to each user/machine.
         - `active_user`: Currently selected local user identity.
         - `machine_id`: A unique, randomly generated short ID created upon first run to uniquely identify the machine, used for log files.
-        - `show_only_mine`: Flag to filter by `active_user`.
-        - `hidden_queues`: List of queues to hide from the board.
+        -   `show_only_mine`: Flag to filter by `active_user`.
+        -   `manage_only_mine`: Flag to restrict ticket management to assigned tickets only (default: true).
+        -   `hidden_queues`: List of queues to hide from the board.
         - `search_history`: List of recent search queries.
         - `date_range`: Last used date filter range (from/to).
 ## Non-Functional Requirements
