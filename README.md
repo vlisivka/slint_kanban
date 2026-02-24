@@ -73,7 +73,7 @@ A modern, file-system-based Kanban board application built with Rust and Slint U
 ~/Kanban/
 ├── Queue/                            # Kanban queues (columns)
 │   ├── 1. Incoming/                  # Symlinks to ticket directories
-│   ├── 2. ToDo/
+│   ├── 2. To Do/
 │   ├── 3. Doing/
 │   ├── 4. Reviewing/
 │   ├── 5. Testing/
@@ -181,7 +181,7 @@ On first launch, the application automatically creates the default directory str
 
 ```bash
 # Add a ticket
-slint_kanban add -t "Fix login bug" -d "Users can't log in" -q "2. ToDo" --assign-to user -p 3
+slint_kanban add -t "Fix login bug" -d "Users can't log in" -q "2. To Do" --assign-to user -p 3
 
 # List all tickets
 slint_kanban list

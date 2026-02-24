@@ -10,7 +10,7 @@ Implementing essential keyboard shortcuts to improve productivity without requir
 - **Ticket Management**:
     - `Ctrl+N`: Create a new ticket in the first visible queue.
 - **View Toggles**:
-    - `Ctrl+M`: Toggle between "Show only my tickets" and "Show all tickets".
+    - `Ctrl+M`: Toggle between "Show my tickets only" and "Show all tickets".
 
 ## Proposed Changes
 

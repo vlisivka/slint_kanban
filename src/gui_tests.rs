@@ -11,7 +11,7 @@ fn setup_test_app() -> (App, Arc<AppController>, PathBuf, tempfile::TempDir) {
     Board::ensure_initialized(&root_path).unwrap();
     let board = Board::load(root_path.clone()).unwrap();
     board
-        .create_ticket("Ticket 1", "Desc 1", "2. ToDo", "user1", "author", 3)
+        .create_ticket("Ticket 1", "Desc 1", "2. To Do", "user1", "author", 3)
         .unwrap();
     board
         .create_ticket("Ticket 2", "Desc 2", "6. Done", "user2", "author", 5)
@@ -47,12 +47,12 @@ fn run_gui_interaction_cycle(ui: &App, controller: &Arc<AppController>, _root_pa
     controller.reload().unwrap();
 
     // 3. Creation & Cancel
-    ui.invoke_test_trigger_add_ticket("2. ToDo".into());
+    ui.invoke_test_trigger_add_ticket("2. To Do".into());
     ui.invoke_test_trigger_cancel_edit();
 
-    ui.invoke_test_trigger_add_ticket("2. ToDo".into());
+    ui.invoke_test_trigger_add_ticket("2. To Do".into());
     ui.invoke_create_ticket(
-        "2. ToDo".into(),
+        "2. To Do".into(),
         "Perf Task".into(),
         "Perf Details".into(),
         "user1".into(),
@@ -62,7 +62,7 @@ fn run_gui_interaction_cycle(ui: &App, controller: &Arc<AppController>, _root_pa
 
     // 4. View & Close
     let queues = ui.get_board_queues();
-    let todo_queue = queues.iter().find(|q| q.id == "2. ToDo").unwrap();
+    let todo_queue = queues.iter().find(|q| q.id == "2. To Do").unwrap();
     let t_view = todo_queue.tickets.row_data(0).unwrap();
     ui.set_active_ticket(t_view);
     ui.set_show_ticket_view_dialog(true);
@@ -89,7 +89,7 @@ fn run_gui_interaction_cycle(ui: &App, controller: &Arc<AppController>, _root_pa
     controller.reload().unwrap();
 
     // 7. Limits
-    ui.invoke_set_queue_limit("2. ToDo".into(), 5);
+    ui.invoke_set_queue_limit("2. To Do".into(), 5);
     controller.reload().unwrap();
 
     // 8. Search History Cycle
@@ -135,7 +135,7 @@ fn test_gui_suite() {
     println!("Starting fuzzy stability test (100 random steps)...");
     let mut rng = rand::thread_rng();
     use rand::Rng;
-    let qids = vec!["1. Incoming", "2. ToDo", "3. Doing", "6. Done"];
+    let qids = vec!["1. Incoming", "2. To Doo", "3. Doing", "6. Done"];
     for i in 0..100 {
         let step_start = std::time::Instant::now();
         match rng.gen_range(0..5) {

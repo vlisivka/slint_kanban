@@ -60,7 +60,7 @@ To realistically verify trend visualization, we will implement a simulation util
 2. **History Generation**:
     - Replays actions for the last 30-60 days.
     - Randomly adds tickets with points (0-10).
-    - Simulates "work" by moving tickets through queues (ToDo -> Doing -> Review -> Done).
+    - Simulates "work" by moving tickets through queues (To Do -> Doing -> Review -> Done).
     - **Point-Based Velocity**: Heavier tickets (more points) stay in "active" queues longer than smaller ones.
     - **Past Timestamps**: Manually writes log entries and README.md fields with adjusted dates to simulate past activity.
 3. **Execution**:

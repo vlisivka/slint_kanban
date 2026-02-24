@@ -41,7 +41,7 @@ fn main() -> anyhow::Result<()> {
     let users = vec!["Alice", "Bob", "Charlie"];
     let queues = vec![
         "1. Incoming",
-        "2. ToDo",
+        "2. To Do",
         "3. Doing",
         "4. Reviewing",
         "5. Testing",

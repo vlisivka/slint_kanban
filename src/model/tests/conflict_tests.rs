@@ -28,7 +28,7 @@ fn test_conflict_resolution_duplicates() {
 
     // Place symlink in two queues
     let q1_path = root_path.join("Queue").join("1. Incoming");
-    let q2_path = root_path.join("Queue").join("2. ToDo");
+    let q2_path = root_path.join("Queue").join("2. To Do");
 
     #[cfg(unix)]
     {

@@ -28,7 +28,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
     -   **Root Directory**: Default is `~/Kanban`. Can be overridden by the first command-line argument.
     -   **Board Overview**: A `README.md` file in the root directory (`~/Kanban/README.md`) that documents the purpose of the board, definitions for each queue, and the development process/rules.
     -   **Tickets directory**: `~/Kanban/Ticket`
-    - **Queues**: Sub-directories within `~/Kanban/Queue`. Sorted alphabetically by directory name. Names should start with a number and a dot (e.g., `1. Incoming`, `2. ToDo`) to ensure predictable ordering.
+    - **Queues**: Sub-directories within `~/Kanban/Queue`. Sorted alphabetically by directory name. Names should start with a number and a dot (e.g., `1. Incoming`, `2. To Do`) to ensure predictable ordering.
     -   **Tickets**: Symlinks from a queue directory to `~/Kanban/Tickets`.
     -   **Ticket Content**: A directory containing:
         -   `README.md`: The main ticket file (metadata + description).
@@ -56,7 +56,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
     -   Create new tickets.
     -   Read ticket content: Clicking on a ticket opens a full-window read-only view with Markdown rendering.
     -   Update ticket content: Editing is triggered by a dedicated "Edit" button. Allows editing raw text/YAML.
-    -   **Delete tickets**: Move tickets from `~/Kanban/Ticket` to `~/Kanban/Deleted` directory (the recycle bin). A confirmation dialog must be shown before this action, explicitly stating that the ticket is being moved to the recycle bin.
+    -   **Delete tickets**: Move tickets from `~/Kanban/Ticket` to `~/Kanban/Deleted` directory (the Recycle Bin). A confirmation dialog must be shown before this action, explicitly stating that the ticket is being moved to the Recycle Bin.
 4.  **Ticket Interaction**:
     -   **Click**: Opens read-only details view with Markdown support.
     -   **Edit Button**: Opens the editor for raw `README.md` content.
@@ -66,7 +66,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
     -   Support linking between tickets using these IDs (e.g., `#abc123`).
     -   IDs must be short, easy to enter, and consists only of lowercase letters and digits.
 6.  **Limits on queues**:
-    -  ToDo queue - no more than 21 item (configurable).
+    -  To Do queue - no more than 21 item (configurable).
     -  Doing queue - no more than 5 items (configurable).
 
 7.  **Multi-user Support**:
@@ -98,7 +98,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
             -   This option can be toggled in the user settings.
             -   Administrators have this option disabled by default and can manage any ticket.
         -   **Queue Conflict Resolution**: In a decentralized setup, a ticket might end up in multiple queues or no queues due to synchronization delays.
-            -   **Multiple Queues**: If a ticket symlink exists in multiple queue directories, the application resolves the conflict by keeping the symlink in the queue that is "furthest" from the start of the board (e.g., if it's in both "ToDo" and "Done", it stays in "Done"). It is automatically removed from all other queues.
+            -   **Multiple Queues**: If a ticket symlink exists in multiple queue directories, the application resolves the conflict by keeping the symlink in the queue that is "furthest" from the start of the board (e.g., if it's in both "To Do" and "Done", it stays in "Done"). It is automatically removed from all other queues.
             -   **No Queues**: If a ticket exists in the `Tickets/` directory but is not referenced by any symlink in the `Queue/` directory, it is automatically added to the **first visible** queue on the board.
 
 8.  **Command Line Interface (CLI)**:
@@ -166,7 +166,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
     - **GUI Tests**: Mandatory for critical UI interactions and state transitions using `slint::testing` and `i-slint-backend-testing`.
     - **Assertions**: All `assert!` and `assert_eq!` calls in tests MUST contain a descriptive message explaining the expected behavior and providing guidance on how to fix the issue if the assertion fails.
 
-- **Initialization**: Automatically create the root directory and sub-directories (`Ticket`, `Queue`). Create default queues (`Incoming`, `ToDo`, `Doing`, `Reviewing`, `Testing`, `Done`, `Archive`) **only if no queues already exist** in the `Queue` directory.
+- **Initialization**: Automatically create the root directory and sub-directories (`Ticket`, `Queue`). Create default queues (`Incoming`, `To Do`, `Doing`, `Reviewing`, `Testing`, `Done`, `Archive`) **only if no queues already exist** in the `Queue` directory.
 
 ## Future Enhancements
 
@@ -175,7 +175,7 @@ The following features are planned for future releases:
 1. **Markdown Rendering**: Full Markdown rendering in ticket detail view with support for formatting, lists, code blocks, and other Markdown features.
 
 2. **Queue Limits**: Configurable limits on the number of tickets per queue with visual indicators and enforcement:
-   - ToDo queue: Maximum 21 items (configurable)
+   - To Dooooo queue: Maximum 21 items (configurable)
    - Doing queue: Maximum 5 items (configurable)
    - Visual warnings when approaching limits
 

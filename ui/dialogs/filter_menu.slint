@@ -52,7 +52,7 @@ export component FilterMenu inherits Rectangle {
         }
 
         check-my-tickets := CheckBox {
-            text: "Show only my tickets";
+            text: "Show my tickets only";
             checked <=> UserGlobal.show-only-mine;
             toggled => {
                 UserGlobal.toggle-show-only-mine(self.checked);
@@ -60,7 +60,7 @@ export component FilterMenu inherits Rectangle {
         }
 
         CheckBox {
-            text: "Manage only my tickets";
+            text: "Manage my tickets only";
             checked <=> UserGlobal.manage-only-mine;
             toggled => {
                 UserGlobal.toggle-manage-only-mine(self.checked);

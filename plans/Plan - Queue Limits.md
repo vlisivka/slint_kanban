@@ -4,7 +4,7 @@
 Implement configurable queue limits with visual indicators and enforcement to prevent queues from becoming overloaded.
 
 ## Requirements (from SPECIFICATION.md)
-- ToDo queue: Maximum 21 items (configurable)
+- To Do queue: Maximum 21 items (configurable)
 - Doing queue: Maximum 5 items (configurable)
 - Visual warnings when approaching limits
 - Prevent adding tickets when limit reached
@@ -15,7 +15,7 @@ Implement configurable queue limits with visual indicators and enforcement to pr
 - Add `toml` crate dependency to `Cargo.toml`
 - Create `Config` struct in `model.rs` to hold queue limits
 - Implement `Config::load()` to read from `~/Kanban/config.toml`
-- Implement `Config::default()` with specification defaults (ToDo=21, Doing=5)
+- Implement `Config::default()` with specification defaults (To Do=21, Doing=5)
 - Create default config file if it doesn't exist
 
 ### 2. Data Model Updates
@@ -63,7 +63,7 @@ Implement configurable queue limits with visual indicators and enforcement to pr
 ```toml
 # ~/Kanban/config.toml
 [queue_limits]
-"2. ToDo" = 21
+"2. To Do" = 21
 "3. Doing" = 5
 ```
 

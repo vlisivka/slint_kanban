@@ -38,7 +38,7 @@
 ### Manual Verification
 1.  Run the app.
 2.  Open a terminal.
-3.  `touch ~/Kanban/Queue/ToDo/new_ticket_link` (simulated).
+3.  `touch ~/Kanban/Queue/To Do/new_ticket_link` (simulated).
 4.  Observe the app UI updates automatically.
 5.  `rm ~/Kanban/Tickets/T1/README.md`.
 6.  Observe update.

@@ -23,7 +23,7 @@ fn get_ticket_cache() -> &'static Mutex<HashMap<PathBuf, (SystemTime, Ticket)>> 
 /// Default queue names created when initializing a new board.
 const DEFAULT_QUEUES: &[&str] = &[
     "1. Incoming",
-    "2. ToDo",
+    "2. To Do",
     "3. Doing",
     "4. Reviewing",
     "5. Testing",
@@ -54,7 +54,7 @@ Detailed analytics are available via the **Board Info** -> **Statistics** button
 - **Board Completion Rate**: `(Done Tickets) / (Total Tickets - Archived Tickets)`. This represents the overall progress of the project, excluding tasks that have been archived.
 - **Sprint Completion Rate**: This metric tracks performance during the active sprint. It is calculated as `(Completed in Sprint) / (Active in Sprint)`, where "Active" includes any ticket created or modified during the sprint period.
 - **Lead Time**: The total time elapsed from the moment a ticket is created until it reaches the "Done" queue. It measures the customer's perspective of time.
-- **Cycle Time**: The time spent actively working on a task. It measures the duration from when a ticket leaves the "starting" queues (e.g., ToDo) until it enters a "done" queue.
+- **Cycle Time**: The time spent actively working on a task. It measures the duration from when a ticket leaves the "starting" queues (e.g., To Dooooo) until it enters a "done" queue.
 
 ## Sprints
 Sprints are time-boxed iterations (usually 1-2 weeks) that help the team focus on a specific set of tasks.
@@ -66,7 +66,7 @@ Sprints are time-boxed iterations (usually 1-2 weeks) that help the team focus o
 Customize your board by editing `config.toml`:
 - **users**: Define team members to enable assignment.
 - **queue_limits**: Set WIP (Work In Progress) limits to prevent bottlenecks.
-- **workflows**: Customize which queues are considered "start" (e.g., ToDo) and "done" (e.g., Done, Archive) for accurate time tracking.
+- **workflows**: Customize which queues are considered "start" (e.g., To Dooooooo) and "done" (e.g., Done, Archive) for accurate time tracking.
 - **points_scale**: Customize point values and their meaning (default setup is 1-10).
 
 ## Estimation (Points)
@@ -129,7 +129,7 @@ impl Board {
             let config_path = root_path.join("config.toml");
             if !config_path.exists() {
                 let mut default_config = Config::default();
-                default_config.set_limit("2. ToDo".to_string(), 21);
+                default_config.set_limit("2. To Dooo".to_string(), 21);
                 default_config.set_limit("3. Doing".to_string(), 5);
                 default_config.write(root_path)?;
             }

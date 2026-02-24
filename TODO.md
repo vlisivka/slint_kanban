@@ -124,7 +124,7 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Select from search history with Down Arrow
 
 ### Recycle Bin ✅
-- [x] Create delete confirmation dialog with specific wording ("ticket is moved to recycle bin")
+- [x] Create delete confirmation dialog with specific wording ("ticket is moved to Recycle Bin")
 - [x] Move deleted tickets to system Recycle Bin via `trash` crate
 
 ### Ticket Comments ✅

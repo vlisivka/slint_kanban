@@ -30,7 +30,7 @@ fn test_get_board_summary() {
 
     let mut q2 = crate::model::queue::Queue {
         id: "2".into(),
-        name: "ToDo".into(),
+        name: "To Do".into(),
         tickets: vec![],
         limit: Some(5),
         visible: true,
@@ -76,11 +76,11 @@ fn test_get_board_summary() {
     assert_eq!(summary.queues[0].limit, None, "Incoming has no limit");
 
     assert_eq!(
-        summary.queues[1].name, "ToDo",
+        summary.queues[1].name, "To Do",
         "Second queue name should match"
     );
-    assert_eq!(summary.queues[1].count, 2, "ToDo should have 2 tickets");
-    assert_eq!(summary.queues[1].limit, Some(5), "ToDo has limit 5");
+    assert_eq!(summary.queues[1].count, 2, "To Do should have 2 tickets");
+    assert_eq!(summary.queues[1].limit, Some(5), "To Do has limit 5");
 
     assert_eq!(
         summary.users.len(),
@@ -143,7 +143,7 @@ fn test_parse_log_file() -> anyhow::Result<()> {
 | **Date** | **Action** | **Action description** | **JSON** |\n\
 | :--- | :--- | :--- | :--- |\n\
 | 2026-02-22T10:00:00Z | CREATE_TICKET | Created Task A | `{\"action\":\"CREATE_TICKET\", \"id\":\"123\", \"title\":\"Task A\", \"queue\":\"Incoming\"}` |\n\
-| 2026-02-22T10:05:00Z | CHANGE_STATUS | Moved to ToDo | `{\"action\":\"CHANGE_STATUS\", \"id\":\"123\", \"from\":\"Incoming\", \"to\":\"ToDo\"}` |\n";
+| 2026-02-22T10:05:00Z | CHANGE_STATUS | Moved to To Do | `{\"action\":\"CHANGE_STATUS\", \"id\":\"123\", \"from\":\"Incoming\", \"to\":\"To Do\"}` |\n";
 
     fs::write(&log_path, log_content)?;
 

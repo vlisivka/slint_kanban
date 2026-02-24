@@ -16,7 +16,7 @@
     -   `id`: String (matches directory name in `~/Kanban/Queue`).
     -   `name`: String (display name, same as id for now).
     -   `tickets`: Vec<Ticket>.
-    -   `max_tickets`: Option<u32> (for limits: ToDo=21, Doing=5).
+    -   `max_tickets`: Option<u32> (for limits: To Do=21, Doing=5).
 -   **Struct `Board`**:
     -   `queues`: Vec<Queue>.
     -   `tickets_path`: PathBuf (`~/Kanban/Tickets`).

@@ -564,7 +564,7 @@ mod tests {
                 payload: ActionPayload::CreateTicket {
                     id: "t1".to_string(),
                     title: "T1".to_string(),
-                    queue: "ToDo".to_string(),
+                    queue: "To Doo".to_string(),
                     points: 5,
                 },
             },
@@ -574,7 +574,7 @@ mod tests {
                 description: "Moved T1".to_string(),
                 payload: ActionPayload::ChangeStatus {
                     id: "t1".to_string(),
-                    from: "ToDo".to_string(),
+                    from: "To Do".to_string(),
                     to: "Done".to_string(),
                 },
             },

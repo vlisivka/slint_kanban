@@ -1,7 +1,7 @@
 # Plan - Fix Double Reload
 
 ## Problem
-When the user changes the active user or toggles the "Show only my tickets" filter, the application reloads the board twice:
+When the user changes the active user or toggles the "Show my tickets only" filter, the application reloads the board twice:
 1. Immediately after the change (manual trigger).
 2. ~100ms later when the file watcher detects the change to `config.toml`.
 

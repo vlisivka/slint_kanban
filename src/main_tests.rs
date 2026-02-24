@@ -109,12 +109,12 @@ fn test_cli_move() -> anyhow::Result<()> {
     let id = env.board()?.queues[0].tickets[0].id.clone();
 
     // Valid move
-    env.run(&["move", "-i", &id, "-q", "2. ToDo"])?;
+    env.run(&["move", "-i", &id, "-q", "2. To Do"])?;
     let board = env.board()?;
     assert!(board
         .queues
         .iter()
-        .find(|q| q.id == "2. ToDo")
+        .find(|q| q.id == "2. To Do")
         .unwrap()
         .tickets
         .iter()
@@ -243,7 +243,7 @@ fn test_cli_list() -> anyhow::Result<()> {
         "--assign-to",
         "Alice",
     ])?;
-    env.run(&["add", "-t", "Task B", "-d", "KeywordX", "-q", "2. ToDo"])?;
+    env.run(&["add", "-t", "Task B", "-d", "KeywordX", "-q", "2. To Do"])?;
 
     // List all
     let out = env.run(&["list"])?;
@@ -349,7 +349,15 @@ fn test_cli_stats() -> anyhow::Result<()> {
         "--assign-to",
         "Alice",
     ])?;
-    env.run(&["add", "-t", "Task 2", "-q", "2. ToDo", "--assign-to", "Bob"])?;
+    env.run(&[
+        "add",
+        "-t",
+        "Task 2",
+        "-q",
+        "2. To Do",
+        "--assign-to",
+        "Bob",
+    ])?;
     env.run(&["add", "-t", "Task 3", "-q", "1. Incoming"])?;
 
     let out = env.run(&["stats"])?;
@@ -359,7 +367,7 @@ fn test_cli_stats() -> anyhow::Result<()> {
 
     assert!(out.contains("== Tickets per Queue =="));
     assert!(out.contains("1. Incoming              2      -     -"));
-    assert!(out.contains("2. ToDo                  1     21    4%"));
+    assert!(out.contains("2. To Do                  1     21    4%"));
 
     assert!(out.contains("== Tickets per User =="));
     assert!(out.contains("Alice                    1"));
