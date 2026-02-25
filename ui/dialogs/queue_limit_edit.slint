@@ -37,7 +37,7 @@ export component QueueLimitEdit inherits Rectangle {
                 spacing: 20px;
 
                 Text {
-                    text: "Set Limit for " + queue_name;
+                    text: @tr("Set Limit for {}", queue_name);
                     font-size: 20px;
                     font-weight: 700;
                     horizontal-alignment: center;
@@ -46,7 +46,7 @@ export component QueueLimitEdit inherits Rectangle {
                 VerticalLayout {
                     spacing: 8px;
                     Text {
-                        text: "Max Tickets";
+                        text: @tr("Max Tickets");
                         font-size: 11px;
                         font-weight: 800;
                         opacity: 0.6;
@@ -54,7 +54,7 @@ export component QueueLimitEdit inherits Rectangle {
 
                     limit-input := LineEdit {
                         text <=> limit_text;
-                        placeholder-text: "e.g. 5, 21";
+                        placeholder-text: @tr("e.g. 5, 21");
                         height: 40px;
                         input-type: number;
                     }
@@ -63,7 +63,7 @@ export component QueueLimitEdit inherits Rectangle {
                 HorizontalLayout {
                     spacing: 12px;
                     Button {
-                        text: "Cancel";
+                        text: @tr("Cancel");
                         clicked => {
                             cancel();
                         }
@@ -71,7 +71,7 @@ export component QueueLimitEdit inherits Rectangle {
                     }
 
                     Button {
-                        text: "Remove Limit";
+                        text: @tr("Remove Limit");
                         clicked => {
                             remove-limit(queue_id);
                         }
@@ -79,7 +79,7 @@ export component QueueLimitEdit inherits Rectangle {
                     }
 
                     save-btn := Button {
-                        text: "Save";
+                        text: @tr("Save");
                         primary: true;
                         clicked => {
                             save(queue_id, limit_text.to-float());

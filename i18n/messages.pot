@@ -1,0 +1,1019 @@
+# #-#-#-#-#  slint.pot (PACKAGE VERSION)  #-#-#-#-#
+#
+# #-#-#-#-#  rust.pot (PACKAGE VERSION)  #-#-#-#-#
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"#-#-#-#-#  slint.pot (PACKAGE VERSION)  #-#-#-#-#\n"
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2026-02-25 06:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: \n"
+"#-#-#-#-#  rust.pot (PACKAGE VERSION)  #-#-#-#-#\n"
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-02-25 07:27+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ui/dialogs/warning_dialog.slint:52
+msgctxt "WarningDialog"
+msgid "Warning"
+msgstr ""
+
+#: ui/dialogs/warning_dialog.slint:66
+msgctxt "WarningDialog"
+msgid "OK"
+msgstr ""
+
+#: ui/dialogs/queue_limit_edit.slint:40
+msgctxt "QueueLimitEdit"
+msgid "Set Limit for {}"
+msgstr ""
+
+#: ui/dialogs/queue_limit_edit.slint:49
+msgctxt "QueueLimitEdit"
+msgid "Max Tickets"
+msgstr ""
+
+#: ui/dialogs/queue_limit_edit.slint:57
+msgctxt "QueueLimitEdit"
+msgid "e.g. 5, 21"
+msgstr ""
+
+#: ui/dialogs/queue_limit_edit.slint:66
+msgctxt "QueueLimitEdit"
+msgid "Cancel"
+msgstr ""
+
+#: ui/dialogs/queue_limit_edit.slint:74
+msgctxt "QueueLimitEdit"
+msgid "Remove Limit"
+msgstr ""
+
+#: ui/dialogs/queue_limit_edit.slint:82
+msgctxt "QueueLimitEdit"
+msgid "Save"
+msgstr ""
+
+#: ui/dialogs/filter_menu.slint:32
+msgctxt "FilterMenu"
+msgid "User Settings"
+msgstr ""
+
+#: ui/dialogs/filter_menu.slint:40
+msgctxt "FilterMenu"
+msgid "Active User:"
+msgstr ""
+
+#: ui/dialogs/filter_menu.slint:55
+msgctxt "FilterMenu"
+msgid "Show my tickets only"
+msgstr ""
+
+#: ui/dialogs/filter_menu.slint:63
+msgctxt "FilterMenu"
+msgid "Manage my tickets only"
+msgstr ""
+
+#: ui/dialogs/filter_menu.slint:78
+msgctxt "FilterMenu"
+msgid "Visible Queues"
+msgstr ""
+
+#: ui/dialogs/filter_menu.slint:104
+msgctxt "FilterMenu"
+msgid "Filter by Date Range"
+msgstr ""
+
+#: ui/dialogs/filter_menu.slint:114
+msgctxt "FilterMenu"
+msgid "From:"
+msgstr ""
+
+#: ui/dialogs/filter_menu.slint:131
+msgctxt "FilterMenu"
+msgid "To:"
+msgstr ""
+
+#: ui/dialogs/filter_menu.slint:149
+msgctxt "FilterMenu"
+msgid "Close"
+msgstr ""
+
+#: ui/dialogs/search_history_menu.slint:24
+msgctxt "SearchHistoryMenu"
+msgid "Recent Searches"
+msgstr ""
+
+#: ui/dialogs/search_history_menu.slint:68
+msgctxt "SearchHistoryMenu"
+msgid "No history yet"
+msgstr ""
+
+#: ui/dialogs/search_history_menu.slint:76
+msgctxt "SearchHistoryMenu"
+msgid "Close"
+msgstr ""
+
+#: ui/dialogs/delete_confirm_dialog.slint:55
+msgctxt "DeleteConfirmDialog"
+msgid "Delete Ticket"
+msgstr ""
+
+#: ui/dialogs/delete_confirm_dialog.slint:65
+msgctxt "DeleteConfirmDialog"
+msgid "Are you sure you want to delete ticket #{}?"
+msgstr ""
+
+#: ui/dialogs/delete_confirm_dialog.slint:73
+msgctxt "DeleteConfirmDialog"
+msgid "\"{}\""
+msgstr ""
+
+#: ui/dialogs/delete_confirm_dialog.slint:81
+msgctxt "DeleteConfirmDialog"
+msgid "The ticket will be moved to the Recycle Bin."
+msgstr ""
+
+#: ui/dialogs/delete_confirm_dialog.slint:93
+msgctxt "DeleteConfirmDialog"
+msgid "Cancel"
+msgstr ""
+
+#: ui/dialogs/delete_confirm_dialog.slint:100
+msgctxt "DeleteConfirmDialog"
+msgid "Delete"
+msgstr ""
+
+#: ui/dialogs/ticket_edit.slint:46
+msgctxt "TicketEdit"
+msgid "Cancel"
+msgstr ""
+
+#: ui/dialogs/ticket_edit.slint:58
+msgctxt "TicketEdit"
+msgid "Create New Ticket"
+msgstr ""
+
+#: ui/dialogs/ticket_edit.slint:58
+msgctxt "TicketEdit"
+msgid "Edit Ticket "
+msgstr ""
+
+#: ui/dialogs/ticket_edit.slint:71
+msgctxt "TicketEdit"
+msgid "Save Ticket"
+msgstr ""
+
+#: ui/dialogs/ticket_edit.slint:87
+msgctxt "TicketEdit"
+msgid "Author"
+msgstr ""
+
+#: ui/dialogs/ticket_edit.slint:105
+msgctxt "TicketEdit"
+msgid "Assigned To"
+msgstr ""
+
+#: ui/dialogs/ticket_edit.slint:115
+msgctxt "TicketEdit"
+msgid "<unassigned>"
+msgstr ""
+
+#: ui/dialogs/ticket_edit.slint:135
+msgctxt "TicketEdit"
+msgid "Points"
+msgstr ""
+
+#: ui/dialogs/ticket_edit.slint:178
+msgctxt "TicketEdit"
+msgid "Title"
+msgstr ""
+
+#: ui/dialogs/ticket_edit.slint:186 ui/dialogs/ticket_edit.slint:202
+msgctxt "TicketEdit"
+msgid "What needs to be done?"
+msgstr ""
+
+#: ui/dialogs/ticket_edit.slint:194
+msgctxt "TicketEdit"
+msgid "Description"
+msgstr ""
+
+#: ui/dialogs/ticket_edit.slint:210
+msgctxt "TicketEdit"
+msgid "Attach File"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:55
+msgctxt "TicketView"
+msgid "Edit"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:65
+msgctxt "TicketView"
+msgid "📁 Attachments ({})"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:73
+msgctxt "TicketView"
+msgid "📊 Statistics"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:101
+msgctxt "TicketView"
+msgid "Assigned to: {}"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "⭐ {} pts (~{})"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "1 day"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "2 days"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "3 days"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "4 days"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "1 week"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "2 weeks"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "1 month"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "2-3 months"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "6 months"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "1 year"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "{} pts"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:116
+msgctxt "TicketView"
+msgid "Author: {}"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:125
+msgctxt "TicketView"
+msgid "Created: {}"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:132
+msgctxt "TicketView"
+msgid "Updated: {}"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:140
+msgctxt "TicketView"
+msgid "Close"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:163
+msgctxt "TicketView"
+msgid "Related Tickets:"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:204
+msgctxt "TicketView"
+msgid "Comments:"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:218
+msgctxt "TicketView"
+msgid "{} at {}"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:269
+msgctxt "TicketView"
+msgid "Add a comment:"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:281
+msgctxt "TicketView"
+msgid "Attach File"
+msgstr ""
+
+#: ui/dialogs/ticket_view.slint:297
+msgctxt "TicketView"
+msgid "Post Comment"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:62
+msgctxt "AdminSettings"
+msgid "Administrator Settings"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:68
+msgctxt "AdminSettings"
+msgid "Close"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:81
+msgctxt "AdminSettings"
+msgid "Documentation"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:89
+msgctxt "AdminSettings"
+msgid "Users"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:97
+msgctxt "AdminSettings"
+msgid "Queues"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:105
+msgctxt "AdminSettings"
+msgid "Sprints"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:117
+msgctxt "AdminSettings"
+msgid "Edit Board Overview (README.md)"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:131
+msgctxt "AdminSettings"
+msgid "Save Documentation"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:143
+msgctxt "AdminSettings"
+msgid "Manage Shared Users"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:152
+msgctxt "AdminSettings"
+msgid "Enter new username..."
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:162
+msgctxt "AdminSettings"
+msgid "Add User"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:204
+msgctxt "AdminSettings"
+msgid "Manage Board Queues"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:213
+msgctxt "AdminSettings"
+msgid "Enter new queue name (e.g., 8. Optional)..."
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:223
+msgctxt "AdminSettings"
+msgid "Add Queue"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:254
+msgctxt "AdminSettings"
+msgid "({} tickets)"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:275
+msgctxt "AdminSettings"
+msgid "Manage Sprints"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:284
+msgctxt "AdminSettings"
+msgid "Sprint Name"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:290
+msgctxt "AdminSettings"
+msgid "Start (YYYY-MM-DD)"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:296
+msgctxt "AdminSettings"
+msgid "End (YYYY-MM-DD)"
+msgstr ""
+
+#: ui/dialogs/admin_settings.slint:301
+msgctxt "AdminSettings"
+msgid "Add Sprint"
+msgstr ""
+
+#: ui/components/kanban_column.slint:41
+msgctxt "KanbanColumn"
+msgid "{} pts total"
+msgstr ""
+
+#: ui/components/kanban_column.slint:95
+msgctxt "KanbanColumn"
+msgid "{}/{}"
+msgstr ""
+
+#: ui/components/ticket_card.slint:100
+msgctxt "TicketCard"
+msgid "✍ {}"
+msgstr ""
+
+#: ui/components/ticket_card.slint:107
+msgctxt "TicketCard"
+msgid "👤 {}"
+msgstr ""
+
+#: ui/components/ticket_card.slint:119
+msgctxt "TicketCard"
+msgid "⭐ {}"
+msgstr ""
+
+#: ui/components/ticket_card.slint:133
+msgctxt "TicketCard"
+msgid "C: {}"
+msgstr ""
+
+#: ui/components/ticket_card.slint:139
+msgctxt "TicketCard"
+msgid "U: {}"
+msgstr ""
+
+#: ui/sprints_view.slint:24
+msgctxt "SprintsView"
+msgid "Sprints Management"
+msgstr ""
+
+#: ui/sprints_view.slint:34
+msgctxt "SprintsView"
+msgid "Back to Board"
+msgstr ""
+
+#: ui/sprints_view.slint:57
+msgctxt "SprintsView"
+msgid "Sprint Name"
+msgstr ""
+
+#: ui/sprints_view.slint:63
+msgctxt "SprintsView"
+msgid "Start Date"
+msgstr ""
+
+#: ui/sprints_view.slint:69
+msgctxt "SprintsView"
+msgid "End Date"
+msgstr ""
+
+#: ui/sprints_view.slint:83
+msgctxt "SprintsView"
+msgid "No sprints configured."
+msgstr ""
+
+#: ui/stats_view.slint:24
+msgctxt "StatsView"
+msgid "Board Statistics"
+msgstr ""
+
+#: ui/stats_view.slint:34
+msgctxt "StatsView"
+msgid "Back to Board"
+msgstr ""
+
+#: ui/stats_view.slint:49
+msgctxt "StatsView"
+msgid "== Board Summary =="
+msgstr ""
+
+#: ui/stats_view.slint:54
+msgctxt "StatsView"
+msgid "Total tickets: {}"
+msgstr ""
+
+#: ui/stats_view.slint:58
+msgctxt "StatsView"
+msgid "Unassigned: {}"
+msgstr ""
+
+#: ui/stats_view.slint:62
+msgctxt "StatsView"
+msgid "Average Lead Time: {}"
+msgstr ""
+
+#: ui/stats_view.slint:66
+msgctxt "StatsView"
+msgid "Average Cycle Time: {}"
+msgstr ""
+
+#: ui/stats_view.slint:72
+msgctxt "StatsView"
+msgid "Ticket Completion Rate: {}"
+msgstr ""
+
+#: ui/stats_view.slint:92
+msgctxt "StatsView"
+msgid "Points: {} / {}"
+msgstr ""
+
+#: ui/stats_view.slint:110
+msgctxt "StatsView"
+msgid "Points Completion Rate: {}"
+msgstr ""
+
+#: ui/stats_view.slint:118
+msgctxt "StatsView"
+msgid "Sprint Completion Rate (Tickets): {}"
+msgstr ""
+
+#: ui/stats_view.slint:141
+msgctxt "StatsView"
+msgid "== Trends (Total vs Done Points) =="
+msgstr ""
+
+#: ui/stats_view.slint:214
+msgctxt "StatsView"
+msgid "Total Points (Scope)"
+msgstr ""
+
+#: ui/stats_view.slint:230
+msgctxt "StatsView"
+msgid "Done Points (Completed)"
+msgstr ""
+
+#: ui/stats_view.slint:238
+msgctxt "StatsView"
+msgid "Early stages show only Total Points as work needs time to be completed."
+msgstr ""
+
+#: ui/stats_view.slint:249
+msgctxt "StatsView"
+msgid "== Sprint Burndown Chart =="
+msgstr ""
+
+#: ui/stats_view.slint:330
+msgctxt "StatsView"
+msgid "Remaining Points"
+msgstr ""
+
+#: ui/stats_view.slint:346
+msgctxt "StatsView"
+msgid "Ideal Burndown"
+msgstr ""
+
+#: ui/stats_view.slint:358
+msgctxt "StatsView"
+msgid "== Tickets per Queue =="
+msgstr ""
+
+#: ui/stats_view.slint:366
+msgctxt "StatsView"
+msgid "Queue"
+msgstr ""
+
+#: ui/stats_view.slint:372 ui/stats_view.slint:437
+msgctxt "StatsView"
+msgid "Count"
+msgstr ""
+
+#: ui/stats_view.slint:379
+msgctxt "StatsView"
+msgid "Limit"
+msgstr ""
+
+#: ui/stats_view.slint:386
+msgctxt "StatsView"
+msgid "Usage"
+msgstr ""
+
+#: ui/stats_view.slint:423
+msgctxt "StatsView"
+msgid "== Tickets per User =="
+msgstr ""
+
+#: ui/stats_view.slint:431
+msgctxt "StatsView"
+msgid "User"
+msgstr ""
+
+#: ui/app.slint:149
+msgctxt "App"
+msgid "Slint Kanban"
+msgstr ""
+
+#: ui/app.slint:235
+msgctxt "App"
+msgid "Search:"
+msgstr ""
+
+#: ui/app.slint:245
+msgctxt "App"
+msgid "Filter titles, descriptions or IDs..."
+msgstr ""
+
+#: ui/app.slint:292
+msgctxt "App"
+msgid "History"
+msgstr ""
+
+#: ui/app.slint:299
+msgctxt "App"
+msgid "Board Info"
+msgstr ""
+
+#: ui/app.slint:313
+msgctxt "App"
+msgid "🏃 Sprint {}: {}"
+msgstr ""
+
+#: ui/app.slint:334
+msgctxt "App"
+msgid "🛠 Admin"
+msgstr ""
+
+#: ui/app.slint:418
+msgctxt "App"
+msgid "New Ticket"
+msgstr ""
+
+#: ui/app.slint:458
+msgctxt "App"
+msgid "Moving #{}"
+msgstr ""
+
+#: src/main.rs:28
+msgid "Using Kanban root: {}"
+msgstr ""
+
+#: src/main.rs:44
+msgid "Failed to watch directory: {}"
+msgstr ""
+
+#: src/main.rs:55
+msgid "Warning: Failed to watch user config directory: {}"
+msgstr ""
+
+#: src/main.rs:86
+msgid "[WATCHER] Change detected, triggering reload..."
+msgstr ""
+
+#: src/main.rs:89
+msgid "Error reloading board: {}"
+msgstr ""
+
+#: src/main.rs:93
+msgid "Watch error: {}"
+msgstr ""
+
+#: src/main.rs:95
+msgid "Channel error: {}"
+msgstr ""
+
+#: src/main.rs:339
+msgid "Adding ticket: {} to queue: {} with {} points"
+msgstr ""
+
+#: src/main.rs:356
+msgid "Updating ticket: {}"
+msgstr ""
+
+#: src/main.rs:359 src/main.rs:479 src/main.rs:496 src/main.rs:511
+#: src/main.rs:580
+msgid "Ticket not found: {}"
+msgstr ""
+
+#: src/main.rs:362
+msgid ""
+"Access Denied: You can only update tickets assigned to you. Use --admin to "
+"bypass."
+msgstr ""
+
+#: src/main.rs:408 src/main.rs:543
+msgid "<unassigned>"
+msgstr ""
+
+#: src/main.rs:413
+msgid " [{} pts]"
+msgstr ""
+
+#: src/main.rs:434
+msgid "Setting active user to: {}"
+msgstr ""
+
+#: src/main.rs:438
+msgid "Setting show_only_mine to: {}"
+msgstr ""
+
+#: src/main.rs:442
+msgid "Setting manage_only_mine to: {}"
+msgstr ""
+
+#: src/main.rs:447
+msgid "Adding user: {}"
+msgstr ""
+
+#: src/main.rs:476
+msgid "Moving ticket: {} to queue: {}"
+msgstr ""
+
+#: src/main.rs:482
+msgid ""
+"Access Denied: You can only move tickets assigned to you. Use --admin to "
+"bypass."
+msgstr ""
+
+#: src/main.rs:489
+msgid "Ticket not found in any queue: {}"
+msgstr ""
+
+#: src/main.rs:493
+msgid "Removing ticket: {}"
+msgstr ""
+
+#: src/main.rs:499
+msgid ""
+"Access Denied: You can only remove tickets assigned to you. Use --admin to "
+"bypass."
+msgstr ""
+
+#: src/main.rs:505
+msgid "Opening GUI for path: {}"
+msgstr ""
+
+#: src/main.rs:518
+msgid "Unknown"
+msgstr ""
+
+#: src/main.rs:565
+msgid "Adding comment to ticket: {}"
+msgstr ""
+
+#: src/main.rs:590
+msgid "Opening attachments directory: {}"
+msgstr ""
+
+#: src/main.rs:607 src/main.rs:610
+msgid "No attachments found."
+msgstr ""
+
+#: src/main.rs:617
+msgid "No action specified. Use --file, --list, --show, or --open."
+msgstr ""
+
+#: src/main.rs:626
+msgid "No sprints found."
+msgstr ""
+
+#: src/main.rs:654
+msgid "No active sprint for today."
+msgstr ""
+
+#: src/main.rs:671
+msgid "Sprint with number {} already exists."
+msgstr ""
+
+#: src/main.rs:712 src/main.rs:733
+msgid "Sprint {} not found."
+msgstr ""
+
+#: src/main.rs:749
+msgid "== Board Summary =="
+msgstr ""
+
+#: src/main.rs:750
+msgid "Total tickets: {}"
+msgstr ""
+
+#: src/main.rs:754
+msgid "Unassigned:    {}"
+msgstr ""
+
+#: src/main.rs:760
+msgid "Avg Lead Time: {}"
+msgstr ""
+
+#: src/main.rs:763 src/main.rs:774 src/lib.rs:111 src/lib.rs:115
+msgid "{:.1} days"
+msgstr ""
+
+#: src/main.rs:771
+msgid "Avg Cycle Time: {}"
+msgstr ""
+
+#: src/main.rs:780
+msgid "Completion Rate: {:.1}%"
+msgstr ""
+
+#: src/main.rs:783
+msgid "Total Points:    {}"
+msgstr ""
+
+#: src/main.rs:787
+msgid "Done Points:     {}"
+msgstr ""
+
+#: src/main.rs:791
+msgid "Points Completion Rate: {:.1}%"
+msgstr ""
+
+#: src/main.rs:795
+msgid "Sprint Completion: {:.1}% (Tickets)"
+msgstr ""
+
+#: src/main.rs:799
+msgid "== Tickets per Queue =="
+msgstr ""
+
+#: src/main.rs:804
+msgid "{:<20} {:>5} {:>6} {:>5}"
+msgstr ""
+
+#: src/main.rs:832
+msgid "== Tickets per User =="
+msgstr ""
+
+#: src/main.rs:833
+msgid "{:<20} {:>5}"
+msgstr ""
+
+#: src/controller.rs:54
+msgid "UI dropped"
+msgstr ""
+
+#: src/controller.rs:333
+msgid "Access Denied: You can only manage tickets assigned to you."
+msgstr ""
+
+#: src/controller.rs:370
+msgid "Error loading board info: {}"
+msgstr ""
+
+#: src/controller.rs:385
+msgid "Access Denied: You can only delete tickets assigned to you."
+msgstr ""
+
+#: src/controller.rs:440
+msgid "Access Denied: You can only update tickets assigned to you."
+msgstr ""
+
+#: src/controller.rs:523
+msgid "Could not open folder: {}"
+msgstr ""
+
+#: src/controller.rs:526
+msgid "Attachment folder doesn't exist yet."
+msgstr ""
+
+#: src/controller.rs:665
+msgid "Ticket NOT FOUND: {}"
+msgstr ""
+
+#: src/controller.rs:725
+msgid "Failed to save board README: {}"
+msgstr ""
+
+#: src/controller.rs:733
+msgid "Failed to add queue: {}"
+msgstr ""
+
+#: src/controller.rs:743
+msgid "Failed to rename queue: {}"
+msgstr ""
+
+#: src/controller.rs:753
+msgid "Failed to delete queue: {}"
+msgstr ""
+
+#: src/controller.rs:763
+msgid "Failed to add user: {}"
+msgstr ""
+
+#: src/controller.rs:773
+msgid "Failed to remove user: {}"
+msgstr ""
+
+#: src/controller.rs:783
+msgid "Failed to add sprint: {}"
+msgstr ""
+
+#: src/controller.rs:798
+msgid "Failed to update sprint: {}"
+msgstr ""
+
+#: src/model/board.rs:164 src/model/board.rs:175 src/model/board.rs:196
+msgid "Invalid root path"
+msgstr ""
+
+#: src/model/board.rs:178 src/model/board.rs:204
+msgid "Queue already exists: {}"
+msgstr ""
+
+#: src/model/board.rs:201 src/model/board.rs:238
+msgid "Queue not found: {}"
+msgstr ""
+
+#: src/model/board.rs:243
+msgid "Queue is not empty: {}"
+msgstr ""
+
+#: src/model/board.rs:360
+msgid "Sprint {} not found"
+msgstr ""
+
+#: src/model/board.rs:646
+msgid "Source ({}) or target ({}) queue not found"
+msgstr ""
+
+#: src/model/board.rs:689
+msgid "Ticket {} not found in queue {}"
+msgstr ""
+
+#: src/model/board.rs:701
+msgid "Ticket {} not found"
+msgstr ""
+
+#: src/model/board.rs:712
+msgid "Failed to move ticket to trash: {}"
+msgstr ""
+
+#: src/model/board.rs:768
+msgid "Queue {} not found"
+msgstr ""
+
+#: src/model/board.rs:787
+msgid "Failed to generate unique ticket ID after 5 attempts"
+msgstr ""
+
+#: src/model/ticket.rs:142 src/model/ticket.rs:235
+msgid "Invalid ticket path: {}"
+msgstr ""
+
+#: src/model/ticket.rs:148 src/model/ticket.rs:241
+msgid "README.md not found in {}"
+msgstr ""
+
+#: src/model/ticket.rs:154
+msgid "Failed to open README.md in {}: {}"
+msgstr ""
+
+#: src/model/ticket.rs:190 src/model/ticket.rs:253
+msgid "Invalid ticket format (missing frontmatter) in {}"
+msgstr ""
+
+#: src/model/ticket.rs:197 src/model/ticket.rs:263
+msgid "Failed to parse YAML in {}: {}"
+msgstr ""
+
+#: src/model/ticket.rs:247
+msgid "Failed to read README.md in {}: {}"
+msgstr ""
+
+#: src/lib.rs:23 src/lib.rs:43
+msgid "Unknown Ticket"
+msgstr ""

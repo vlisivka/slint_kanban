@@ -146,7 +146,7 @@ export component App inherits Window {
     min-width: 400px;
     min-height: 300px;
 
-    title: "Slint Kanban";
+    title: @tr("Slint Kanban");
     forward-focus: focus_scope;
 
     init => {
@@ -232,7 +232,7 @@ export component App inherits Window {
                         alignment: center;
 
                         Text {
-                            text: "Search:";
+                            text: @tr("Search:");
                             vertical-alignment: center;
                             font-weight: 700;
                         }
@@ -242,7 +242,7 @@ export component App inherits Window {
                             search-input := LineEdit {
                                 width: 100%;
                                 text <=> search_query;
-                                placeholder-text: "Filter titles, descriptions or IDs...";
+                                placeholder-text: @tr("Filter titles, descriptions or IDs...");
                                 edited(text) => {
                                     search-edited(text);
                                 }
@@ -289,14 +289,14 @@ export component App inherits Window {
                         }
 
                         history-btn := Button {
-                            text: "History";
+                            text: @tr("History");
                             clicked => {
                                 show_search_history = !show_search_history;
                             }
                         }
 
                         Button {
-                            text: "Board Info";
+                            text: @tr("Board Info");
                             clicked => {
                                 show-board-info();
                             }
@@ -310,7 +310,7 @@ export component App inherits Window {
                                 padding-right: 8px;
                                 spacing: 4px;
                                 Text {
-                                    text: "🏃 Sprint " + active_sprint.number + ": " + active_sprint.name;
+                                    text: @tr("🏃 Sprint {}: {}", active_sprint.number, active_sprint.name);
                                     vertical-alignment: center;
                                     font-weight: 600;
                                     color: Palette.foreground;
@@ -331,7 +331,7 @@ export component App inherits Window {
                         padding-right: 15px;
                         spacing: 12px;
                         if (is_admin): Button {
-                            text: "🛠 Admin";
+                            text: @tr("🛠 Admin");
                             clicked => {
                                 request-admin-data();
                                 show_admin_settings = true;
@@ -415,7 +415,7 @@ export component App inherits Window {
 
     test-trigger-add-ticket(qid) => {
         editing_ticket_id = "";
-        editing_ticket_title = "New Ticket";
+        editing_ticket_title = @tr("New Ticket");
         editing_ticket_description = "";
         editing_ticket_assignee = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
         editing_ticket_author = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
@@ -455,7 +455,7 @@ export component App inherits Window {
         border-width: 2px;
 
         Text {
-            text: "Moving #" + dragging_ticket_id;
+            text: @tr("Moving #{}", dragging_ticket_id);
             font-weight: 700;
             horizontal-alignment: center;
             vertical-alignment: center;

@@ -216,6 +216,12 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Board initialization and setup logic
   - [x] Internal tools for fixing data corruption or resolving conflicts
 
+### Translate GUI, CLI, and Logs into User Language
+  - [x] Mark all user-facing strings
+  - [x] Extract translatable strings into a `.pot` file
+  - [x] Translate `.pot` file into Ukrainian language
+  - [x] Load translations dynamically
+
 ### Markdown Rendering
 - [ ] Implement Markdown rendering in ticket detail view using Servo
   - [ ] Copy WebView component from Slint "servo" example: https://github.com/slint-ui/slint/tree/master/examples/servo
@@ -233,12 +239,6 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [ ] Export to Markdown
   - [ ] Batch export functionality
   - [ ] Export configuration options
-
-### Translate GUI, CLI, and Logs into User Language
-  - [ ] Mark all user-facing strings
-  - [ ] Extract translatable strings into a `.pot` file
-  - [ ] Translate `.pot` file into Ukrainian language
-  - [ ] Compile in translation statically or load dynamically
 
 ---
 

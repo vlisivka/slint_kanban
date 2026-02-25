@@ -1,0 +1,1018 @@
+# #-#-#-#-#  slint.pot (PACKAGE VERSION)  #-#-#-#-#
+#
+# #-#-#-#-#  rust.pot (PACKAGE VERSION)  #-#-#-#-#
+# Ukrainian translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-02-25 06:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"#-#-#-#-#  slint.pot (PACKAGE VERSION)  #-#-#-#-#\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"#-#-#-#-#  rust.pot (PACKAGE VERSION)  #-#-#-#-#\n"
+
+#: ui/dialogs/warning_dialog.slint:52
+msgctxt "WarningDialog"
+msgid "Warning"
+msgstr "Попередження"
+
+#: ui/dialogs/warning_dialog.slint:66
+msgctxt "WarningDialog"
+msgid "OK"
+msgstr "ОК"
+
+#: ui/dialogs/queue_limit_edit.slint:40
+msgctxt "QueueLimitEdit"
+msgid "Set Limit for {}"
+msgstr "Встановити ліміт для {}"
+
+#: ui/dialogs/queue_limit_edit.slint:49
+msgctxt "QueueLimitEdit"
+msgid "Max Tickets"
+msgstr "Макс. тікетів"
+
+#: ui/dialogs/queue_limit_edit.slint:57
+msgctxt "QueueLimitEdit"
+msgid "e.g. 5, 21"
+msgstr "напр. 5, 21"
+
+#: ui/dialogs/queue_limit_edit.slint:66
+msgctxt "QueueLimitEdit"
+msgid "Cancel"
+msgstr "Скасувати"
+
+#: ui/dialogs/queue_limit_edit.slint:74
+msgctxt "QueueLimitEdit"
+msgid "Remove Limit"
+msgstr "Видалити ліміт"
+
+#: ui/dialogs/queue_limit_edit.slint:82
+msgctxt "QueueLimitEdit"
+msgid "Save"
+msgstr "Зберегти"
+
+#: ui/dialogs/filter_menu.slint:32
+msgctxt "FilterMenu"
+msgid "User Settings"
+msgstr "Налаштування користувача"
+
+#: ui/dialogs/filter_menu.slint:40
+msgctxt "FilterMenu"
+msgid "Active User:"
+msgstr "Активний користувач:"
+
+#: ui/dialogs/filter_menu.slint:55
+msgctxt "FilterMenu"
+msgid "Show my tickets only"
+msgstr "Показувати лише мої тікети"
+
+#: ui/dialogs/filter_menu.slint:63
+msgctxt "FilterMenu"
+msgid "Manage my tickets only"
+msgstr "Керувати лише моїми тікетами"
+
+#: ui/dialogs/filter_menu.slint:78
+msgctxt "FilterMenu"
+msgid "Visible Queues"
+msgstr "Видимі черги"
+
+#: ui/dialogs/filter_menu.slint:104
+msgctxt "FilterMenu"
+msgid "Filter by Date Range"
+msgstr "Фільтр за датою"
+
+#: ui/dialogs/filter_menu.slint:114
+msgctxt "FilterMenu"
+msgid "From:"
+msgstr "Від:"
+
+#: ui/dialogs/filter_menu.slint:131
+msgctxt "FilterMenu"
+msgid "To:"
+msgstr "До:"
+
+#: ui/dialogs/filter_menu.slint:149
+msgctxt "FilterMenu"
+msgid "Close"
+msgstr "Закрити"
+
+#: ui/dialogs/search_history_menu.slint:24
+msgctxt "SearchHistoryMenu"
+msgid "Recent Searches"
+msgstr "Останні пошуки"
+
+#: ui/dialogs/search_history_menu.slint:68
+msgctxt "SearchHistoryMenu"
+msgid "No history yet"
+msgstr "Історія порожня"
+
+#: ui/dialogs/search_history_menu.slint:76
+msgctxt "SearchHistoryMenu"
+msgid "Close"
+msgstr "Закрити"
+
+#: ui/dialogs/delete_confirm_dialog.slint:55
+msgctxt "DeleteConfirmDialog"
+msgid "Delete Ticket"
+msgstr "Видалити тікет"
+
+#: ui/dialogs/delete_confirm_dialog.slint:65
+msgctxt "DeleteConfirmDialog"
+msgid "Are you sure you want to delete ticket #{}?"
+msgstr "Ви впевнені, що хочете видалити тікет #{}?"
+
+#: ui/dialogs/delete_confirm_dialog.slint:73
+msgctxt "DeleteConfirmDialog"
+msgid "\"{}\""
+msgstr "\"{}\""
+
+#: ui/dialogs/delete_confirm_dialog.slint:81
+msgctxt "DeleteConfirmDialog"
+msgid "The ticket will be moved to the Recycle Bin."
+msgstr "Тікет буде переміщено до кошика."
+
+#: ui/dialogs/delete_confirm_dialog.slint:93
+msgctxt "DeleteConfirmDialog"
+msgid "Cancel"
+msgstr "Скасувати"
+
+#: ui/dialogs/delete_confirm_dialog.slint:100
+msgctxt "DeleteConfirmDialog"
+msgid "Delete"
+msgstr "Видалити"
+
+#: ui/dialogs/ticket_edit.slint:46
+msgctxt "TicketEdit"
+msgid "Cancel"
+msgstr "Скасувати"
+
+#: ui/dialogs/ticket_edit.slint:58
+msgctxt "TicketEdit"
+msgid "Create New Ticket"
+msgstr "Створити новий тікет"
+
+#: ui/dialogs/ticket_edit.slint:58
+msgctxt "TicketEdit"
+msgid "Edit Ticket "
+msgstr "Редагувати тікет "
+
+#: ui/dialogs/ticket_edit.slint:71
+msgctxt "TicketEdit"
+msgid "Save Ticket"
+msgstr "Зберегти тікет"
+
+#: ui/dialogs/ticket_edit.slint:87
+msgctxt "TicketEdit"
+msgid "Author"
+msgstr "Автор"
+
+#: ui/dialogs/ticket_edit.slint:105
+msgctxt "TicketEdit"
+msgid "Assigned To"
+msgstr "Виконавець"
+
+#: ui/dialogs/ticket_edit.slint:115
+msgctxt "TicketEdit"
+msgid "<unassigned>"
+msgstr "<не призначено>"
+
+#: ui/dialogs/ticket_edit.slint:135
+msgctxt "TicketEdit"
+msgid "Points"
+msgstr "Бали"
+
+#: ui/dialogs/ticket_edit.slint:178
+msgctxt "TicketEdit"
+msgid "Title"
+msgstr "Заголовок"
+
+#: ui/dialogs/ticket_edit.slint:186 ui/dialogs/ticket_edit.slint:202
+msgctxt "TicketEdit"
+msgid "What needs to be done?"
+msgstr "Що потрібно зробити?"
+
+#: ui/dialogs/ticket_edit.slint:194
+msgctxt "TicketEdit"
+msgid "Description"
+msgstr "Опис"
+
+#: ui/dialogs/ticket_edit.slint:210
+msgctxt "TicketEdit"
+msgid "Attach File"
+msgstr "Прикріпити файл"
+
+#: ui/dialogs/ticket_view.slint:55
+msgctxt "TicketView"
+msgid "Edit"
+msgstr "Редагувати"
+
+#: ui/dialogs/ticket_view.slint:65
+msgctxt "TicketView"
+msgid "📁 Attachments ({})"
+msgstr "📁 Вкладення ({})"
+
+#: ui/dialogs/ticket_view.slint:73
+msgctxt "TicketView"
+msgid "📊 Statistics"
+msgstr "📊 Статистика"
+
+#: ui/dialogs/ticket_view.slint:101
+msgctxt "TicketView"
+msgid "Assigned to: {}"
+msgstr "Виконавець: {}"
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "⭐ {} pts (~{})"
+msgstr "⭐ {} балів (~{})"
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "1 day"
+msgstr "1 день"
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "2 days"
+msgstr "2 дні"
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "3 days"
+msgstr "3 дні"
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "4 days"
+msgstr "4 дні"
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "1 week"
+msgstr "1 тиждень"
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "2 weeks"
+msgstr "2 тижні"
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "1 month"
+msgstr "1 місяць"
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "2-3 months"
+msgstr "2-3 місяці"
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "6 months"
+msgstr "6 місяців"
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "1 year"
+msgstr "1 рік"
+
+#: ui/dialogs/ticket_view.slint:108
+msgctxt "TicketView"
+msgid "{} pts"
+msgstr "{} балів"
+
+#: ui/dialogs/ticket_view.slint:116
+msgctxt "TicketView"
+msgid "Author: {}"
+msgstr "Автор: {}"
+
+#: ui/dialogs/ticket_view.slint:125
+msgctxt "TicketView"
+msgid "Created: {}"
+msgstr "Створено: {}"
+
+#: ui/dialogs/ticket_view.slint:132
+msgctxt "TicketView"
+msgid "Updated: {}"
+msgstr "Оновлено: {}"
+
+#: ui/dialogs/ticket_view.slint:140
+msgctxt "TicketView"
+msgid "Close"
+msgstr "Закрити"
+
+#: ui/dialogs/ticket_view.slint:163
+msgctxt "TicketView"
+msgid "Related Tickets:"
+msgstr "Пов'язані тікети:"
+
+#: ui/dialogs/ticket_view.slint:204
+msgctxt "TicketView"
+msgid "Comments:"
+msgstr "Коментарі:"
+
+#: ui/dialogs/ticket_view.slint:218
+msgctxt "TicketView"
+msgid "{} at {}"
+msgstr "{} о {}"
+
+#: ui/dialogs/ticket_view.slint:269
+msgctxt "TicketView"
+msgid "Add a comment:"
+msgstr "Додати коментар:"
+
+#: ui/dialogs/ticket_view.slint:281
+msgctxt "TicketView"
+msgid "Attach File"
+msgstr "Прикріпити файл"
+
+#: ui/dialogs/ticket_view.slint:297
+msgctxt "TicketView"
+msgid "Post Comment"
+msgstr "Опублікувати коментар"
+
+#: ui/dialogs/admin_settings.slint:62
+msgctxt "AdminSettings"
+msgid "Administrator Settings"
+msgstr "Налаштування адміністратора"
+
+#: ui/dialogs/admin_settings.slint:68
+msgctxt "AdminSettings"
+msgid "Close"
+msgstr "Закрити"
+
+#: ui/dialogs/admin_settings.slint:81
+msgctxt "AdminSettings"
+msgid "Documentation"
+msgstr "Документація"
+
+#: ui/dialogs/admin_settings.slint:89
+msgctxt "AdminSettings"
+msgid "Users"
+msgstr "Користувачі"
+
+#: ui/dialogs/admin_settings.slint:97
+msgctxt "AdminSettings"
+msgid "Queues"
+msgstr "Черги"
+
+#: ui/dialogs/admin_settings.slint:105
+msgctxt "AdminSettings"
+msgid "Sprints"
+msgstr "Спринти"
+
+#: ui/dialogs/admin_settings.slint:117
+msgctxt "AdminSettings"
+msgid "Edit Board Overview (README.md)"
+msgstr "Редагувати огляд дошки (README.md)"
+
+#: ui/dialogs/admin_settings.slint:131
+msgctxt "AdminSettings"
+msgid "Save Documentation"
+msgstr "Зберегти документацію"
+
+#: ui/dialogs/admin_settings.slint:143
+msgctxt "AdminSettings"
+msgid "Manage Shared Users"
+msgstr "Керування користувачами"
+
+#: ui/dialogs/admin_settings.slint:152
+msgctxt "AdminSettings"
+msgid "Enter new username..."
+msgstr "Введіть ім'я користувача..."
+
+#: ui/dialogs/admin_settings.slint:162
+msgctxt "AdminSettings"
+msgid "Add User"
+msgstr "Додати користувача"
+
+#: ui/dialogs/admin_settings.slint:204
+msgctxt "AdminSettings"
+msgid "Manage Board Queues"
+msgstr "Керування чергами"
+
+#: ui/dialogs/admin_settings.slint:213
+msgctxt "AdminSettings"
+msgid "Enter new queue name (e.g., 8. Optional)..."
+msgstr "Назва нової черги (напр. 8. Факультативно)..."
+
+#: ui/dialogs/admin_settings.slint:223
+msgctxt "AdminSettings"
+msgid "Add Queue"
+msgstr "Додати чергу"
+
+#: ui/dialogs/admin_settings.slint:254
+msgctxt "AdminSettings"
+msgid "({} tickets)"
+msgstr "({} тікетів)"
+
+#: ui/dialogs/admin_settings.slint:275
+msgctxt "AdminSettings"
+msgid "Manage Sprints"
+msgstr "Керування спринтами"
+
+#: ui/dialogs/admin_settings.slint:284
+msgctxt "AdminSettings"
+msgid "Sprint Name"
+msgstr "Назва спринту"
+
+#: ui/dialogs/admin_settings.slint:290
+msgctxt "AdminSettings"
+msgid "Start (YYYY-MM-DD)"
+msgstr "Початок (РРРР-ММ-ДД)"
+
+#: ui/dialogs/admin_settings.slint:296
+msgctxt "AdminSettings"
+msgid "End (YYYY-MM-DD)"
+msgstr "Кінець (РРРР-ММ-ДД)"
+
+#: ui/dialogs/admin_settings.slint:301
+msgctxt "AdminSettings"
+msgid "Add Sprint"
+msgstr "Додати спринт"
+
+#: ui/components/kanban_column.slint:41
+msgctxt "KanbanColumn"
+msgid "{} pts total"
+msgstr "всього {} балів"
+
+#: ui/components/kanban_column.slint:95
+msgctxt "KanbanColumn"
+msgid "{}/{}"
+msgstr "{}/{}"
+
+#: ui/components/ticket_card.slint:100
+msgctxt "TicketCard"
+msgid "✍ {}"
+msgstr "✍ {}"
+
+#: ui/components/ticket_card.slint:107
+msgctxt "TicketCard"
+msgid "👤 {}"
+msgstr "👤 {}"
+
+#: ui/components/ticket_card.slint:119
+msgctxt "TicketCard"
+msgid "⭐ {}"
+msgstr "⭐ {}"
+
+#: ui/components/ticket_card.slint:133
+msgctxt "TicketCard"
+msgid "C: {}"
+msgstr "С: {}"
+
+#: ui/components/ticket_card.slint:139
+msgctxt "TicketCard"
+msgid "U: {}"
+msgstr "О: {}"
+
+#: ui/sprints_view.slint:24
+msgctxt "SprintsView"
+msgid "Sprints Management"
+msgstr "Керування спринтами"
+
+#: ui/sprints_view.slint:34
+msgctxt "SprintsView"
+msgid "Back to Board"
+msgstr "Назад до дошки"
+
+#: ui/sprints_view.slint:57
+msgctxt "SprintsView"
+msgid "Sprint Name"
+msgstr "Назва спринту"
+
+#: ui/sprints_view.slint:63
+msgctxt "SprintsView"
+msgid "Start Date"
+msgstr "Дата початку"
+
+#: ui/sprints_view.slint:69
+msgctxt "SprintsView"
+msgid "End Date"
+msgstr "Дата кінця"
+
+#: ui/sprints_view.slint:83
+msgctxt "SprintsView"
+msgid "No sprints configured."
+msgstr "Спринти не налаштовані."
+
+#: ui/stats_view.slint:24
+msgctxt "StatsView"
+msgid "Board Statistics"
+msgstr "Статистика дошки"
+
+#: ui/stats_view.slint:34
+msgctxt "StatsView"
+msgid "Back to Board"
+msgstr "Назад до дошки"
+
+#: ui/stats_view.slint:49
+msgctxt "StatsView"
+msgid "== Board Summary =="
+msgstr "== Загальний стан =="
+
+#: ui/stats_view.slint:54
+msgctxt "StatsView"
+msgid "Total tickets: {}"
+msgstr "Всього тікетів: {}"
+
+#: ui/stats_view.slint:58
+msgctxt "StatsView"
+msgid "Unassigned: {}"
+msgstr "Не призначено: {}"
+
+#: ui/stats_view.slint:62
+msgctxt "StatsView"
+msgid "Average Lead Time: {}"
+msgstr "Середній Lead Time: {}"
+
+#: ui/stats_view.slint:66
+msgctxt "StatsView"
+msgid "Average Cycle Time: {}"
+msgstr "Середній Cycle Time: {}"
+
+#: ui/stats_view.slint:72
+msgctxt "StatsView"
+msgid "Ticket Completion Rate: {}"
+msgstr "Відсоток завершення тікетів: {}"
+
+#: ui/stats_view.slint:92
+msgctxt "StatsView"
+msgid "Points: {} / {}"
+msgstr "Бали: {} / {}"
+
+#: ui/stats_view.slint:110
+msgctxt "StatsView"
+msgid "Points Completion Rate: {}"
+msgstr "Відсоток завершення за балами: {}"
+
+#: ui/stats_view.slint:118
+msgctxt "StatsView"
+msgid "Sprint Completion Rate (Tickets): {}"
+msgstr "Прогрес спринту (тікети): {}"
+
+#: ui/stats_view.slint:141
+msgctxt "StatsView"
+msgid "== Trends (Total vs Done Points) =="
+msgstr "== Тренди (Всього проти Готово) =="
+
+#: ui/stats_view.slint:214
+msgctxt "StatsView"
+msgid "Total Points (Scope)"
+msgstr "Всього балів (обсяг)"
+
+#: ui/stats_view.slint:230
+msgctxt "StatsView"
+msgid "Done Points (Completed)"
+msgstr "Готові бали (виконано)"
+
+#: ui/stats_view.slint:238
+msgctxt "StatsView"
+msgid "Early stages show only Total Points as work needs time to be completed."
+msgstr "На ранніх етапах відображаються лише загальні бали."
+
+#: ui/stats_view.slint:249
+msgctxt "StatsView"
+msgid "== Sprint Burndown Chart =="
+msgstr "== Діаграма згоряння спринту =="
+
+#: ui/stats_view.slint:330
+msgctxt "StatsView"
+msgid "Remaining Points"
+msgstr "Залишок балів"
+
+#: ui/stats_view.slint:346
+msgctxt "StatsView"
+msgid "Ideal Burndown"
+msgstr "Ідеальне згоряння"
+
+#: ui/stats_view.slint:358
+msgctxt "StatsView"
+msgid "== Tickets per Queue =="
+msgstr "== Тікетів у чергах =="
+
+#: ui/stats_view.slint:366
+msgctxt "StatsView"
+msgid "Queue"
+msgstr "Черга"
+
+#: ui/stats_view.slint:372 ui/stats_view.slint:437
+msgctxt "StatsView"
+msgid "Count"
+msgstr "Кількість"
+
+#: ui/stats_view.slint:379
+msgctxt "StatsView"
+msgid "Limit"
+msgstr "Ліміт"
+
+#: ui/stats_view.slint:386
+msgctxt "StatsView"
+msgid "Usage"
+msgstr "Завантаженість"
+
+#: ui/stats_view.slint:423
+msgctxt "StatsView"
+msgid "== Tickets per User =="
+msgstr "== Тікетів у користувачів =="
+
+#: ui/stats_view.slint:431
+msgctxt "StatsView"
+msgid "User"
+msgstr "Користувач"
+
+#: ui/app.slint:149
+msgctxt "App"
+msgid "Slint Kanban"
+msgstr "Slint Канбан"
+
+#: ui/app.slint:235
+msgctxt "App"
+msgid "Search:"
+msgstr "Пошук:"
+
+#: ui/app.slint:245
+msgctxt "App"
+msgid "Filter titles, descriptions or IDs..."
+msgstr "Шукати в заголовках, описах чи ID..."
+
+#: ui/app.slint:292
+msgctxt "App"
+msgid "History"
+msgstr "Історія"
+
+#: ui/app.slint:299
+msgctxt "App"
+msgid "Board Info"
+msgstr "Огляд дошки"
+
+#: ui/app.slint:313
+msgctxt "App"
+msgid "🏃 Sprint {}: {}"
+msgstr "🏃 Спринт {}: {}"
+
+#: ui/app.slint:334
+msgctxt "App"
+msgid "🛠 Admin"
+msgstr "🛠 Адмін"
+
+#: ui/app.slint:418
+msgctxt "App"
+msgid "New Ticket"
+msgstr "Новий тікет"
+
+#: ui/app.slint:458
+msgctxt "App"
+msgid "Moving #{}"
+msgstr "Переміщення #{}"
+
+#: src/main.rs:28
+msgid "Using Kanban root: {}"
+msgstr "Використовується корінь Канбан: {}"
+
+#: src/main.rs:44
+msgid "Failed to watch directory: {}"
+msgstr "Не вдалося розпочати спостереження за каталогом: {}"
+
+#: src/main.rs:55
+msgid "Warning: Failed to watch user config directory: {}"
+msgstr ""
+"Попередження: Не вдалося розпочати спостереження за каталогом конфігурації "
+"користувача: {}"
+
+#: src/main.rs:86
+msgid "[WATCHER] Change detected, triggering reload..."
+msgstr "[WATCHER] Виявлено зміни, запуск перевантаження..."
+
+#: src/main.rs:89
+msgid "Error reloading board: {}"
+msgstr "Помилка при перевантаженні дошки: {}"
+
+#: src/main.rs:93
+msgid "Watch error: {}"
+msgstr "Помилка спостереження: {}"
+
+#: src/main.rs:95
+msgid "Channel error: {}"
+msgstr "Помилка каналу: {}"
+
+#: src/main.rs:339
+msgid "Adding ticket: {} to queue: {} with {} points"
+msgstr "Додавання тікета: {} до черги: {} з кількістю балів: {}"
+
+#: src/main.rs:356
+msgid "Updating ticket: {}"
+msgstr "Оновлення тікета: {}"
+
+#: src/main.rs:359 src/main.rs:479 src/main.rs:496 src/main.rs:511
+#: src/main.rs:580
+msgid "Ticket not found: {}"
+msgstr "Тікет не знайдено: {}"
+
+#: src/main.rs:362
+msgid ""
+"Access Denied: You can only update tickets assigned to you. Use --admin to "
+"bypass."
+msgstr ""
+"Доступ заборонено: Ви можете оновлювати лише тікети, призначені вам. "
+"Використовуйте --admin для обходу."
+
+#: src/main.rs:408 src/main.rs:543
+msgid "<unassigned>"
+msgstr "<не призначено>"
+
+#: src/main.rs:413
+msgid " [{} pts]"
+msgstr " [{} бал.]"
+
+#: src/main.rs:434
+msgid "Setting active user to: {}"
+msgstr "Встановлення активного користувача: {}"
+
+#: src/main.rs:438
+msgid "Setting show_only_mine to: {}"
+msgstr "Встановлення show_only_mine: {}"
+
+#: src/main.rs:442
+msgid "Setting manage_only_mine to: {}"
+msgstr "Встановлення manage_only_mine: {}"
+
+#: src/main.rs:447
+msgid "Adding user: {}"
+msgstr "Додавання користувача: {}"
+
+#: src/main.rs:476
+msgid "Moving ticket: {} to queue: {}"
+msgstr "Переміщення тікета: {} до черги: {}"
+
+#: src/main.rs:482
+msgid ""
+"Access Denied: You can only move tickets assigned to you. Use --admin to "
+"bypass."
+msgstr ""
+"Доступ заборонено: Ви можете переміщувати лише тікети, призначені вам. "
+"Використовуйте --admin для обходу."
+
+#: src/main.rs:489
+msgid "Ticket not found in any queue: {}"
+msgstr "Тікет не знайдено в жодній черзі: {}"
+
+#: src/main.rs:493
+msgid "Removing ticket: {}"
+msgstr "Видалення тікета: {}"
+
+#: src/main.rs:499
+msgid ""
+"Access Denied: You can only remove tickets assigned to you. Use --admin to "
+"bypass."
+msgstr ""
+"Доступ заборонено: Ви можете видаляти лише тікети, призначені вам. "
+"Використовуйте --admin для обходу."
+
+#: src/main.rs:505
+msgid "Opening GUI for path: {}"
+msgstr "Відкриття GUI за шляхом: {}"
+
+#: src/main.rs:518
+msgid "Unknown"
+msgstr "Невідомо"
+
+#: src/main.rs:565
+msgid "Adding comment to ticket: {}"
+msgstr "Додавання коментаря до тікета: {}"
+
+#: src/main.rs:590
+msgid "Opening attachments directory: {}"
+msgstr "Відкриття каталогу вкладень: {}"
+
+#: src/main.rs:607 src/main.rs:610
+msgid "No attachments found."
+msgstr "Вкладень не знайдено."
+
+#: src/main.rs:617
+msgid "No action specified. Use --file, --list, --show, or --open."
+msgstr "Дію не вказано. Використовуйте --file, --list, --show або --open."
+
+#: src/main.rs:626
+msgid "No sprints found."
+msgstr "Спринтів не знайдено."
+
+#: src/main.rs:654
+msgid "No active sprint for today."
+msgstr "Немає активного спринту на сьогодні."
+
+#: src/main.rs:671
+msgid "Sprint with number {} already exists."
+msgstr "Спринт із номером {} вже існує."
+
+#: src/main.rs:712 src/main.rs:733
+msgid "Sprint {} not found."
+msgstr "Спринт {} не знайдено."
+
+#: src/main.rs:749
+msgid "== Board Summary =="
+msgstr "== Загальний стан дошки =="
+
+#: src/main.rs:750
+msgid "Total tickets: {}"
+msgstr "Всього тікетів: {}"
+
+#: src/main.rs:754
+msgid "Unassigned:    {}"
+msgstr "Не призначено:  {}"
+
+#: src/main.rs:760
+msgid "Avg Lead Time: {}"
+msgstr "Сер. Lead Time: {}"
+
+#: src/main.rs:763 src/main.rs:774 src/lib.rs:111 src/lib.rs:115
+msgid "{:.1} days"
+msgstr "{:.1} дн."
+
+#: src/main.rs:771
+msgid "Avg Cycle Time: {}"
+msgstr "Сер. Cycle Time: {}"
+
+#: src/main.rs:780
+msgid "Completion Rate: {:.1}%"
+msgstr "Відсоток завершення: {:.1}%"
+
+#: src/main.rs:783
+msgid "Total Points:    {}"
+msgstr "Всього балів:    {}"
+
+#: src/main.rs:787
+msgid "Done Points:     {}"
+msgstr "Готових балів:    {}"
+
+#: src/main.rs:791
+msgid "Points Completion Rate: {:.1}%"
+msgstr "Відсоток завершення за балами: {:.1}%"
+
+#: src/main.rs:795
+msgid "Sprint Completion: {:.1}% (Tickets)"
+msgstr "Прогрес спринту: {:.1}% (Тікети)"
+
+#: src/main.rs:799
+msgid "== Tickets per Queue =="
+msgstr "== Тікетів у чергах =="
+
+#: src/main.rs:804
+msgid "{:<20} {:>5} {:>6} {:>5}"
+msgstr "{:<20} {:>5} {:>6} {:>5}"
+
+#: src/main.rs:832
+msgid "== Tickets per User =="
+msgstr "== Тікетів у користувачів =="
+
+#: src/main.rs:833
+msgid "{:<20} {:>5}"
+msgstr "{:<20} {:>5}"
+
+#: src/controller.rs:54
+msgid "UI dropped"
+msgstr "UI від'єднано"
+
+#: src/controller.rs:333
+msgid "Access Denied: You can only manage tickets assigned to you."
+msgstr "Доступ заборонено: Ви можете керувати лише тікетами, призначеними вам."
+
+#: src/controller.rs:370
+msgid "Error loading board info: {}"
+msgstr "Помилка завантаження інформації про дошку: {}"
+
+#: src/controller.rs:385
+msgid "Access Denied: You can only delete tickets assigned to you."
+msgstr "Доступ заборонено: Ви можете видаляти лише тікети, призначені вам."
+
+#: src/controller.rs:440
+msgid "Access Denied: You can only update tickets assigned to you."
+msgstr "Доступ заборонено: Ви можете оновлювати лише тікети, призначені вам."
+
+#: src/controller.rs:523
+msgid "Could not open folder: {}"
+msgstr "Не вдалося відкрити папку: {}"
+
+#: src/controller.rs:526
+msgid "Attachment folder doesn't exist yet."
+msgstr "Папка вкладень ще не існує."
+
+#: src/controller.rs:665
+msgid "Ticket NOT FOUND: {}"
+msgstr "Тікет НЕ ЗНАЙДЕНО: {}"
+
+#: src/controller.rs:725
+msgid "Failed to save board README: {}"
+msgstr "Не вдалося зберегти README дошки: {}"
+
+#: src/controller.rs:733
+msgid "Failed to add queue: {}"
+msgstr "Не вдалося додати чергу: {}"
+
+#: src/controller.rs:743
+msgid "Failed to rename queue: {}"
+msgstr "Не вдалося перейменувати чергу: {}"
+
+#: src/controller.rs:753
+msgid "Failed to delete queue: {}"
+msgstr "Не вдалося видалити чергу: {}"
+
+#: src/controller.rs:763
+msgid "Failed to add user: {}"
+msgstr "Не вдалося додати користувача: {}"
+
+#: src/controller.rs:773
+msgid "Failed to remove user: {}"
+msgstr "Не вдалося видалити користувача: {}"
+
+#: src/controller.rs:783
+msgid "Failed to add sprint: {}"
+msgstr "Не вдалося додати спринт: {}"
+
+#: src/controller.rs:798
+msgid "Failed to update sprint: {}"
+msgstr "Не вдалося оновити спринт: {}"
+
+#: src/model/board.rs:164 src/model/board.rs:175 src/model/board.rs:196
+msgid "Invalid root path"
+msgstr "Некоректний кореневий шлях"
+
+#: src/model/board.rs:178 src/model/board.rs:204
+msgid "Queue already exists: {}"
+msgstr "Черга вже існує: {}"
+
+#: src/model/board.rs:201 src/model/board.rs:238
+msgid "Queue not found: {}"
+msgstr "Чергу не знайдено: {}"
+
+#: src/model/board.rs:243
+msgid "Queue is not empty: {}"
+msgstr "Черга не порожня: {}"
+
+#: src/model/board.rs:360
+msgid "Sprint {} not found"
+msgstr "Спринт {} не знайдено"
+
+#: src/model/board.rs:646
+msgid "Source ({}) or target ({}) queue not found"
+msgstr "Вихідну ({}) або цільову ({}) чергу не знайдено"
+
+#: src/model/board.rs:689
+msgid "Ticket {} not found in queue {}"
+msgstr "Тікет {} не знайдено в черзі {}"
+
+#: src/model/board.rs:701
+msgid "Ticket {} not found"
+msgstr "Тікет {} не знайдено"
+
+#: src/model/board.rs:712
+msgid "Failed to move ticket to trash: {}"
+msgstr "Не вдалося перемістити тікет до кошика: {}"
+
+#: src/model/board.rs:768
+msgid "Queue {} not found"
+msgstr "Чергу {} не знайдено"
+
+#: src/model/board.rs:787
+msgid "Failed to generate unique ticket ID after 5 attempts"
+msgstr "Не вдалося згенерувати унікальний ID тікета після 5 спроб"
+
+#: src/model/ticket.rs:142 src/model/ticket.rs:235
+msgid "Invalid ticket path: {}"
+msgstr "Некоректний шлях до тікета: {}"
+
+#: src/model/ticket.rs:148 src/model/ticket.rs:241
+msgid "README.md not found in {}"
+msgstr "README.md не знайдено в {}"
+
+#: src/model/ticket.rs:154
+msgid "Failed to open README.md in {}: {}"
+msgstr "Не вдалося відкрити README.md в {}: {}"
+
+#: src/model/ticket.rs:190 src/model/ticket.rs:253
+msgid "Invalid ticket format (missing frontmatter) in {}"
+msgstr "Некоректний формат тікета (відсутній frontmatter) в {}"
+
+#: src/model/ticket.rs:197 src/model/ticket.rs:263
+msgid "Failed to parse YAML in {}: {}"
+msgstr "Не вдалося розібрати YAML в {}: {}"
+
+#: src/model/ticket.rs:247
+msgid "Failed to read README.md in {}: {}"
+msgstr "Не вдалося прочитати README.md в {}: {}"
+
+#: src/lib.rs:23 src/lib.rs:43
+msgid "Unknown Ticket"
+msgstr "Невідомий тікет"

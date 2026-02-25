@@ -21,7 +21,7 @@ export component SearchHistoryMenu inherits Rectangle {
         spacing: 12px;
 
         Text {
-            text: "Recent Searches";
+            text: @tr("Recent Searches");
             font-size: 16px;
             font-weight: 700;
         }
@@ -65,7 +65,7 @@ export component SearchHistoryMenu inherits Rectangle {
         }
 
         if (history.length == 0): Text {
-            text: "No history yet";
+            text: @tr("No history yet");
             font-italic: true;
             opacity: 0.5;
         }
@@ -73,7 +73,7 @@ export component SearchHistoryMenu inherits Rectangle {
         HorizontalLayout {
             alignment: end;
             close-btn := Button {
-                text: "Close";
+                text: @tr("Close");
                 clicked => {
                     close();
                 }

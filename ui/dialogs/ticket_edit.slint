@@ -43,7 +43,7 @@ export component TicketEdit inherits Rectangle {
                     alignment: space-between;
 
                     cancel-btn := Button {
-                        text: "Cancel";
+                        text: @tr("Cancel");
                         width: 100px;
                         height: 40px;
                         clicked => {
@@ -55,7 +55,7 @@ export component TicketEdit inherits Rectangle {
                         alignment: center;
                         spacing: 8px;
                         Text {
-                            text: ticket_id == "" ? "Create New Ticket" : "Edit Ticket ";
+                            text: ticket_id == "" ? @tr("Create New Ticket") : @tr("Edit Ticket ");
                             font-size: 32px;
                             font-weight: 800;
                         }
@@ -68,7 +68,7 @@ export component TicketEdit inherits Rectangle {
                     }
 
                     save-btn := Button {
-                        text: "Save Ticket";
+                        text: @tr("Save Ticket");
                         primary: true;
                         width: 120px;
                         height: 40px;
@@ -84,7 +84,7 @@ export component TicketEdit inherits Rectangle {
                     if author != "": VerticalLayout {
                         spacing: 8px;
                         Text {
-                            text: "Author";
+                            text: @tr("Author");
                             font-size: 11px;
                             font-weight: 800;
                             opacity: 0.6;
@@ -102,7 +102,7 @@ export component TicketEdit inherits Rectangle {
                     VerticalLayout {
                         spacing: 8px;
                         Text {
-                            text: "Assigned To";
+                            text: @tr("Assigned To");
                             font-size: 11px;
                             font-weight: 800;
                             opacity: 0.6;
@@ -112,7 +112,7 @@ export component TicketEdit inherits Rectangle {
                             spacing: 8px;
                             assign-combo := ComboBox {
                                 model: users;
-                                current-value: assigned_to == "" ? "<unassigned>" : assigned_to;
+                                current-value: assigned_to == "" ? @tr("<unassigned>") : assigned_to;
                                 height: 40px;
                                 width: 200px;
                                 selected(val) => {
@@ -132,7 +132,7 @@ export component TicketEdit inherits Rectangle {
                     VerticalLayout {
                         spacing: 8px;
                         Text {
-                            text: "Points";
+                            text: @tr("Points");
                             font-size: 11px;
                             font-weight: 800;
                             opacity: 0.6;
@@ -175,7 +175,7 @@ export component TicketEdit inherits Rectangle {
                 VerticalLayout {
                     spacing: 8px;
                     Text {
-                        text: "Title";
+                        text: @tr("Title");
                         font-size: 11px;
                         font-weight: 800;
                         opacity: 0.6;
@@ -183,7 +183,7 @@ export component TicketEdit inherits Rectangle {
 
                     title-input := LineEdit {
                         text <=> title_text;
-                        placeholder-text: "What needs to be done?";
+                        placeholder-text: @tr("What needs to be done?");
                         height: 40px;
                     }
                 }
@@ -191,7 +191,7 @@ export component TicketEdit inherits Rectangle {
                 VerticalLayout {
                     spacing: 8px;
                     Text {
-                        text: "Description";
+                        text: @tr("Description");
                         font-size: 11px;
                         font-weight: 800;
                         opacity: 0.6;
@@ -199,7 +199,7 @@ export component TicketEdit inherits Rectangle {
 
                     desc-input := TextEdit {
                         text <=> description_text;
-                        placeholder-text: "What needs to be done?";
+                        placeholder-text: @tr("What needs to be done?");
                         preferred-height: 400px;
                         vertical-stretch: 1;
                     }
@@ -207,7 +207,7 @@ export component TicketEdit inherits Rectangle {
                     if ticket_id != "": HorizontalLayout {
                         alignment: end;
                         attach-btn := Button {
-                            text: "Attach File";
+                            text: @tr("Attach File");
                             height: 40px;
                             clicked => {
                                 let link = root.attach-file(ticket_id);

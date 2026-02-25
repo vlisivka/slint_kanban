@@ -52,7 +52,7 @@ export component TicketView inherits Rectangle {
                     HorizontalLayout {
                         spacing: 8px;
                         if ticket.id != "board-info": edit-btn := Button {
-                            text: "Edit";
+                            text: @tr("Edit");
                             enabled: root.can-manage;
                             width: 100px;
                             height: 40px;
@@ -62,7 +62,7 @@ export component TicketView inherits Rectangle {
                         }
 
                         if ticket.id != "board-info" && ticket.attachment_count > 0: Button {
-                            text: "📁 Attachments (" + ticket.attachment_count + ")";
+                            text: @tr("📁 Attachments ({})", ticket.attachment_count);
                             height: 40px;
                             clicked => {
                                 open-attachment-folder(ticket.id);
@@ -70,7 +70,7 @@ export component TicketView inherits Rectangle {
                         }
 
                         if ticket.id == "board-info": Button {
-                            text: "📊 Statistics";
+                            text: @tr("📊 Statistics");
                             height: 40px;
                             clicked => {
                                 request-stats();
@@ -98,14 +98,14 @@ export component TicketView inherits Rectangle {
                         }
 
                         if ticket.assigned_to != "": Text {
-                            text: "Assigned to: " + ticket.assigned_to;
+                            text: @tr("Assigned to: {}", ticket.assigned_to);
                             font-size: 14px;
                             font-weight: 400;
                             horizontal-alignment: center;
                             opacity: 0.6;
                         }
                         if ticket.points > 0: Text {
-                            text: "⭐ " + ticket.points + " pts (~" + (ticket.points == 1 ? "1 day" : ticket.points == 2 ? "2 days" : ticket.points == 3 ? "3 days" : ticket.points == 4 ? "4 days" : ticket.points == 5 ? "1 week" : ticket.points == 6 ? "2 weeks" : ticket.points == 7 ? "1 month" : ticket.points == 8 ? "2-3 months" : ticket.points == 9 ? "6 months" : ticket.points == 10 ? "1 year" : ticket.points + " pts") + ")";
+                            text: @tr("⭐ {} pts (~{})", ticket.points, (ticket.points == 1 ? @tr("1 day") : ticket.points == 2 ? @tr("2 days") : ticket.points == 3 ? @tr("3 days") : ticket.points == 4 ? @tr("4 days") : ticket.points == 5 ? @tr("1 week") : ticket.points == 6 ? @tr("2 weeks") : ticket.points == 7 ? @tr("1 month") : ticket.points == 8 ? @tr("2-3 months") : ticket.points == 9 ? @tr("6 months") : ticket.points == 10 ? @tr("1 year") : @tr("{} pts", ticket.points)));
                             font-size: 16px;
                             font-weight: 700;
                             horizontal-alignment: center;
@@ -113,7 +113,7 @@ export component TicketView inherits Rectangle {
                         }
 
                         if ticket.author != "": Text {
-                            text: "Author: " + ticket.author;
+                            text: @tr("Author: {}", ticket.author);
                             font-size: 12px;
                             font-weight: 300;
                             horizontal-alignment: center;
@@ -122,14 +122,14 @@ export component TicketView inherits Rectangle {
                         }
 
                         if ticket.created_at != "": Text {
-                            text: "Created: " + ticket.created_at;
+                            text: @tr("Created: {}", ticket.created_at);
                             font-size: 11px;
                             horizontal-alignment: center;
                             opacity: 0.5;
                         }
 
                         if ticket.updated_at != "" && ticket.updated_at != ticket.created_at: Text {
-                            text: "Updated: " + ticket.updated_at;
+                            text: @tr("Updated: {}", ticket.updated_at);
                             font-size: 11px;
                             horizontal-alignment: center;
                             opacity: 0.5;
@@ -137,7 +137,7 @@ export component TicketView inherits Rectangle {
                     }
 
                     close-btn := Button {
-                        text: "Close";
+                        text: @tr("Close");
                         width: 100px;
                         height: 40px;
                         clicked => {
@@ -160,7 +160,7 @@ export component TicketView inherits Rectangle {
                         if ticket.references.length > 0: VerticalLayout {
                             spacing: 12px;
                             Text {
-                                text: "Related Tickets:";
+                                text: @tr("Related Tickets:");
                                 font-size: 16px;
                                 font-weight: 800;
                                 opacity: 0.7;
@@ -201,7 +201,7 @@ export component TicketView inherits Rectangle {
                         if ticket.comments.length > 0: VerticalLayout {
                             spacing: 12px;
                             Text {
-                                text: "Comments:";
+                                text: @tr("Comments:");
                                 font-size: 16px;
                                 font-weight: 800;
                                 opacity: 0.7;
@@ -215,7 +215,7 @@ export component TicketView inherits Rectangle {
                                     spacing: 8px;
 
                                     Text {
-                                        text: comment.author + " at " + comment.created_at;
+                                        text: @tr("{} at {}", comment.author, comment.created_at);
                                         font-size: 11px;
                                         opacity: 0.6;
                                     }
@@ -266,7 +266,7 @@ export component TicketView inherits Rectangle {
                             spacing: 8px;
                             padding: 0px;
                             Text {
-                                text: "Add a comment:";
+                                text: @tr("Add a comment:");
                                 font-weight: 700;
                             }
 
@@ -278,7 +278,7 @@ export component TicketView inherits Rectangle {
                                 alignment: end;
                                 spacing: 8px;
                                 Button {
-                                    text: "Attach File";
+                                    text: @tr("Attach File");
                                     height: 40px;
                                     min-width: 120px;
                                     clicked => {
@@ -294,7 +294,7 @@ export component TicketView inherits Rectangle {
                                 }
 
                                 Button {
-                                    text: "Post Comment";
+                                    text: @tr("Post Comment");
                                     primary: true;
                                     height: 40px;
                                     min-width: 120px;

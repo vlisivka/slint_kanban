@@ -5,6 +5,7 @@
 //! Constraints: Should not contain logic for managing multiple tickets or queues.
 
 use serde::{Deserialize, Serialize};
+use tr::tr;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct TicketMetadata {
@@ -138,16 +139,20 @@ impl Ticket {
         let ticket_id = path
             .file_name()
             .and_then(|n| n.to_str())
-            .ok_or_else(|| anyhow::anyhow!("Invalid ticket path: {:?}", path))?
+            .ok_or_else(|| anyhow::anyhow!(tr!("Invalid ticket path: {}", path.display())))?
             .to_string();
 
         let readme_path = path.join("README.md");
         if !readme_path.exists() {
-            return Err(anyhow::anyhow!("README.md not found in {:?}", path));
+            return Err(anyhow::anyhow!(tr!(
+                "README.md not found in {}",
+                path.display()
+            )));
         }
 
-        let file = std::fs::File::open(&readme_path)
-            .map_err(|e| anyhow::anyhow!("Failed to open README.md in {:?}: {}", path, e))?;
+        let file = std::fs::File::open(&readme_path).map_err(|e| {
+            anyhow::anyhow!(tr!("Failed to open README.md in {}: {}", path.display(), e))
+        })?;
         let reader = std::io::BufReader::new(file);
         use std::io::BufRead;
 
@@ -181,14 +186,19 @@ impl Ticket {
         }
 
         if state < 2 {
-            return Err(anyhow::anyhow!(
-                "Invalid ticket format (missing frontmatter) in {:?}",
-                readme_path
-            ));
+            return Err(anyhow::anyhow!(tr!(
+                "Invalid ticket format (missing frontmatter) in {}",
+                readme_path.display()
+            )));
         }
 
-        let mut metadata: TicketMetadata = serde_yaml::from_str(&frontmatter)
-            .map_err(|e| anyhow::anyhow!("Failed to parse YAML in {:?}: {}", readme_path, e))?;
+        let mut metadata: TicketMetadata = serde_yaml::from_str(&frontmatter).map_err(|e| {
+            anyhow::anyhow!(tr!(
+                "Failed to parse YAML in {}: {}",
+                readme_path.display(),
+                e
+            ))
+        })?;
 
         // Backfill updated_at for tickets created before this field was added
         if metadata.updated_at.is_empty() && !metadata.created_at.is_empty() {
@@ -222,30 +232,39 @@ impl Ticket {
         let ticket_id = path
             .file_name()
             .and_then(|n| n.to_str())
-            .ok_or_else(|| anyhow::anyhow!("Invalid ticket path: {:?}", path))?
+            .ok_or_else(|| anyhow::anyhow!(tr!("Invalid ticket path: {}", path.display())))?
             .to_string();
 
         let readme_path = path.join("README.md");
         if !readme_path.exists() {
-            return Err(anyhow::anyhow!("README.md not found in {:?}", path));
+            return Err(anyhow::anyhow!(tr!(
+                "README.md not found in {}",
+                path.display()
+            )));
         }
 
-        let content = std::fs::read_to_string(&readme_path)
-            .map_err(|e| anyhow::anyhow!("Failed to read README.md in {:?}: {}", path, e))?;
+        let content = std::fs::read_to_string(&readme_path).map_err(|e| {
+            anyhow::anyhow!(tr!("Failed to read README.md in {}: {}", path.display(), e))
+        })?;
 
         let parts: Vec<&str> = content.splitn(3, "---").collect();
         if parts.len() < 3 {
-            return Err(anyhow::anyhow!(
-                "Invalid ticket format (missing frontmatter) in {:?}",
-                readme_path
-            ));
+            return Err(anyhow::anyhow!(tr!(
+                "Invalid ticket format (missing frontmatter) in {}",
+                readme_path.display()
+            )));
         }
 
         let frontmatter = parts[1];
         let body = parts[2].trim().to_string();
 
-        let mut metadata: TicketMetadata = serde_yaml::from_str(frontmatter)
-            .map_err(|e| anyhow::anyhow!("Failed to parse YAML in {:?}: {}", readme_path, e))?;
+        let mut metadata: TicketMetadata = serde_yaml::from_str(frontmatter).map_err(|e| {
+            anyhow::anyhow!(tr!(
+                "Failed to parse YAML in {}: {}",
+                readme_path.display(),
+                e
+            ))
+        })?;
 
         // Backfill updated_at for tickets created before this field was added
         if metadata.updated_at.is_empty() && !metadata.created_at.is_empty() {

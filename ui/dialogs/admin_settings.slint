@@ -59,13 +59,13 @@ export component AdminSettings inherits Rectangle {
                 HorizontalLayout {
                     alignment: space-between;
                     Text {
-                        text: "Administrator Settings";
+                        text: @tr("Administrator Settings");
                         font-size: 28px;
                         font-weight: 800;
                     }
 
                     Button {
-                        text: "Close";
+                        text: @tr("Close");
                         width: 80px;
                         clicked => {
                             close();
@@ -78,7 +78,7 @@ export component AdminSettings inherits Rectangle {
                     spacing: 8px;
                     height: 40px;
                     Button {
-                        text: "Documentation";
+                        text: @tr("Documentation");
                         primary: active_tab == 0;
                         clicked => {
                             active_tab = 0;
@@ -86,7 +86,7 @@ export component AdminSettings inherits Rectangle {
                     }
 
                     Button {
-                        text: "Users";
+                        text: @tr("Users");
                         primary: active_tab == 1;
                         clicked => {
                             active_tab = 1;
@@ -94,7 +94,7 @@ export component AdminSettings inherits Rectangle {
                     }
 
                     Button {
-                        text: "Queues";
+                        text: @tr("Queues");
                         primary: active_tab == 2;
                         clicked => {
                             active_tab = 2;
@@ -102,7 +102,7 @@ export component AdminSettings inherits Rectangle {
                     }
 
                     Button {
-                        text: "Sprints";
+                        text: @tr("Sprints");
                         primary: active_tab == 3;
                         clicked => {
                             active_tab = 3;
@@ -114,7 +114,7 @@ export component AdminSettings inherits Rectangle {
                 if active_tab == 0: VerticalBox {
                     spacing: 12px;
                     Text {
-                        text: "Edit Board Overview (README.md)";
+                        text: @tr("Edit Board Overview (README.md)");
                         font-weight: 700;
                         opacity: 0.7;
                     }
@@ -128,7 +128,7 @@ export component AdminSettings inherits Rectangle {
                     HorizontalLayout {
                         alignment: end;
                         Button {
-                            text: "Save Documentation";
+                            text: @tr("Save Documentation");
                             primary: true;
                             clicked => {
                                 save_readme(board_readme);
@@ -140,7 +140,7 @@ export component AdminSettings inherits Rectangle {
                 if active_tab == 1: VerticalBox {
                     spacing: 16px;
                     Text {
-                        text: "Manage Shared Users";
+                        text: @tr("Manage Shared Users");
                         font-weight: 700;
                         opacity: 0.7;
                     }
@@ -149,7 +149,7 @@ export component AdminSettings inherits Rectangle {
                         spacing: 12px;
                         LineEdit {
                             text <=> new_user_name;
-                            placeholder-text: "Enter new username...";
+                            placeholder-text: @tr("Enter new username...");
                             accepted => {
                                 if (new_user_name != "") {
                                     add_user(new_user_name);
@@ -159,7 +159,7 @@ export component AdminSettings inherits Rectangle {
                         }
 
                         Button {
-                            text: "Add User";
+                            text: @tr("Add User");
                             enabled: new_user_name != "";
                             clicked => {
                                 add_user(new_user_name);
@@ -201,7 +201,7 @@ export component AdminSettings inherits Rectangle {
                 if active_tab == 2: VerticalBox {
                     spacing: 16px;
                     Text {
-                        text: "Manage Board Queues";
+                        text: @tr("Manage Board Queues");
                         font-weight: 700;
                         opacity: 0.7;
                     }
@@ -210,7 +210,7 @@ export component AdminSettings inherits Rectangle {
                         spacing: 12px;
                         LineEdit {
                             text <=> new_queue_name;
-                            placeholder-text: "Enter new queue name (e.g., 8. Optional)...";
+                            placeholder-text: @tr("Enter new queue name (e.g., 8. Optional)...");
                             accepted => {
                                 if (new_queue_name != "") {
                                     add_queue(new_queue_name);
@@ -220,7 +220,7 @@ export component AdminSettings inherits Rectangle {
                         }
 
                         Button {
-                            text: "Add Queue";
+                            text: @tr("Add Queue");
                             enabled: new_queue_name != "";
                             clicked => {
                                 add_queue(new_queue_name);
@@ -251,7 +251,7 @@ export component AdminSettings inherits Rectangle {
                                     }
 
                                     Text {
-                                        text: "(" + q.ticket_count + " tickets)";
+                                        text: @tr("({} tickets)", q.ticket_count);
                                         vertical-alignment: center;
                                         opacity: 0.6;
                                         font-size: 12px;
@@ -272,7 +272,7 @@ export component AdminSettings inherits Rectangle {
                 if active_tab == 3: VerticalBox {
                     spacing: 16px;
                     Text {
-                        text: "Manage Sprints";
+                        text: @tr("Manage Sprints");
                         font-weight: 700;
                         opacity: 0.7;
                     }
@@ -281,24 +281,24 @@ export component AdminSettings inherits Rectangle {
                         spacing: 12px;
                         LineEdit {
                             text <=> new_sprint_name;
-                            placeholder-text: "Sprint Name";
+                            placeholder-text: @tr("Sprint Name");
                             horizontal-stretch: 1;
                         }
 
                         LineEdit {
                             text <=> new_sprint_start;
-                            placeholder-text: "Start (YYYY-MM-DD)";
+                            placeholder-text: @tr("Start (YYYY-MM-DD)");
                             width: 150px;
                         }
 
                         LineEdit {
                             text <=> new_sprint_end;
-                            placeholder-text: "End (YYYY-MM-DD)";
+                            placeholder-text: @tr("End (YYYY-MM-DD)");
                             width: 150px;
                         }
 
                         Button {
-                            text: "Add Sprint";
+                            text: @tr("Add Sprint");
                             enabled: new_sprint_name != "" && new_sprint_start != "" && new_sprint_end != "";
                             clicked => {
                                 add_sprint(new_sprint_name, new_sprint_start, new_sprint_end);

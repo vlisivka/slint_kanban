@@ -49,7 +49,7 @@ export component WarningDialog inherits Rectangle {
                     }
 
                     Text {
-                        text: "Warning";
+                        text: @tr("Warning");
                         font-size: 20px;
                         font-weight: 700;
                     }
@@ -63,7 +63,7 @@ export component WarningDialog inherits Rectangle {
                 }
 
                 ok-btn := Button {
-                    text: "OK";
+                    text: @tr("OK");
                     primary: true;
                     clicked => {
                         close();

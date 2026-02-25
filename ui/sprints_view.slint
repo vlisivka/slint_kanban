@@ -21,7 +21,7 @@ export component SprintsView inherits Rectangle {
 
         HorizontalLayout {
             Text {
-                text: "Sprints Management";
+                text: @tr("Sprints Management");
                 font-size: 24px;
                 font-weight: 700;
             }
@@ -31,7 +31,7 @@ export component SprintsView inherits Rectangle {
             }
 
             Button {
-                text: "Back to Board";
+                text: @tr("Back to Board");
                 clicked => {
                     close();
                 }
@@ -54,19 +54,19 @@ export component SprintsView inherits Rectangle {
 
                     Text {
                         horizontal-stretch: 1;
-                        text: "Sprint Name";
+                        text: @tr("Sprint Name");
                         font-weight: 700;
                     }
 
                     Text {
                         width: 100px;
-                        text: "Start Date";
+                        text: @tr("Start Date");
                         font-weight: 700;
                     }
 
                     Text {
                         width: 100px;
-                        text: "End Date";
+                        text: @tr("End Date");
                         font-weight: 700;
                     }
                 }
@@ -80,7 +80,7 @@ export component SprintsView inherits Rectangle {
                 if (sprints.length == 0): Rectangle {
                     height: 40px;
                     Text {
-                        text: "No sprints configured.";
+                        text: @tr("No sprints configured.");
                         horizontal-alignment: center;
                         vertical-alignment: center;
                         color: Palette.foreground;

@@ -13,6 +13,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 use std::time::SystemTime;
+use tr::tr;
 
 static TICKET_CACHE: OnceLock<Mutex<HashMap<PathBuf, (SystemTime, Ticket)>>> = OnceLock::new();
 
@@ -160,7 +161,7 @@ impl Board {
         let root_path = self
             .tickets_path
             .parent()
-            .ok_or_else(|| anyhow::anyhow!("Invalid root path"))?;
+            .ok_or_else(|| anyhow::anyhow!(tr!("Invalid root path")))?;
         let readme_path = root_path.join("README.md");
         std::fs::write(&readme_path, content)?;
         self.append_log_entry(ActionPayload::UpdateBoardInfo, "Updated board README.md")?;
@@ -171,10 +172,10 @@ impl Board {
         let root_path = self
             .tickets_path
             .parent()
-            .ok_or_else(|| anyhow::anyhow!("Invalid root path"))?;
+            .ok_or_else(|| anyhow::anyhow!(tr!("Invalid root path")))?;
         let queue_path = root_path.join("Queue").join(name);
         if queue_path.exists() {
-            anyhow::bail!("Queue already exists: {}", name);
+            anyhow::bail!(tr!("Queue already exists: {}", name));
         }
         std::fs::create_dir_all(&queue_path)?;
         self.append_log_entry(
@@ -192,15 +193,15 @@ impl Board {
         let root_path = self
             .tickets_path
             .parent()
-            .ok_or_else(|| anyhow::anyhow!("Invalid root path"))?;
+            .ok_or_else(|| anyhow::anyhow!(tr!("Invalid root path")))?;
         let old_path = root_path.join("Queue").join(old_id);
         let new_path = root_path.join("Queue").join(new_name);
 
         if !old_path.exists() {
-            anyhow::bail!("Queue not found: {}", old_id);
+            anyhow::bail!(tr!("Queue not found: {}", old_id));
         }
         if new_path.exists() {
-            anyhow::bail!("Queue already exists: {}", new_name);
+            anyhow::bail!(tr!("Queue already exists: {}", new_name));
         }
 
         std::fs::rename(&old_path, &new_path)?;
@@ -234,12 +235,12 @@ impl Board {
         let queue_path = root_path.join("Queue").join(id);
 
         if !queue_path.exists() {
-            anyhow::bail!("Queue not found: {}", id);
+            anyhow::bail!(tr!("Queue not found: {}", id));
         }
 
         // Check if empty (only files/symlinks)
         if std::fs::read_dir(&queue_path)?.next().is_some() {
-            anyhow::bail!("Queue is not empty: {}", id);
+            anyhow::bail!(tr!("Queue is not empty: {}", id));
         }
 
         std::fs::remove_dir(&queue_path)?;
@@ -356,7 +357,7 @@ impl Board {
             .sprints
             .iter_mut()
             .find(|s| s.number == number)
-            .ok_or_else(|| anyhow::anyhow!("Sprint {} not found", number))?;
+            .ok_or_else(|| anyhow::anyhow!(tr!("Sprint {} not found", number)))?;
 
         if let Some(n) = name {
             sprint.name = n;
@@ -641,11 +642,11 @@ impl Board {
         let ticket_dir = self.ticket_path(ticket_id).canonicalize()?;
 
         if !source_path.exists() || !target_path.exists() {
-            return Err(anyhow::anyhow!(
-                "Source ({:?}) or target ({:?}) queue not found",
-                source_path,
-                target_path
-            ));
+            return Err(anyhow::anyhow!(tr!(
+                "Source ({}) or target ({}) queue not found",
+                source_path.display(),
+                target_path.display()
+            )));
         }
 
         // Check if target queue has reached its limit
@@ -684,11 +685,11 @@ impl Board {
 
             Ok(())
         } else {
-            Err(anyhow::anyhow!(
+            Err(anyhow::anyhow!(tr!(
                 "Ticket {} not found in queue {}",
                 ticket_id,
                 source_queue_id
-            ))
+            )))
         }
     }
 
@@ -697,7 +698,7 @@ impl Board {
     pub fn delete_ticket(&self, ticket_id: &str) -> anyhow::Result<()> {
         let ticket_path = self.ticket_path(ticket_id);
         if !ticket_path.exists() {
-            return Err(anyhow::anyhow!("Ticket {} not found", ticket_id));
+            return Err(anyhow::anyhow!(tr!("Ticket {} not found", ticket_id)));
         }
 
         // We use canonicalized path for any advanced checking before moving
@@ -707,7 +708,10 @@ impl Board {
         #[cfg(not(test))]
         {
             if let Err(e) = trash::delete(&abs_ticket_path) {
-                return Err(anyhow::anyhow!("Failed to move ticket to trash: {}", e));
+                return Err(anyhow::anyhow!(tr!(
+                    "Failed to move ticket to trash: {}",
+                    e
+                )));
             }
         }
 
@@ -761,7 +765,7 @@ impl Board {
 
         let queue_path = self.queue_path(queue_id);
         if !queue_path.exists() {
-            return Err(anyhow::anyhow!("Queue {} not found", queue_id));
+            return Err(anyhow::anyhow!(tr!("Queue {} not found", queue_id)));
         }
 
         self.check_queue_limit(queue_id)?;
@@ -780,7 +784,7 @@ impl Board {
             })
             .find(|id| !self.ticket_path(id).exists())
             .ok_or_else(|| {
-                anyhow::anyhow!("Failed to generate unique ticket ID after 5 attempts")
+                anyhow::anyhow!(tr!("Failed to generate unique ticket ID after 5 attempts"))
             })?;
 
         let ticket_dir = self.ticket_path(&ticket_id);

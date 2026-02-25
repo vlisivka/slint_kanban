@@ -97,14 +97,14 @@ export component TicketCard inherits Rectangle {
                 }
 
                 if ticket.author != "": Text {
-                    text: "✍ " + ticket.author;
+                    text: @tr("✍ {}", ticket.author);
                     font-size: 11px;
                     font-weight: 500;
                     color: Theme.author-color;
                 }
 
                 if ticket.assigned_to != "": Text {
-                    text: "👤 " + ticket.assigned_to;
+                    text: @tr("👤 {}", ticket.assigned_to);
                     font-size: 11px;
                     font-weight: 500;
                     color: Palette.accent-background;
@@ -116,7 +116,7 @@ export component TicketCard inherits Rectangle {
                     background: root.point-color;
                     border-radius: 9px;
                     pts_txt := Text {
-                        text: "⭐ " + ticket.points;
+                        text: @tr("⭐ {}", ticket.points);
                         font-size: 10px;
                         font-weight: 800;
                         color: white;
@@ -130,13 +130,13 @@ export component TicketCard inherits Rectangle {
                 spacing: 2px;
                 alignment: end;
                 Text {
-                    text: "C: " + ticket.created_at;
+                    text: @tr("C: {}", ticket.created_at);
                     font-size: 9px;
                     opacity: 0.6;
                 }
 
                 Text {
-                    text: "U: " + ticket.updated_at;
+                    text: @tr("U: {}", ticket.updated_at);
                     font-size: 9px;
                     opacity: 0.6;
                 }

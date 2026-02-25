@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Mutex;
+use tr::tr;
 
 /// Mediates between the Slint UI and the file-system Board model.
 /// Each action handler re-loads the board from disk to ensure consistency
@@ -50,7 +51,7 @@ impl AppController {
         let app = self
             .app_weak
             .upgrade()
-            .ok_or_else(|| anyhow::anyhow!("UI dropped"))?;
+            .ok_or_else(|| anyhow::anyhow!(tr!("UI dropped")))?;
 
         let t1 = std::time::Instant::now();
         let board = Board::load(self.root_path.clone())?;
@@ -328,7 +329,9 @@ impl AppController {
 
         if let Some(ticket) = board.find_ticket_by_id(&ticket_id) {
             if !self.can_manage_ticket(ticket, &board) {
-                self.show_error("Access Denied: You can only manage tickets assigned to you.");
+                self.show_error(&tr!(
+                    "Access Denied: You can only manage tickets assigned to you."
+                ));
                 return;
             }
         }
@@ -364,7 +367,7 @@ impl AppController {
                 app.set_show_ticket_view_dialog(true);
             }
             Err(e) => {
-                self.show_error(&format!("Error loading board info: {}", e));
+                self.show_error(&tr!("Error loading board info: {}", e));
             }
         }
     }
@@ -378,7 +381,9 @@ impl AppController {
         println!("Controller: Deleting ticket {}", ticket_id);
         if let Some(ticket) = board.find_ticket_by_id(&ticket_id) {
             if !self.can_manage_ticket(ticket, &board) {
-                self.show_error("Access Denied: You can only delete tickets assigned to you.");
+                self.show_error(&tr!(
+                    "Access Denied: You can only delete tickets assigned to you."
+                ));
                 return;
             }
         }
@@ -431,7 +436,9 @@ impl AppController {
         println!("Controller: Saving ticket {}", ticket_id);
         if let Some(ticket) = board.find_ticket_by_id(&ticket_id) {
             if !self.can_manage_ticket(ticket, &board) {
-                self.show_error("Access Denied: You can only update tickets assigned to you.");
+                self.show_error(&tr!(
+                    "Access Denied: You can only update tickets assigned to you."
+                ));
                 return;
             }
         }
@@ -513,10 +520,10 @@ impl AppController {
         if attach_dir.exists() {
             if let Err(e) = open::that(&attach_dir) {
                 eprintln!("Error opening attachment folder: {:?}", e);
-                self.show_error(&format!("Could not open folder: {}", e));
+                self.show_error(&tr!("Could not open folder: {}", e));
             }
         } else {
-            self.show_error("Attachment folder doesn't exist yet.");
+            self.show_error(&tr!("Attachment folder doesn't exist yet."));
         }
     }
 
@@ -655,7 +662,7 @@ impl AppController {
                 }
             }
         } else {
-            self.show_error(&format!("Ticket NOT FOUND: {}", target_id));
+            self.show_error(&tr!("Ticket NOT FOUND: {}", target_id));
         }
     }
 
@@ -715,7 +722,7 @@ impl AppController {
     pub fn handle_save_board_readme(&self, content: String) {
         if let Some(board) = self.load_board("save readme") {
             if let Err(e) = board.update_board_readme(&content) {
-                self.show_error(&format!("Failed to save board README: {}", e));
+                self.show_error(&tr!("Failed to save board README: {}", e));
             }
         }
     }
@@ -723,7 +730,7 @@ impl AppController {
     pub fn handle_add_queue(&self, name: String) {
         if let Some(board) = self.load_board("add queue") {
             if let Err(e) = board.add_queue(&name) {
-                self.show_error(&format!("Failed to add queue: {}", e));
+                self.show_error(&tr!("Failed to add queue: {}", e));
             } else {
                 let _ = self.reload();
             }
@@ -733,7 +740,7 @@ impl AppController {
     pub fn handle_rename_queue(&self, id: String, new_name: String) {
         if let Some(board) = self.load_board("rename queue") {
             if let Err(e) = board.rename_queue(&id, &new_name) {
-                self.show_error(&format!("Failed to rename queue: {}", e));
+                self.show_error(&tr!("Failed to rename queue: {}", e));
             } else {
                 let _ = self.reload();
             }
@@ -743,7 +750,7 @@ impl AppController {
     pub fn handle_delete_queue(&self, id: String) {
         if let Some(board) = self.load_board("delete queue") {
             if let Err(e) = board.delete_queue(&id) {
-                self.show_error(&format!("Failed to delete queue: {}", e));
+                self.show_error(&tr!("Failed to delete queue: {}", e));
             } else {
                 let _ = self.reload();
             }
@@ -753,7 +760,7 @@ impl AppController {
     pub fn handle_add_user(&self, username: String) {
         if let Some(mut board) = self.load_board("add user") {
             if let Err(e) = board.add_user(&username) {
-                self.show_error(&format!("Failed to add user: {}", e));
+                self.show_error(&tr!("Failed to add user: {}", e));
             } else {
                 let _ = self.reload();
             }
@@ -763,7 +770,7 @@ impl AppController {
     pub fn handle_remove_user(&self, username: String) {
         if let Some(mut board) = self.load_board("remove user") {
             if let Err(e) = board.remove_user(&username) {
-                self.show_error(&format!("Failed to remove user: {}", e));
+                self.show_error(&tr!("Failed to remove user: {}", e));
             } else {
                 let _ = self.reload();
             }
@@ -773,7 +780,7 @@ impl AppController {
     pub fn handle_add_sprint(&self, name: String, start: String, end: String) {
         if let Some(mut board) = self.load_board("add sprint") {
             if let Err(e) = board.add_sprint(name, start, end) {
-                self.show_error(&format!("Failed to add sprint: {}", e));
+                self.show_error(&tr!("Failed to add sprint: {}", e));
             } else {
                 let _ = self.reload();
             }
@@ -788,7 +795,7 @@ impl AppController {
                 if start.is_empty() { None } else { Some(start) },
                 if end.is_empty() { None } else { Some(end) },
             ) {
-                self.show_error(&format!("Failed to update sprint: {}", e));
+                self.show_error(&tr!("Failed to update sprint: {}", e));
             } else {
                 let _ = self.reload();
             }

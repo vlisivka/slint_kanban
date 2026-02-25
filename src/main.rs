@@ -13,6 +13,7 @@ use slint_kanban::model::Board;
 use slint_kanban::*;
 use std::path::PathBuf;
 use std::sync::Arc;
+use tr::tr;
 
 /// Pushes the full board state into the UI, applying search/date/user filters.
 /// Called on every reload (initial load, file watcher event, or filter change).
@@ -24,7 +25,7 @@ fn run_gui(root_path: PathBuf, admin: bool) -> anyhow::Result<()> {
 
     ui.set_board_queues(controller.board_queues_model().into());
 
-    println!("Using Kanban root: {:?}", root_path);
+    println!("{}", tr!("Using Kanban root: {}", root_path.display()));
 
     // Initial load
     controller.reload()?;
@@ -40,7 +41,7 @@ fn run_gui(root_path: PathBuf, admin: bool) -> anyhow::Result<()> {
         let mut watcher = notify::recommended_watcher(tx).unwrap();
 
         if let Err(e) = watcher.watch(&watcher_root, RecursiveMode::Recursive) {
-            eprintln!("Failed to watch directory: {:?}", e);
+            eprintln!("{}", tr!("Failed to watch directory: {}", e));
             return;
         }
 
@@ -49,7 +50,10 @@ fn run_gui(root_path: PathBuf, admin: bool) -> anyhow::Result<()> {
             if let Some(parent) = user_path.parent() {
                 let _ = std::fs::create_dir_all(parent);
                 if let Err(e) = watcher.watch(parent, RecursiveMode::NonRecursive) {
-                    eprintln!("Warning: Failed to watch user config directory: {:?}", e);
+                    eprintln!(
+                        "{}",
+                        tr!("Warning: Failed to watch user config directory: {}", e)
+                    );
                 }
             }
         }
@@ -79,16 +83,16 @@ fn run_gui(root_path: PathBuf, admin: bool) -> anyhow::Result<()> {
                     while rx.try_recv().is_ok() {}
 
                     let c = c_watcher.clone();
-                    eprintln!("[WATCHER] Change detected, triggering reload...");
+                    eprintln!("{}", tr!("[WATCHER] Change detected, triggering reload..."));
                     let _ = slint::invoke_from_event_loop(move || {
                         if let Err(e) = c.reload() {
-                            eprintln!("Error reloading board: {:?}", e);
+                            eprintln!("{}", tr!("Error reloading board: {}", e));
                         }
                     });
                 }
-                Ok(Err(e)) => eprintln!("Watch error: {:?}", e),
+                Ok(Err(e)) => eprintln!("{}", tr!("Watch error: {}", e)),
                 Err(e) => {
-                    eprintln!("Channel error: {:?}", e);
+                    eprintln!("{}", tr!("Channel error: {}", e));
                     break;
                 }
             }
@@ -330,8 +334,13 @@ fn handle_command(
         } => {
             writeln!(
                 out,
-                "Adding ticket: {} to queue: {} with {} points",
-                title, queue, points
+                "{}",
+                tr!(
+                    "Adding ticket: {} to queue: {} with {} points",
+                    title,
+                    queue,
+                    points
+                )
             )?;
             let author = board.config.active_user();
             board.create_ticket(&title, &description, &queue, &assign_to, author, points)?;
@@ -344,13 +353,13 @@ fn handle_command(
             unassign,
             points,
         } => {
-            writeln!(out, "Updating ticket: {}", id)?;
+            writeln!(out, "{}", tr!("Updating ticket: {}", id))?;
             let ticket = board
                 .find_ticket_by_id(&id)
-                .ok_or_else(|| anyhow::anyhow!("Ticket not found: {}", id))?;
+                .ok_or_else(|| anyhow::anyhow!(tr!("Ticket not found: {}", id)))?;
 
             if !board.can_manage_ticket(ticket, admin) {
-                anyhow::bail!("Access Denied: You can only update tickets assigned to you. Use --admin to bypass.");
+                anyhow::bail!(tr!("Access Denied: You can only update tickets assigned to you. Use --admin to bypass."));
             }
 
             // Fields not provided on CLI are preserved from the existing ticket
@@ -396,12 +405,12 @@ fn handle_command(
                     writeln!(out, "\n=== {} ===", queue.name)?;
                     for t in filtered_tickets {
                         let user_display = if t.assigned_to.is_empty() {
-                            "<unassigned>".to_string()
+                            tr!("<unassigned>").to_string()
                         } else {
                             t.assigned_to.clone()
                         };
                         let points_display = if t.points > 0 {
-                            format!(" [{} pts]", t.points)
+                            tr!(" [{} pts]", t.points)
                         } else {
                             "".to_string()
                         };
@@ -422,20 +431,20 @@ fn handle_command(
         } => {
             let mut config = board.config.clone();
             if let Some(user) = active_user {
-                writeln!(out, "Setting active user to: {}", user)?;
+                writeln!(out, "{}", tr!("Setting active user to: {}", user))?;
                 config.user.active_user = user;
             }
             if let Some(mine) = show_only_mine {
-                writeln!(out, "Setting show_only_mine to: {}", mine)?;
+                writeln!(out, "{}", tr!("Setting show_only_mine to: {}", mine))?;
                 config.user.show_only_mine = mine;
             }
             if let Some(manage) = manage_only_mine {
-                writeln!(out, "Setting manage_only_mine to: {}", manage)?;
+                writeln!(out, "{}", tr!("Setting manage_only_mine to: {}", manage))?;
                 config.user.manage_only_mine = manage;
             }
             if let Some(user) = add_user {
                 if !config.kanban.users.contains(&user) {
-                    writeln!(out, "Adding user: {}", user)?;
+                    writeln!(out, "{}", tr!("Adding user: {}", user))?;
                     config.kanban.users.push(user);
                 }
             }
@@ -464,49 +473,49 @@ fn handle_command(
             }
         }
         Commands::Move { id, queue } => {
-            writeln!(out, "Moving ticket: {} to queue: {}", id, queue)?;
+            writeln!(out, "{}", tr!("Moving ticket: {} to queue: {}", id, queue))?;
             let ticket = board
                 .find_ticket_by_id(&id)
-                .ok_or_else(|| anyhow::anyhow!("Ticket not found: {}", id))?;
+                .ok_or_else(|| anyhow::anyhow!(tr!("Ticket not found: {}", id)))?;
 
             if !board.can_manage_ticket(ticket, admin) {
-                anyhow::bail!("Access Denied: You can only move tickets assigned to you. Use --admin to bypass.");
+                anyhow::bail!(tr!("Access Denied: You can only move tickets assigned to you. Use --admin to bypass."));
             }
 
             let source_queue = board
                 .queues
                 .iter()
                 .find(|q| q.tickets.iter().any(|t| t.id == id))
-                .ok_or_else(|| anyhow::anyhow!("Ticket not found in any queue: {}", id))?;
+                .ok_or_else(|| anyhow::anyhow!(tr!("Ticket not found in any queue: {}", id)))?;
             board.move_ticket(&id, &source_queue.id, &queue)?;
         }
         Commands::Remove { id } => {
-            writeln!(out, "Removing ticket: {}", id)?;
+            writeln!(out, "{}", tr!("Removing ticket: {}", id))?;
             let ticket = board
                 .find_ticket_by_id(&id)
-                .ok_or_else(|| anyhow::anyhow!("Ticket not found: {}", id))?;
+                .ok_or_else(|| anyhow::anyhow!(tr!("Ticket not found: {}", id)))?;
 
             if !board.can_manage_ticket(ticket, admin) {
-                anyhow::bail!("Access Denied: You can only remove tickets assigned to you. Use --admin to bypass.");
+                anyhow::bail!(tr!("Access Denied: You can only remove tickets assigned to you. Use --admin to bypass."));
             }
 
             board.delete_ticket(&id)?;
         }
         Commands::Open { path } => {
-            writeln!(out, "Opening GUI for path: {:?}", path)?;
+            writeln!(out, "{}", tr!("Opening GUI for path: {}", path.display()))?;
             run_gui(path, admin)?;
         }
         Commands::Show { id } => {
             let ticket = board
                 .load_full_ticket(&id)
-                .map_err(|_| anyhow::anyhow!("Ticket not found: {}", id))?;
+                .map_err(|_| anyhow::anyhow!(tr!("Ticket not found: {}", id)))?;
 
             let queue_name = board
                 .queues
                 .iter()
                 .find(|q| q.tickets.iter().any(|t| t.id == id))
-                .map(|q| q.name.as_str())
-                .unwrap_or("Unknown");
+                .map(|q| q.name.clone())
+                .unwrap_or_else(|| tr!("Unknown").to_string());
 
             let ticket_dir = board.ticket_path(&id);
             let attach_dir = ticket_dir.join("attachment");
@@ -531,9 +540,9 @@ fn handle_command(
                 out,
                 "Assigned to: {}",
                 if ticket.assigned_to.is_empty() {
-                    "<unassigned>"
+                    tr!("<unassigned>").to_string()
                 } else {
-                    &ticket.assigned_to
+                    ticket.assigned_to.clone()
                 }
             )?;
             writeln!(out, "Author:      {}", ticket.author)?;
@@ -553,7 +562,7 @@ fn handle_command(
             }
         }
         Commands::Comment { id, content } => {
-            writeln!(out, "Adding comment to ticket: {}", id)?;
+            writeln!(out, "{}", tr!("Adding comment to ticket: {}", id))?;
             let author = board.config.active_user();
             board.add_comment(&id, &content, author)?;
         }
@@ -568,7 +577,7 @@ fn handle_command(
             let attach_dir = ticket_dir.join("attachment");
 
             if !ticket_dir.exists() {
-                anyhow::bail!("Ticket not found: {}", id);
+                anyhow::bail!(tr!("Ticket not found: {}", id));
             }
 
             if open {
@@ -577,8 +586,8 @@ fn handle_command(
                 }
                 writeln!(
                     out,
-                    "Opening attachments directory: {}",
-                    attach_dir.display()
+                    "{}",
+                    tr!("Opening attachments directory: {}", attach_dir.display())
                 )?;
                 #[cfg(not(test))]
                 open::that(&attach_dir)?;
@@ -595,16 +604,18 @@ fn handle_command(
                         }
                     }
                     if !found {
-                        writeln!(out, "No attachments found.")?;
+                        writeln!(out, "{}", tr!("No attachments found."))?;
                     }
                 } else {
-                    writeln!(out, "No attachments found.")?;
+                    writeln!(out, "{}", tr!("No attachments found."))?;
                 }
             } else if let Some(f) = file {
                 let link = board.attach_file(&id, &f)?;
                 writeln!(out, "{}", link)?;
             } else {
-                anyhow::bail!("No action specified. Use --file, --list, --show, or --open.");
+                anyhow::bail!(tr!(
+                    "No action specified. Use --file, --list, --show, or --open."
+                ));
             }
         }
         Commands::Sprint { action } => {
@@ -612,7 +623,7 @@ fn handle_command(
             match action {
                 SprintAction::List => {
                     if sprint_board.config.kanban.sprints.is_empty() {
-                        writeln!(out, "No sprints found.")?;
+                        writeln!(out, "{}", tr!("No sprints found."))?;
                     } else {
                         writeln!(
                             out,
@@ -640,7 +651,7 @@ fn handle_command(
                             current.number, current.name, current.start_date, current.end_date
                         )?;
                     } else {
-                        writeln!(out, "No active sprint for today.")?;
+                        writeln!(out, "{}", tr!("No active sprint for today."))?;
                     }
                 }
                 SprintAction::Add {
@@ -657,7 +668,7 @@ fn handle_command(
                             .iter()
                             .any(|s| s.number == n)
                         {
-                            anyhow::bail!("Sprint with number {} already exists.", n);
+                            anyhow::bail!(tr!("Sprint with number {} already exists.", n));
                         }
                         n
                     } else {
@@ -698,7 +709,7 @@ fn handle_command(
                         .sprints
                         .iter_mut()
                         .find(|s| s.number == number)
-                        .ok_or_else(|| anyhow::anyhow!("Sprint {} not found.", number))?;
+                        .ok_or_else(|| anyhow::anyhow!(tr!("Sprint {} not found.", number)))?;
                     if let Some(ref n) = name {
                         sprint.name = n.clone();
                     }
@@ -719,7 +730,7 @@ fn handle_command(
                         .sprints
                         .retain(|s| s.number != number);
                     if sprint_board.config.kanban.sprints.len() == initial_len {
-                        anyhow::bail!("Sprint {} not found.", number);
+                        anyhow::bail!(tr!("Sprint {} not found.", number));
                     }
                     sprint_board.config.write(&root_path)?;
                     writeln!(out, "Removed sprint {}.", number)?;
@@ -735,47 +746,67 @@ fn print_stats_human_readable(
     summary: &slint_kanban::model::stats::BoardSummary,
     out: &mut dyn std::io::Write,
 ) -> anyhow::Result<()> {
-    writeln!(out, "== Board Summary ==")?;
-    writeln!(out, "Total tickets: {}", summary.total_tickets)?;
-    writeln!(out, "Unassigned:    {}", summary.unassigned_tickets)?;
+    writeln!(out, "{}", tr!("== Board Summary =="))?;
+    writeln!(out, "{}", tr!("Total tickets: {}", summary.total_tickets))?;
     writeln!(
         out,
-        "Avg Lead Time: {}",
-        summary
-            .avg_lead_time_days
-            .map(|d| format!("{:.1} days", d))
-            .unwrap_or_else(|| "-".to_string())
+        "{}",
+        tr!("Unassigned:    {}", summary.unassigned_tickets)
     )?;
     writeln!(
         out,
-        "Avg Cycle Time: {}",
-        summary
-            .avg_cycle_time_days
-            .map(|d| format!("{:.1} days", d))
-            .unwrap_or_else(|| "-".to_string())
+        "{}",
+        tr!(
+            "Avg Lead Time: {}",
+            summary
+                .avg_lead_time_days
+                .map(|d| tr!("{:.1} days", d))
+                .unwrap_or_else(|| "-".to_string())
+        )
+    )?;
+    writeln!(
+        out,
+        "{}",
+        tr!(
+            "Avg Cycle Time: {}",
+            summary
+                .avg_cycle_time_days
+                .map(|d| tr!("{:.1} days", d))
+                .unwrap_or_else(|| "-".to_string())
+        )
     )?;
 
     if let Some(rate) = summary.completion_rate {
-        writeln!(out, "Completion Rate: {:.1}%", rate)?;
+        writeln!(out, "{}", tr!("Completion Rate: {:.1}%", rate))?;
     }
 
-    writeln!(out, "Total Points:    {}", summary.total_points)?;
-    writeln!(out, "Done Points:     {}", summary.total_done_points)?;
+    writeln!(out, "{}", tr!("Total Points:    {}", summary.total_points))?;
+    writeln!(
+        out,
+        "{}",
+        tr!("Done Points:     {}", summary.total_done_points)
+    )?;
     if summary.total_points > 0 {
         let p_rate = (summary.total_done_points as f64 / summary.total_points as f64) * 100.0;
-        writeln!(out, "Points Completion Rate: {:.1}%", p_rate)?;
+        writeln!(out, "{}", tr!("Points Completion Rate: {:.1}%", p_rate))?;
     }
 
     if let Some(rate) = summary.sprint_completion_rate {
-        writeln!(out, "Sprint Completion: {:.1}% (Tickets)", rate)?;
+        writeln!(out, "{}", tr!("Sprint Completion: {:.1}% (Tickets)", rate))?;
     }
     writeln!(out)?;
 
-    writeln!(out, "== Tickets per Queue ==")?;
+    writeln!(out, "{}", tr!("== Tickets per Queue =="))?;
     writeln!(
         out,
-        "{:<20} {:>5} {:>6} {:>5}",
-        "Queue", "Count", "Limit", "Usage"
+        "{}",
+        tr!(
+            "{:<20} {:>5} {:>6} {:>5}",
+            "Queue",
+            "Count",
+            "Limit",
+            "Usage"
+        )
     )?;
     for q in &summary.queues {
         let limit_str = q
@@ -798,8 +829,8 @@ fn print_stats_human_readable(
         )?;
     }
     writeln!(out)?;
-    writeln!(out, "== Tickets per User ==")?;
-    writeln!(out, "{:<20} {:>5}", "User", "Count")?;
+    writeln!(out, "{}", tr!("== Tickets per User =="))?;
+    writeln!(out, "{}", tr!("{:<20} {:>5}", "User", "Count"))?;
     for u in &summary.users {
         writeln!(out, "{:<20} {:>5}", u.name, u.count)?;
     }
@@ -958,6 +989,15 @@ fn run_cli(args: CliArgs, out: &mut dyn std::io::Write) -> anyhow::Result<()> {
 
 fn main() -> anyhow::Result<()> {
     use clap::Parser;
+
+    // Initialize translations for Rust code
+    tr::tr_init!("i18n");
+
+    // Initialize translations for Slint
+    // Dynamically look for i18n directory relative to the manifest or in standard locations
+    // For now, assume it's in the current working directory or relative to the manifest
+    let _ = slint::init_translations!(concat!(env!("CARGO_MANIFEST_DIR"), "/i18n"));
+
     let args = CliArgs::parse();
     run_cli(args, &mut std::io::stdout())
 }

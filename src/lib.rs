@@ -6,6 +6,7 @@ slint::include_modules!();
 
 use model::{Board, Ticket};
 use slint::SharedString;
+use tr::tr;
 
 /// Converts a domain Ticket into the Slint-generated TicketStr for UI binding.
 /// `snippet` is the first line of the description, shown on the card preview.
@@ -19,7 +20,7 @@ pub fn into_slint_ticket(ticket: &Ticket, board: &Board) -> TicketStr {
             let title = board
                 .find_ticket_by_id(id)
                 .map(|t| t.title.clone())
-                .unwrap_or_else(|| "Unknown Ticket".to_string());
+                .unwrap_or_else(|| tr!("Unknown Ticket").to_string());
             RefStr {
                 id: SharedString::from(id_with_hash),
                 title: SharedString::from(title),
@@ -39,7 +40,7 @@ pub fn into_slint_ticket(ticket: &Ticket, board: &Board) -> TicketStr {
                     let title = board
                         .find_ticket_by_id(id)
                         .map(|t| t.title.clone())
-                        .unwrap_or_else(|| "Unknown Ticket".to_string());
+                        .unwrap_or_else(|| tr!("Unknown Ticket").to_string());
                     RefStr {
                         id: SharedString::from(id_with_hash),
                         title: SharedString::from(title),
@@ -107,11 +108,11 @@ pub fn into_slint_summary(summary: &model::stats::BoardSummary) -> BoardSummaryS
 
     let lead_time_str = summary
         .avg_lead_time_days
-        .map(|d| format!("{:.1} days", d))
+        .map(|d| tr!("{:.1} days", d))
         .unwrap_or_else(|| "-".to_string());
     let cycle_time_str = summary
         .avg_cycle_time_days
-        .map(|d| format!("{:.1} days", d))
+        .map(|d| tr!("{:.1} days", d))
         .unwrap_or_else(|| "-".to_string());
     let completion_rate_str = summary
         .completion_rate

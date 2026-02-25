@@ -52,7 +52,7 @@ export component DeleteConfirmDialog inherits Rectangle {
                     }
 
                     Text {
-                        text: "Delete Ticket";
+                        text: @tr("Delete Ticket");
                         font-size: 20px;
                         font-weight: 700;
                         vertical-alignment: center;
@@ -62,7 +62,7 @@ export component DeleteConfirmDialog inherits Rectangle {
                 VerticalLayout {
                     spacing: 8px;
                     Text {
-                        text: "Are you sure you want to delete ticket #" + ticket_id + "?";
+                        text: @tr("Are you sure you want to delete ticket #{}?", ticket_id);
                         font-size: 15px;
                         font-weight: 600;
                         horizontal-alignment: center;
@@ -70,7 +70,7 @@ export component DeleteConfirmDialog inherits Rectangle {
                     }
 
                     Text {
-                        text: "\"" + ticket_title + "\"";
+                        text: @tr("\"{}\"", ticket_title);
                         font-size: 14px;
                         font-italic: true;
                         horizontal-alignment: center;
@@ -78,7 +78,7 @@ export component DeleteConfirmDialog inherits Rectangle {
                     }
 
                     Text {
-                        text: "The ticket will be moved to the Recycle Bin.";
+                        text: @tr("The ticket will be moved to the Recycle Bin.");
                         font-size: 14px;
                         color: Palette.foreground.darker(20%);
                         horizontal-alignment: center;
@@ -90,14 +90,14 @@ export component DeleteConfirmDialog inherits Rectangle {
                     spacing: 16px;
                     alignment: center;
                     Button {
-                        text: "Cancel";
+                        text: @tr("Cancel");
                         clicked => {
                             cancel();
                         }
                     }
 
                     Button {
-                        text: "Delete";
+                        text: @tr("Delete");
                         primary: true;
                         clicked => {
                             confirm();

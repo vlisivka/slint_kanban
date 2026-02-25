@@ -210,3 +210,10 @@ The following features are planned for future releases:
    - Time tracking per queue is implemented via log parsing.
     - Completion rates and trends
     - Burndown charts are implemented for the current sprint, showing remaining vs ideal points.
+
+9. **Internationalization (i18n)**:
+    - **Gettext Support**: The application uses the Gettext `.po` format for translations.
+    - **Marking Strings**: Translatable strings are marked using `@tr()` in `.slint` files and `tr!` in `.rs` files.
+    - **Extraction Workflow**: A script is used to extract strings from source files into a `.pot` template.
+    - **Runtime Localization**: Translations are loaded at runtime from `.mo` files or bundled into the executable.
+    - **Supported Languages**: Initially target Ukrainian (uk).
