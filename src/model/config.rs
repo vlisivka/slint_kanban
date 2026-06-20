@@ -5,7 +5,13 @@
 //! Constraints: Should not contain board-specific or ticket-specific logic.
 
 use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::path::PathBuf;
+
+thread_local! {
+    static TEST_USER_CONFIG_PATH: RefCell<Option<PathBuf>> = RefCell::new(None);
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Sprint {
@@ -156,7 +162,15 @@ impl Config {
     }
 
     pub fn user_config_path() -> Option<std::path::PathBuf> {
+        let overridden = TEST_USER_CONFIG_PATH.with(|p| p.borrow().clone());
+        if overridden.is_some() {
+            return overridden;
+        }
         dirs::config_dir().map(|p| p.join("slint-kanban").join("user.toml"))
+    }
+
+    pub fn set_test_user_config_path(path: Option<std::path::PathBuf>) {
+        TEST_USER_CONFIG_PATH.with(|p| *p.borrow_mut() = path);
     }
 
     // Facade methods for backward compatibility

@@ -197,12 +197,8 @@ fn test_cli_attach() -> anyhow::Result<()> {
 #[test]
 fn test_cli_configure() -> anyhow::Result<()> {
     let env = TestEnv::new()?;
-    // Mock HOME for user config path during test
     let user_dir = tempfile::tempdir().unwrap();
-    std::env::set_var("HOME", user_dir.path());
-    // Note: dirs::config_dir() might use different env vars on different OS
-    #[cfg(target_os = "linux")]
-    std::env::set_var("XDG_CONFIG_HOME", user_dir.path());
+    slint_kanban::model::Config::set_test_user_config_path(Some(user_dir.path().join("user.toml")));
 
     Board::ensure_initialized(&env.root)?;
 

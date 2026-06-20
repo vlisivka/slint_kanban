@@ -689,9 +689,7 @@ fn test_activity_logging() -> anyhow::Result<()> {
     let root_path = board_dir.path().to_path_buf();
 
     let user_dir = tempdir()?;
-    std::env::set_var("HOME", user_dir.path());
-    #[cfg(target_os = "linux")]
-    std::env::set_var("XDG_CONFIG_HOME", user_dir.path());
+    Config::set_test_user_config_path(Some(user_dir.path().join("user.toml")));
 
     Board::ensure_initialized(&root_path)?;
     let board = Board::load(root_path.clone())?;

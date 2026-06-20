@@ -2,6 +2,11 @@
 name = "slint_kanban"
 version = "0.2.0"
 edition = "2021"
+authors = ["Volodymyr M. Lisivka <vlisivka@gmail.com>"]
+description = "A modern, file-system-based Kanban board application built with Rust and Slint UI framework."
+license = "GPL-3.0-or-later"
+repository = "https://github.com/vlisivka/slint_kanban"
+keywords = ["slint", "productivity"]
 
 [dependencies]
 slint = { version = "1.15", features = ["gettext"] }

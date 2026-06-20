@@ -43,12 +43,8 @@ fn test_split_config_persistence() {
     let board_dir = tempdir().unwrap();
     let board_root = board_dir.path();
 
-    // Mock HOME for user config path during test
     let user_dir = tempdir().unwrap();
-    std::env::set_var("HOME", user_dir.path());
-    // Note: dirs::config_dir() might use different env vars on different OS
-    #[cfg(target_os = "linux")]
-    std::env::set_var("XDG_CONFIG_HOME", user_dir.path());
+    Config::set_test_user_config_path(Some(user_dir.path().join("user.toml")));
 
     let mut config = Config::default();
     config.kanban.users.push("Alice".to_string());
@@ -82,9 +78,7 @@ fn test_machine_id_generation_on_load() {
     let board_root = board_dir.path();
 
     let user_dir = tempdir().unwrap();
-    std::env::set_var("HOME", user_dir.path());
-    #[cfg(target_os = "linux")]
-    std::env::set_var("XDG_CONFIG_HOME", user_dir.path());
+    Config::set_test_user_config_path(Some(user_dir.path().join("user.toml")));
 
     let user_config_path = Config::user_config_path().expect("Should have user config path");
     if user_config_path.exists() {
