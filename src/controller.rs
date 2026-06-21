@@ -142,9 +142,8 @@ impl AppController {
             let current_len = tickets_model.row_count();
             let new_len = new_slint_tickets.len();
 
-            for i in 0..current_len.min(new_len) {
+            for (i, new) in new_slint_tickets.iter().enumerate().take(current_len.min(new_len)) {
                 let old = tickets_model.row_data(i).unwrap();
-                let new = &new_slint_tickets[i];
 
                 // Only update if metadata that affects the card display has changed.
                 // Comparing the whole struct is still cheaper than letting Slint re-render everything.
@@ -159,14 +158,11 @@ impl AppController {
             }
 
             if new_len > current_len {
-                for i in current_len..new_len {
-                    tickets_model.push(new_slint_tickets[i].clone());
-                }
-            } else if new_len < current_len {
-                for _ in new_len..current_len {
-                    tickets_model.remove(new_len);
+                for new in new_slint_tickets.iter().skip(current_len).take(new_len - current_len) {
+                    tickets_model.push(new.clone());
                 }
             }
+
 
             let ticket_count = new_len as i32;
             let limit = queue.limit.map(|l| l as i32).unwrap_or(-1);
@@ -187,18 +183,13 @@ impl AppController {
         let current_q_len = self.board_queues_model.row_count();
         let new_q_len = slint_queues.len();
 
-        for i in 0..current_q_len.min(new_q_len) {
-            self.board_queues_model
-                .set_row_data(i, slint_queues[i].clone());
+        for (i, sq) in slint_queues.iter().enumerate().take(current_q_len.min(new_q_len)) {
+            self.board_queues_model.set_row_data(i, sq.clone());
         }
 
         if new_q_len > current_q_len {
-            for i in current_q_len..new_q_len {
-                self.board_queues_model.push(slint_queues[i].clone());
-            }
-        } else if new_q_len < current_q_len {
-            for _ in new_q_len..current_q_len {
-                self.board_queues_model.remove(new_q_len);
+            for sq in slint_queues.iter().skip(current_q_len).take(new_q_len - current_q_len) {
+                self.board_queues_model.push(sq.clone());
             }
         }
     }
@@ -654,7 +645,7 @@ impl AppController {
 
         let id_to_find = target_id.strip_prefix('#').unwrap_or(&target_id);
 
-        if let Some(_) = board.find_ticket_by_id(id_to_find) {
+        if board.find_ticket_by_id(id_to_find).is_some() {
             if let Ok(ticket) = board.load_full_ticket(id_to_find) {
                 if let Some(app) = self.app_weak.upgrade() {
                     app.set_active_ticket(crate::into_slint_ticket(&ticket, &board));

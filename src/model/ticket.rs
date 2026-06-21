@@ -177,11 +177,9 @@ impl Ticket {
                     frontmatter.push_str(&line);
                     frontmatter.push('\n');
                 }
-                2 => {
-                    if !line.trim().is_empty() {
-                        body_snippet = line.trim().to_string();
-                        break;
-                    }
+                2 if !line.trim().is_empty() => {
+                    body_snippet = line.trim().to_string();
+                    break;
                 }
                 _ => {}
             }

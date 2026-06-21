@@ -527,12 +527,12 @@ impl Board {
                     let ticket_path = entry.path();
                     if ticket_path.is_dir() {
                         let ticket_id = entry.file_name().to_string_lossy().to_string();
-                        if !ticket_to_link.contains_key(&ticket_id) {
+                        if let std::collections::hash_map::Entry::Vacant(e) = ticket_to_link.entry(ticket_id.clone()) {
                             // Orphan!
                             let link_path = self.queues_path.join(first_q).join(&ticket_id);
                             #[cfg(unix)]
                             if std::os::unix::fs::symlink(&ticket_path, link_path.clone()).is_ok() {
-                                ticket_to_link.insert(ticket_id, link_path);
+                                e.insert(link_path);
                             }
                         }
                     }

@@ -155,8 +155,8 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
             let mut cycle_times = Vec::new();
 
             // Map to track ticket timing: ID -> (created, started, completed) in seconds
-            let mut ticket_timings: HashMap<String, (Option<i64>, Option<i64>, Option<i64>)> =
-                HashMap::new();
+            type TicketTimings = HashMap<String, (Option<i64>, Option<i64>, Option<i64>)>;
+            let mut ticket_timings: TicketTimings = HashMap::new();
 
             let sprint = board.config.get_current_sprint(None);
             let mut active_in_sprint = std::collections::HashSet::new();
@@ -580,13 +580,13 @@ pub fn get_burndown_data(
         .ok()
         .and_then(|d| d.and_hms_opt(0, 0, 0))
         .map(|dt| Utc.from_utc_datetime(&dt))
-        .unwrap_or_else(|| Utc::now());
+        .unwrap_or_else(Utc::now);
 
     let end_dt = NaiveDate::parse_from_str(&sprint.end_date, "%Y-%m-%d")
         .ok()
         .and_then(|d| d.and_hms_opt(23, 59, 59))
         .map(|dt| Utc.from_utc_datetime(&dt))
-        .unwrap_or_else(|| Utc::now());
+        .unwrap_or_else(Utc::now);
 
     let today = Utc::now();
     let total_days = (end_dt.signed_duration_since(start_dt).num_days() + 1).max(1);

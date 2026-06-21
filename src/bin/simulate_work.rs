@@ -27,7 +27,7 @@ fn main() -> anyhow::Result<()> {
     // Create some sprints in the past
     let now = Utc::now();
     for i in 1..=4 {
-        let end = now - Duration::days((14 * (4 - i as i32)) as i64);
+        let end = now - Duration::days(14 * (4 - i));
         let start = end - Duration::days(13);
         config.kanban.sprints.push(Sprint {
             number: i as u32,
@@ -38,8 +38,8 @@ fn main() -> anyhow::Result<()> {
     }
     config.write(&board_path)?;
 
-    let users = vec!["Alice", "Bob", "Charlie"];
-    let queues = vec![
+    let users = ["Alice", "Bob", "Charlie"];
+    let queues = [
         "1. Incoming",
         "2. To Do",
         "3. Doing",
@@ -199,7 +199,7 @@ fn append_log(
         &mut file,
         "| {} | {} | {} | `{}` |",
         timestamp,
-        payload.to_string(),
+        payload,
         description,
         json
     )

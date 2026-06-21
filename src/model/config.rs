@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 thread_local! {
-    static TEST_USER_CONFIG_PATH: RefCell<Option<PathBuf>> = RefCell::new(None);
+    static TEST_USER_CONFIG_PATH: RefCell<Option<PathBuf>> = const { RefCell::new(None) };
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

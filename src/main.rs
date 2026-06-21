@@ -17,7 +17,6 @@ use tr::tr;
 
 /// Pushes the full board state into the UI, applying search/date/user filters.
 /// Called on every reload (initial load, file watcher event, or filter change).
-
 fn run_gui(root_path: PathBuf, admin: bool) -> anyhow::Result<()> {
     let ui = App::new()?;
     ui.set_is_admin(admin);
@@ -813,14 +812,9 @@ fn print_stats_human_readable(
             .limit
             .map(|l| l.to_string())
             .unwrap_or_else(|| "-".to_string());
-        let usage_str = if let Some(limit) = q.limit {
-            if limit > 0 {
-                format!("{}%", (q.count * 100) / limit)
-            } else {
-                "-".to_string()
-            }
-        } else {
-            "-".to_string()
+        let usage_str = match q.limit {
+            Some(limit) if limit > 0 => format!("{}%", (q.count * 100) / limit),
+            _ => "-".to_string(),
         };
         writeln!(
             out,
@@ -996,7 +990,7 @@ fn main() -> anyhow::Result<()> {
     // Initialize translations for Slint
     // Dynamically look for i18n directory relative to the manifest or in standard locations
     // For now, assume it's in the current working directory or relative to the manifest
-    let _ = slint::init_translations!(concat!(env!("CARGO_MANIFEST_DIR"), "/i18n"));
+    slint::init_translations!(concat!(env!("CARGO_MANIFEST_DIR"), "/i18n"));
 
     let args = CliArgs::parse();
     run_cli(args, &mut std::io::stdout())
