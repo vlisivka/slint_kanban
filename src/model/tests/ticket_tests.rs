@@ -286,3 +286,112 @@ created_at: 2023-10-27
         serde_yaml::from_str(yaml_no_points).expect("Failed to parse YAML");
     assert_eq!(metadata.points, 0, "Points should default to 0 if missing");
 }
+#[test]
+fn test_ticket_save_load_with_colon_in_title() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let ticket_path = temp_dir.path().join("TColon");
+    std::fs::create_dir(&ticket_path).unwrap();
+
+    // Title with a colon — this is the exact pattern from the bug report:
+    // "Помилка: блок коментарів (#~) перекладається як повідомлення з пустим msgid."
+    let ticket = Ticket {
+        id: "TColon".to_string(),
+        title: "Error: colon in title".to_string(),
+        created_at: "2024-01-01 12:00:00".to_string(),
+        updated_at: "2024-01-01 12:00:00".to_string(),
+        description: "Test description".to_string(),
+        assigned_to: "".to_string(),
+        author: "test".to_string(),
+        points: 0,
+        attachment_count: 0,
+        comments: vec![],
+    };
+
+    // Save should succeed
+    ticket.save(&ticket_path).unwrap();
+
+    // Load should succeed — this is the bug: it currently fails with
+    // "mapping values are not allowed in this context at line 1 column X"
+    let loaded = Ticket::load(&ticket_path).unwrap();
+    assert_eq!(loaded.title, "Error: colon in title");
+}
+
+#[test]
+fn test_extract_references_with_non_ascii() {
+    let t = Ticket {
+        id: "t1".to_string(),
+        title: "T".to_string(),
+        created_at: "now".to_string(),
+        updated_at: "now".to_string(),
+        assigned_to: "".to_string(),
+        author: "me".to_string(),
+        points: 0,
+        attachment_count: 0,
+        description: "Привіт #abc123 і #def456!".to_string(),
+        comments: vec![],
+    };
+    let refs = t.extract_references();
+    assert_eq!(
+        refs.len(),
+        2,
+        "Should extract exactly 2 references from non-ASCII text."
+    );
+    assert!(
+        refs.contains(&"#abc123".to_string()),
+        "Should contain #abc123."
+    );
+    assert!(
+        refs.contains(&"#def456".to_string()),
+        "Should contain #def456."
+    );
+}
+
+#[test]
+fn test_extract_references_with_non_ascii_in_comment() {
+    use crate::model::Comment;
+    let comment = Comment {
+        id: "tc001abc".to_string(),
+        metadata: crate::model::comment::CommentMetadata::default(),
+        content: "Привіт #abc123 і #def456!".to_string(),
+        references: vec![],
+    };
+    let refs = comment.extract_references();
+    assert_eq!(
+        refs.len(),
+        2,
+        "Should extract exactly 2 references from non-ASCII comment."
+    );
+    assert!(
+        refs.contains(&"#abc123".to_string()),
+        "Should contain #abc123."
+    );
+    assert!(
+        refs.contains(&"#def456".to_string()),
+        "Should contain #def456."
+    );
+}
+
+#[test]
+fn test_extract_references_no_panic_on_unicode_byte_boundary() {
+    // '#' at byte 0, then 5 ASCII chars (bytes 1-5), then Cyrillic 'е' (bytes 6-7).
+    // Previously this panicked because [1..7] split the Cyrillic 'е'.
+    // Now char_indices() handles it correctly — no panic.
+    let t = Ticket {
+        id: "t1".to_string(),
+        title: "T".to_string(),
+        created_at: "now".to_string(),
+        updated_at: "now".to_string(),
+        assigned_to: "".to_string(),
+        author: "me".to_string(),
+        points: 0,
+        attachment_count: 0,
+        description: "#12345е".to_string(),
+        comments: vec![],
+    };
+    let refs = t.extract_references();
+    // '12345е' is not all ASCII lowercase/digit (Cyrillic 'е'), so no reference extracted.
+    assert!(
+        refs.is_empty(),
+        "Should extract no references when the 6 chars after '#' contain non-ASCII."
+    );
+}
