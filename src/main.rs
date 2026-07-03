@@ -584,10 +584,40 @@ fn handle_command(
                 }
             }
         }
-        Commands::Comment { id, content } => {
+        Commands::Comment {
+            id,
+            content,
+            content_file,
+        } => {
+            // Resolve comment body: --content-file (file or stdin) overrides --content.
+            // If both provided, concatenate content + "\n" + file/stdin content.
+            let comment_body = match (&content_file, &content) {
+                (Some(path), _) if path == "-" => {
+                    // Read from stdin
+                    let mut input = String::new();
+                    std::io::Read::read_to_string(&mut std::io::stdin(), &mut input)?;
+                    match content {
+                        Some(desc) => format!("{}\n{}", desc, input),
+                        None => input,
+                    }
+                }
+                (Some(path), _) => {
+                    // Read from file
+                    let file_content = std::fs::read_to_string(path).map_err(|e| {
+                        anyhow::anyhow!("Failed to read comment file '{}': {}", path, e)
+                    })?;
+                    match content {
+                        Some(desc) => format!("{}\n{}", desc, file_content),
+                        None => file_content,
+                    }
+                }
+                (None, Some(desc)) => desc.clone(),
+                (None, None) => String::new(),
+            };
+
             writeln!(out, "{}", tr!("Adding comment to ticket: {}", id))?;
             let author = board.config.active_user();
-            board.add_comment(&id, &content, author)?;
+            board.add_comment(&id, &comment_body, author)?;
         }
         Commands::Attach {
             id,

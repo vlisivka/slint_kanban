@@ -178,9 +178,13 @@ pub enum Commands {
         #[arg(short, long)]
         id: String,
 
-        /// Comment content
+        /// Comment content (if empty, reads from --content-file or stdin)
         #[arg(short, long)]
-        content: String,
+        content: Option<String>,
+
+        /// File to read comment content from (use '-' for stdin)
+        #[arg(short = 'f', long)]
+        content_file: Option<String>,
     },
 
     /// Attach a file to a ticket
