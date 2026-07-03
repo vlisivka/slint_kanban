@@ -1,7 +1,7 @@
 ---
 title: "Bug: сміття в статистиці"
 created_at: 2026-07-03 16:04:27
-updated_at: 2026-07-03 16:08:25
+updated_at: 2026-07-03 22:08:29
 assigned_to: "user"
 author: "user"
 points: 1
@@ -50,6 +50,63 @@ Date         TotalT    DoneT   TotalP    DoneP
 - [x] `scripts/pre-commit.sh` проходить (fmt + clippy + tests)
 
 
-### Resolution comments
+## Resolution
 
-(TODO)
+### Виявлена проблема
+
+У функції `print_stats_summary()` три місця використовували `tr!()` навколо format-рядок:
+
+```rust
+// НЕПРАВИЛЬНО (було):
+writeln!(out, "{}", tr!("{:<20} {:>5}", "Queue", "Count"))?;
+
+// ПРАВИЛЬНО (стало):
+writeln!(out, "{:<20} {:>5}", tr!("Queue"), tr!("Count"))?;
+```
+
+`tr!()` — це макрос локалізації. Коли його викликають з format-рядком як першим аргументом, 
+він сприймає все як літеральний рядок для перекладу, не розпізнаючи `{:<20}` як шаблон форматування.
+
+### Зміни в коді
+
+| Файл | Зміна |
+|---|---|
+| `src/main.rs:853-863` | Виправлено header таблиці черг |
+| `src/main.rs:878-881` | Виправлено header таблиці користувачів та цикл |
+
+### Тести
+
+- `test_cli_stats_no_format_garbage()` — перевірка, що вивід не містить `{:<20}`, `{:>5}`, `{::10}`
+- 68 тестів, 7 suites. Clippy та fmt — без помилок.
+
+### Результат
+
+**До:**
+```
+== Тікетів у чергах ==
+{:<20} {:>5} {:>6} {:>5}
+1.Incoming              0       -       -%
+2.ProductBacklog        0      21       0%-
+3.SprintBacklog         0       5       0%-
+```
+
+**Після:**
+```
+== Тікетів у чергах ==
+Queue            Count    Limit   Usage
+1.Incoming             0        -       -%
+2.ProductBacklog       0       21       0%-
+3.SprintBacklog        0        5       0%-
+```
+
+**Було:**
+```rust
+writeln!(out, "{}", tr!("{:<20} {:>5} {:>6} {:>5}", "Queue", ...))
+```
+
+**Стало:**
+```rust
+writeln!(out, "{:<20} {:>5} {:>6} {:>5}", tr!("Queue"), ...)
+```
+
+68 тестів, 7 suites. Clippy та fmt — без помилок.

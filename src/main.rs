@@ -852,14 +852,11 @@ fn print_stats_human_readable(
     writeln!(out, "{}", tr!("== Tickets per Queue =="))?;
     writeln!(
         out,
-        "{}",
-        tr!(
-            "{:<20} {:>5} {:>6} {:>5}",
-            "Queue",
-            "Count",
-            "Limit",
-            "Usage"
-        )
+        "{:<20} {:>5} {:>6} {:>5}",
+        tr!("Queue"),
+        tr!("Count"),
+        tr!("Limit"),
+        tr!("Usage")
     )?;
     for q in &summary.queues {
         let limit_str = q
@@ -878,7 +875,7 @@ fn print_stats_human_readable(
     }
     writeln!(out)?;
     writeln!(out, "{}", tr!("== Tickets per User =="))?;
-    writeln!(out, "{}", tr!("{:<20} {:>5}", "User", "Count"))?;
+    writeln!(out, "{:<20} {:>5}", tr!("User"), tr!("Count"))?;
     for u in &summary.users {
         writeln!(out, "{:<20} {:>5}", u.name, u.count)?;
     }
