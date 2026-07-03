@@ -40,12 +40,12 @@ fn main() -> anyhow::Result<()> {
 
     let users = ["Alice", "Bob", "Charlie"];
     let queues = [
-        "1. Incoming",
-        "2. To Do",
-        "3. Doing",
-        "4. Reviewing",
-        "5. Testing",
-        "6. Done",
+        "1.Incoming",
+        "2.ToDo",
+        "3.Doing",
+        "4.Reviewing",
+        "5.Testing",
+        "6.Done",
     ];
 
     let mut rng = rand::thread_rng();
@@ -89,7 +89,7 @@ fn main() -> anyhow::Result<()> {
                 ticket.save(&board.tickets_path.join(&ticket_id))?;
 
                 // Link to Incoming
-                let queue_path = board.queues_path.join("1. Incoming");
+                let queue_path = board.queues_path.join("1.Incoming");
                 #[cfg(unix)]
                 std::os::unix::fs::symlink(&ticket_dir, queue_path.join(&ticket_id))?;
 
@@ -98,7 +98,7 @@ fn main() -> anyhow::Result<()> {
                     ActionPayload::CreateTicket {
                         id: ticket_id.clone(),
                         title: title.clone(),
-                        queue: "1. Incoming".to_string(),
+                        queue: "1.Incoming".to_string(),
                         points,
                     },
                     &format!("Created ticket {}", ticket_id),
@@ -106,7 +106,7 @@ fn main() -> anyhow::Result<()> {
                     "SystemSim",
                 );
 
-                active_tickets.push((ticket_id, "1. Incoming".to_string(), points, current_date));
+                active_tickets.push((ticket_id, "1.Incoming".to_string(), points, current_date));
             }
         }
 
@@ -145,7 +145,7 @@ fn main() -> anyhow::Result<()> {
 
                     active_tickets[i] = (id.clone(), next_q.clone(), points, current_date);
 
-                    if next_q == "6. Done" {
+                    if next_q == "6.Done" {
                         active_tickets.remove(i);
                         continue;
                     }
@@ -198,10 +198,7 @@ fn append_log(
     writeln!(
         &mut file,
         "| {} | {} | {} | `{}` |",
-        timestamp,
-        payload,
-        description,
-        json
+        timestamp, payload, description, json
     )
     .unwrap();
 }

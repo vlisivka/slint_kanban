@@ -5,7 +5,7 @@ users = [
 sprints = []
 
 [queue_limits]
-"2. To Do" = 21
-"3. Doing" = 5
+"2.ToDo" = 21
+"3.Doing" = 5
 
 [workflows]

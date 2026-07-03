@@ -23,13 +23,13 @@ fn get_ticket_cache() -> &'static Mutex<HashMap<PathBuf, (SystemTime, Ticket)>> 
 
 /// Default queue names created when initializing a new board.
 const DEFAULT_QUEUES: &[&str] = &[
-    "1. Incoming",
-    "2. To Do",
-    "3. Doing",
-    "4. Reviewing",
-    "5. Testing",
-    "6. Done",
-    "7. Archive",
+    "1.Incoming",
+    "2.ToDo",
+    "3.Doing",
+    "4.Reviewing",
+    "5.Testing",
+    "6.Done",
+    "7.Archive",
 ];
 
 const DEFAULT_README: &str = r#"---
@@ -130,8 +130,8 @@ impl Board {
             let config_path = root_path.join("config.toml");
             if !config_path.exists() {
                 let mut default_config = Config::default();
-                default_config.set_limit("2. To Do".to_string(), 21);
-                default_config.set_limit("3. Doing".to_string(), 5);
+                default_config.set_limit("2.ToDo".to_string(), 21);
+                default_config.set_limit("3.Doing".to_string(), 5);
                 default_config.write(root_path)?;
             }
 
@@ -527,7 +527,9 @@ impl Board {
                     let ticket_path = entry.path();
                     if ticket_path.is_dir() {
                         let ticket_id = entry.file_name().to_string_lossy().to_string();
-                        if let std::collections::hash_map::Entry::Vacant(e) = ticket_to_link.entry(ticket_id.clone()) {
+                        if let std::collections::hash_map::Entry::Vacant(e) =
+                            ticket_to_link.entry(ticket_id.clone())
+                        {
                             // Orphan!
                             let link_path = self.queues_path.join(first_q).join(&ticket_id);
                             #[cfg(unix)]

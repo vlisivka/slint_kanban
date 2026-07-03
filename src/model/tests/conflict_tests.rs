@@ -27,8 +27,8 @@ fn test_conflict_resolution_duplicates() {
     t1.save(&t1_dir).unwrap();
 
     // Place symlink in two queues
-    let q1_path = root_path.join("Queue").join("1. Incoming");
-    let q2_path = root_path.join("Queue").join("2. To Do");
+    let q1_path = root_path.join("Queue").join("1.Incoming");
+    let q2_path = root_path.join("Queue").join("2.ToDo");
 
     #[cfg(unix)]
     {
@@ -70,7 +70,7 @@ fn test_conflict_resolution_orphans() {
     // Load board - should find orphan and add to first queue
     let _board = Board::load(root_path.to_path_buf()).unwrap();
 
-    let first_q_path = root_path.join("Queue").join("1. Incoming");
+    let first_q_path = root_path.join("Queue").join("1.Incoming");
     assert!(first_q_path.join("orphan").exists());
 }
 
@@ -80,7 +80,7 @@ fn test_conflict_resolution_broken_links() {
     let root_path = root.path();
     Board::ensure_initialized(root_path).unwrap();
 
-    let q1_path = root_path.join("Queue").join("1. Incoming");
+    let q1_path = root_path.join("Queue").join("1.Incoming");
     let broken_link = q1_path.join("broken");
 
     // Create a symlink to non-existent path

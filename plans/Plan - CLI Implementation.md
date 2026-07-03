@@ -28,5 +28,5 @@ This plan covers the initial steps of implementing the Command Line Interface (C
 - Create unit test that call `run_main` with --help or -h for built-in help.
 
 ### Manual Verification
-- Run `cargo run -- add -t "Test" -d "Desc" -q "1. Incoming"` and check if ticket appears on disk.
+- Run `cargo run -- add -t "Test" -d "Desc" -q "1.Incoming"` and check if ticket appears on disk.
 - Run `cargo run -- open .` to ensure GUI still opens correctly.

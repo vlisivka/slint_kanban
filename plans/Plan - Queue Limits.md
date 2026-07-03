@@ -63,8 +63,8 @@ Implement configurable queue limits with visual indicators and enforcement to pr
 ```toml
 # ~/Kanban/config.toml
 [queue_limits]
-"2. To Do" = 21
-"3. Doing" = 5
+"2.ToDo" = 21
+"3.Doing" = 5
 ```
 
 ## Visual Design

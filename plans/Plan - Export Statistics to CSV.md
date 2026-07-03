@@ -31,7 +31,7 @@
 Колонки: `Type`, `Category/Name`, `Metric`, `Value`, `Unit`
 Приклад:
 - `Summary,General,Total Tickets,10,count`
-- `Queue,1. Incoming,Count,5,tickets`
+- `Queue,1.Incoming,Count,5,tickets`
 - `User,alice,Count,3,tickets`
 - `Trend,2024-02-10,Total Points,50,pts`
 - `Burndown,2024-02-10,Remaining Points,40,pts`

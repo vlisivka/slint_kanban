@@ -60,11 +60,11 @@ fn test_cli_add() -> anyhow::Result<()> {
         "-d",
         "Test Description",
         "-q",
-        "1. Incoming",
+        "1.Incoming",
     ])?;
 
     let board = env.board()?;
-    let incoming = board.queues.iter().find(|q| q.id == "1. Incoming").unwrap();
+    let incoming = board.queues.iter().find(|q| q.id == "1.Incoming").unwrap();
     assert_eq!(
         incoming.tickets.len(),
         1,
@@ -86,7 +86,7 @@ fn test_cli_update() -> anyhow::Result<()> {
         "-d",
         "Old Desc",
         "-q",
-        "1. Incoming",
+        "1.Incoming",
     ])?;
 
     let id = env.board()?.queues[0].tickets[0].id.clone();
@@ -105,16 +105,16 @@ fn test_cli_update() -> anyhow::Result<()> {
 fn test_cli_move() -> anyhow::Result<()> {
     let env = TestEnv::new()?;
 
-    env.run(&["add", "-t", "Move Me", "-q", "1. Incoming"])?;
+    env.run(&["add", "-t", "Move Me", "-q", "1.Incoming"])?;
     let id = env.board()?.queues[0].tickets[0].id.clone();
 
     // Valid move
-    env.run(&["move", "-i", &id, "-q", "2. To Do"])?;
+    env.run(&["move", "-i", &id, "-q", "2.ToDo"])?;
     let board = env.board()?;
     assert!(board
         .queues
         .iter()
-        .find(|q| q.id == "2. To Do")
+        .find(|q| q.id == "2.ToDo")
         .unwrap()
         .tickets
         .iter()
@@ -130,7 +130,7 @@ fn test_cli_move() -> anyhow::Result<()> {
 fn test_cli_remove() -> anyhow::Result<()> {
     let env = TestEnv::new()?;
 
-    env.run(&["add", "-t", "Delete Me", "-q", "1. Incoming"])?;
+    env.run(&["add", "-t", "Delete Me", "-q", "1.Incoming"])?;
     let id = env.board()?.queues[0].tickets[0].id.clone();
 
     // Valid remove
@@ -150,10 +150,10 @@ fn test_cli_change_limit() -> anyhow::Result<()> {
 
     // change limit using model logic explicitly
     let mut board = env.board()?;
-    board.config.set_limit("1. Incoming".to_string(), 10);
+    board.config.set_limit("1.Incoming".to_string(), 10);
     board.config.write(&env.root)?;
 
-    assert_eq!(env.board()?.config.get_limit("1. Incoming"), Some(10));
+    assert_eq!(env.board()?.config.get_limit("1.Incoming"), Some(10));
     Ok(())
 }
 
@@ -161,7 +161,7 @@ fn test_cli_change_limit() -> anyhow::Result<()> {
 fn test_cli_comment() -> anyhow::Result<()> {
     let env = TestEnv::new()?;
 
-    env.run(&["add", "-t", "Test Comment Ticket", "-q", "1. Incoming"])?;
+    env.run(&["add", "-t", "Test Comment Ticket", "-q", "1.Incoming"])?;
     let id = env.board()?.queues[0].tickets[0].id.clone();
 
     env.run(&["comment", "-i", &id, "-c", "CLI created comment"])?;
@@ -178,7 +178,7 @@ fn test_cli_comment() -> anyhow::Result<()> {
 fn test_cli_attach() -> anyhow::Result<()> {
     let env = TestEnv::new()?;
 
-    env.run(&["add", "-t", "Test Attach Ticket", "-q", "1. Incoming"])?;
+    env.run(&["add", "-t", "Test Attach Ticket", "-q", "1.Incoming"])?;
     let id = env.board()?.queues[0].tickets[0].id.clone();
 
     let dummy_file_path = env.root.join("dummy.txt");
@@ -219,7 +219,7 @@ fn test_cli_configure() -> anyhow::Result<()> {
     ])?;
     let board = env.board()?;
     assert_eq!(board.config.user.active_user, "newusr");
-    assert_eq!(board.config.user.show_only_mine, true);
+    assert!(board.config.user.show_only_mine);
 
     Ok(())
 }
@@ -235,11 +235,11 @@ fn test_cli_list() -> anyhow::Result<()> {
         "-d",
         "Desc A",
         "-q",
-        "1. Incoming",
+        "1.Incoming",
         "--assign-to",
         "Alice",
     ])?;
-    env.run(&["add", "-t", "Task B", "-d", "KeywordX", "-q", "2. To Do"])?;
+    env.run(&["add", "-t", "Task B", "-d", "KeywordX", "-q", "2.ToDo"])?;
 
     // List all
     let out = env.run(&["list"])?;
@@ -275,7 +275,7 @@ fn test_cli_show() -> anyhow::Result<()> {
         "-d",
         "Show Description",
         "-q",
-        "1. Incoming",
+        "1.Incoming",
         "--assign-to",
         "Bob",
     ])?;
@@ -299,7 +299,7 @@ fn test_cli_show() -> anyhow::Result<()> {
 fn test_cli_attach_extended() -> anyhow::Result<()> {
     let env = TestEnv::new()?;
 
-    env.run(&["add", "-t", "Attach Test", "-q", "1. Incoming"])?;
+    env.run(&["add", "-t", "Attach Test", "-q", "1.Incoming"])?;
     let id = env.board()?.queues[0].tickets[0].id.clone();
 
     // 1. Test --show (path)
@@ -341,20 +341,12 @@ fn test_cli_stats() -> anyhow::Result<()> {
         "-t",
         "Task 1",
         "-q",
-        "1. Incoming",
+        "1.Incoming",
         "--assign-to",
         "Alice",
     ])?;
-    env.run(&[
-        "add",
-        "-t",
-        "Task 2",
-        "-q",
-        "2. To Do",
-        "--assign-to",
-        "Bob",
-    ])?;
-    env.run(&["add", "-t", "Task 3", "-q", "1. Incoming"])?;
+    env.run(&["add", "-t", "Task 2", "-q", "2.ToDo", "--assign-to", "Bob"])?;
+    env.run(&["add", "-t", "Task 3", "-q", "1.Incoming"])?;
 
     let out = env.run(&["stats"])?;
     assert!(out.contains("== Board Summary =="));
@@ -362,8 +354,8 @@ fn test_cli_stats() -> anyhow::Result<()> {
     assert!(out.contains("Unassigned:    1"));
 
     assert!(out.contains("== Tickets per Queue =="));
-    assert!(out.contains("1. Incoming              2      -     -"));
-    assert!(out.contains("2. To Do                 1     21    4%"));
+    assert!(out.contains("1.Incoming               2      -     -"));
+    assert!(out.contains("2.ToDo                   1     21    4%"));
 
     assert!(out.contains("== Tickets per User =="));
     assert!(out.contains("Alice                    1"));
@@ -387,7 +379,7 @@ fn test_cli_stats_csv() -> anyhow::Result<()> {
         "-t",
         "Task 1",
         "-q",
-        "1. Incoming",
+        "1.Incoming",
         "--assign-to",
         "Alice",
     ])?;
@@ -395,7 +387,7 @@ fn test_cli_stats_csv() -> anyhow::Result<()> {
     let out = env.run(&["stats", "--csv"])?;
     assert!(out.contains("Type,Category/Date,Metric,Value,Unit"));
     assert!(out.contains("Summary,General,Total Tickets,1,count"));
-    assert!(out.contains("Queue,1. Incoming,Count,1,tickets"));
+    assert!(out.contains("Queue,1.Incoming,Count,1,tickets"));
     assert!(out.contains("User,Alice,Count,1,tickets"));
 
     Ok(())

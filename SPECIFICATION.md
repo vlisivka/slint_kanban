@@ -28,7 +28,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
     -   **Root Directory**: Default is `~/Kanban`. Can be overridden by the first command-line argument.
     -   **Board Overview**: A `README.md` file in the root directory (`~/Kanban/README.md`) that documents the purpose of the board, definitions for each queue, and the development process/rules.
     -   **Tickets directory**: `~/Kanban/Ticket`
-    - **Queues**: Sub-directories within `~/Kanban/Queue`. Sorted alphabetically by directory name. Names should start with a number and a dot (e.g., `1. Incoming`, `2. To Do`) to ensure predictable ordering.
+    - **Queues**: Sub-directories within `~/Kanban/Queue`. Sorted alphabetically by directory name. Names should start with a number and a dot (e.g., `1.Incoming`, `2.ToDo`) to ensure predictable ordering.
     -   **Tickets**: Symlinks from a queue directory to `~/Kanban/Tickets`.
     -   **Ticket Content**: A directory containing:
         -   `README.md`: The main ticket file (metadata + description).

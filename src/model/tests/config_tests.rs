@@ -68,7 +68,7 @@ fn test_split_config_persistence() {
     assert_eq!(loaded.user.active_user, "Alice");
     assert_eq!(loaded.get_limit("To Do"), Some(42));
     assert_eq!(loaded.user.search_history, vec!["rust"]);
-    assert_eq!(loaded.manage_only_mine(), false);
+    assert!(!loaded.manage_only_mine());
 }
 
 #[test]

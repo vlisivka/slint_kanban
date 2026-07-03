@@ -34,7 +34,7 @@ pub enum Commands {
         #[arg(short, long, default_value = "")]
         description: String,
 
-        /// Target queue ID (e.g., "1. Incoming")
+        /// Target queue ID (e.g., "1.Incoming")
         #[arg(short, long)]
         queue: String,
 

@@ -72,11 +72,11 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
 
     // Default workflow if not configured
     let default_workflow = crate::model::config::Workflow {
-        start_queues: vec!["3. Doing".to_string(), "Doing".to_string()],
+        start_queues: vec!["3.Doing".to_string(), "Doing".to_string()],
         done_queues: vec![
-            "6. Done".to_string(),
+            "6.Done".to_string(),
             "Done".to_string(),
-            "7. Archive".to_string(),
+            "7.Archive".to_string(),
         ],
     };
 
@@ -98,7 +98,7 @@ pub fn get_board_summary(board: &Board) -> BoardSummary {
         total_tickets += count;
 
         if done_queues.contains(&queue.name) {
-            // Note: 7. Archive is in done_queues by default, but we should distinguish it
+            // Note: 7.Archive is in done_queues by default, but we should distinguish it
             // for the completion rate formula: (Done) / (Total - Archive)
             if queue.name.to_lowercase().contains("archive") {
                 archived_tickets_count += count;
