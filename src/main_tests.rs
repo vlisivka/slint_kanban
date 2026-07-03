@@ -438,3 +438,87 @@ fn test_cli_sprint_crud() -> anyhow::Result<()> {
 
     Ok(())
 }
+#[test]
+fn test_cli_add_description_file() -> anyhow::Result<()> {
+    let env = TestEnv::new()?;
+    // Write a description file
+    std::fs::write(
+        env.root.join("body.md"),
+        "Ticket description body text for testing",
+    )?;
+
+    // Should read description from file
+    env.run(&[
+        "add",
+        "-t",
+        "File Desc Ticket",
+        "-q",
+        "1.Incoming",
+        "--description-file",
+        env.root.join("body.md").to_str().unwrap(),
+    ])?;
+
+    let board = env.board()?;
+    let incoming = board.queues.iter().find(|q| q.id == "1.Incoming").unwrap();
+    assert_eq!(incoming.tickets.len(), 1);
+    assert!(
+        incoming.tickets[0]
+            .description
+            .contains("Ticket description body text for testing"),
+        "Ticket should contain file content"
+    );
+
+    Ok(())
+}
+/// Test concatenation: --description + --description-file
+#[test]
+fn test_cli_add_description_concat() -> anyhow::Result<()> {
+    let env = TestEnv::new()?;
+
+    std::fs::write(env.root.join("body.md"), "File body content")?;
+
+    env.run(&[
+        "add",
+        "-t",
+        "Concat Ticket",
+        "-d",
+        "Inline desc",
+        "-q",
+        "1.Incoming",
+        "--description-file",
+        env.root.join("body.md").to_str().unwrap(),
+    ])?;
+
+    let board = env.board()?;
+    let incoming = board.queues.iter().find(|q| q.id == "1.Incoming").unwrap();
+    assert_eq!(incoming.tickets.len(), 1);
+    assert_eq!(
+        incoming.tickets[0].description,
+        "Inline desc\nFile body content"
+    );
+
+    Ok(())
+}
+
+/// Test error on non-existent description file
+#[test]
+fn test_cli_add_description_file_not_found() -> anyhow::Result<()> {
+    let env = TestEnv::new()?;
+
+    let err = env.run_err(&[
+        "add",
+        "-t",
+        "Error Ticket",
+        "-q",
+        "1.Incoming",
+        "--description-file",
+        "/nonexistent/path/to/file.md",
+    ]);
+    assert!(
+        err.contains("Failed to read description file") || err.contains("No such file"),
+        "Should report file not found error, got: {}",
+        err
+    );
+
+    Ok(())
+}

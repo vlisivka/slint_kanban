@@ -327,10 +327,34 @@ fn handle_command(
         Commands::Add {
             title,
             description,
+            description_file,
             queue,
             assign_to,
             points,
         } => {
+            // Resolve description body: --description-file (file or stdin) overrides --description.
+            // If both provided, concatenate description + "\n" + file/stdin content.
+            let body = match (&description_file, &description) {
+                (Some(path), _) if path == "-" => {
+                    // Read from stdin
+                    let mut input = String::new();
+                    std::io::Read::read_to_string(&mut std::io::stdin(), &mut input)?;
+                    input
+                }
+                (Some(path), _) => {
+                    // Read from file
+                    let file_content = std::fs::read_to_string(path).map_err(|e| {
+                        anyhow::anyhow!("Failed to read description file '{}': {}", path, e)
+                    })?;
+                    match description {
+                        Some(desc) => format!("{}\n{}", desc, file_content),
+                        None => file_content,
+                    }
+                }
+                (None, Some(desc)) => desc.clone(),
+                (None, None) => String::new(),
+            };
+
             writeln!(
                 out,
                 "{}",
@@ -342,7 +366,7 @@ fn handle_command(
                 )
             )?;
             let author = board.config.active_user();
-            board.create_ticket(&title, &description, &queue, &assign_to, author, points)?;
+            board.create_ticket(&title, &body, &queue, &assign_to, author, points)?;
         }
         Commands::Update {
             id,

@@ -136,7 +136,6 @@ impl Ticket {
     /// ---
     /// <markdown body>
     /// ```
-    /// Loads a ticket header and body from its directory, WITHOUT comments.
     pub fn load(path: &std::path::Path) -> anyhow::Result<Self> {
         let ticket_id = path
             .file_name()
@@ -152,47 +151,22 @@ impl Ticket {
             )));
         }
 
-        let file = std::fs::File::open(&readme_path).map_err(|e| {
-            anyhow::anyhow!(tr!("Failed to open README.md in {}: {}", path.display(), e))
+        let content = std::fs::read_to_string(&readme_path).map_err(|e| {
+            anyhow::anyhow!(tr!("Failed to read README.md in {}: {}", path.display(), e))
         })?;
-        let reader = std::io::BufReader::new(file);
-        use std::io::BufRead;
 
-        let mut frontmatter = String::new();
-        let mut body_snippet = String::new();
-        let mut state = 0; // 0: before first ---, 1: inside frontmatter, 2: after second --- (body)
-
-        for line in reader.lines() {
-            let line = line?;
-            if line.trim() == "---" {
-                state += 1;
-                if state == 3 {
-                    break;
-                }
-                continue;
-            }
-
-            match state {
-                1 => {
-                    frontmatter.push_str(&line);
-                    frontmatter.push('\n');
-                }
-                2 if !line.trim().is_empty() => {
-                    body_snippet = line.trim().to_string();
-                    break;
-                }
-                _ => {}
-            }
-        }
-
-        if state < 2 {
+        let parts: Vec<&str> = content.splitn(3, "---").collect();
+        if parts.len() < 3 {
             return Err(anyhow::anyhow!(tr!(
                 "Invalid ticket format (missing frontmatter) in {}",
                 readme_path.display()
             )));
         }
 
-        let mut metadata: TicketMetadata = serde_yaml::from_str(&frontmatter).map_err(|e| {
+        let frontmatter = parts[1];
+        let body = parts[2].trim().to_string();
+
+        let mut metadata: TicketMetadata = serde_yaml::from_str(frontmatter).map_err(|e| {
             anyhow::anyhow!(tr!(
                 "Failed to parse YAML in {}: {}",
                 readme_path.display(),
@@ -205,7 +179,7 @@ impl Ticket {
             metadata.updated_at = metadata.created_at.clone();
         }
 
-        let ticket = Ticket::from_metadata(ticket_id, metadata, body_snippet);
+        let ticket = Ticket::from_metadata(ticket_id, metadata, body);
         Ok(ticket)
     }
 

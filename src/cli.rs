@@ -30,9 +30,13 @@ pub enum Commands {
         #[arg(short, long)]
         title: String,
 
-        /// Ticket description
-        #[arg(short, long, default_value = "")]
-        description: String,
+        /// Ticket description (if empty, reads from --description-file or stdin)
+        #[arg(short = 'd', long)]
+        description: Option<String>,
+
+        /// File to read description from (use '-' for stdin)
+        #[arg(short = 'D', long)]
+        description_file: Option<String>,
 
         /// Target queue ID (e.g., "1.Incoming")
         #[arg(short, long)]

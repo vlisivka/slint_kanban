@@ -169,6 +169,168 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 
 - **Initialization**: Automatically create the root directory and sub-directories (`Ticket`, `Queue`). Create default queues (`Incoming`, `To Do`, `Doing`, `Reviewing`, `Testing`, `Done`, `Archive`) **only if no queues already exist** in the `Queue` directory.
 
+## CLI Commands
+
+The application provides a command-line interface via `slint_kanban <command> [OPTIONS]`. All commands support `--help` for usage information.
+
+### Global Options
+
+| Option | Description |
+|---|---|
+| `-r, --root <PATH>` | Kanban root directory (defaults to `~/Kanban`) |
+| `--admin` | Administrator mode (bypasses manage_only_mine restrictions) |
+
+### `add` — Create a new ticket
+
+```bash
+slint_kanban add -t TITLE -q QUEUE [OPTIONS]
+```
+
+| Option | Short | Description |
+|---|---|---|
+| `--title <TITLE>` | `-t` | Ticket title (required) |
+| `--description <TEXT>` | `-d` | Inline description text |
+| `--description-file <PATH>` | `-D` | File to read description from (use `-` for stdin) |
+| `--queue <QUEUE>` | `-q` | Target queue ID (e.g., `1.Incoming`, `2.ProductBacklog`) (required) |
+| `--assign-to <USER>` | `-a` | Assigned user [default: empty] |
+| `--points <N>` | `-p` | Estimation points 1–10 [default: 0] |
+
+**Description resolution priority:**
+1. `-D -` (stdin) — reads from stdin, ignores `-d`
+2. `-D <file>` — reads from file; if `-d` also provided → concatenates: `[-d]\n[<file>]`
+3. `-d <text>` — uses inline text
+4. No flags → empty description
+
+**Examples:**
+```bash
+# Inline description (backward compatible)
+slint_kanban add -t "Fix login bug" -q "1.Incoming" -d "User cannot log in"
+
+# Read from file
+slint_kanban add -t "Fix login bug" -q "1.Incoming" -D ticket-body.md
+
+# Read from stdin (pipeline)
+cat template.md | slint_kanban add -t "Fix login bug" -q "1.Incoming" -D -
+
+# Concatenate inline + file
+slint_kanban add -t "Fix login bug" -q "1.Incoming" -d "Context:" -D ticket-body.md
+```
+
+### `update` — Update an existing ticket
+
+```bash
+slint_kanban update -id TICKET_ID [OPTIONS]
+```
+
+| Option | Short | Description |
+|---|---|---|
+| `--id <ID>` | `-id` | Ticket short ID (required) |
+| `--title <TITLE>` | `-t` | New title (preserved if omitted) |
+| `--description <TEXT>` | `-d` | New description (preserved if omitted) |
+| `--assign-to <USER>` | `-a` | Assign to user |
+| `--unassign` | | Clear assignment |
+| `--points <N>` | `-p` | New points value (preserved if omitted) |
+
+### `move` — Move ticket between queues
+
+```bash
+slint_kanban move -id TICKET_ID -q QUEUE
+```
+
+| Option | Short | Description |
+|---|---|---|
+| `--id <ID>` | `-id` | Ticket short ID (required) |
+| `--queue <QUEUE>` | `-q` | Target queue ID (required) |
+
+### `remove` — Delete a ticket
+
+```bash
+slint_kanban remove -id TICKET_ID
+```
+
+| Option | Short | Description |
+|---|---|---|
+| `--id <ID>` | `-id` | Ticket short ID (required) |
+
+### `list` — List tickets with filters
+
+```bash
+slint_kanban list [OPTIONS]
+```
+
+| Option | Short | Description |
+|---|---|---|
+| `--search <QUERY>` | `-s` | Full-text search |
+| `--id <ID>` | `-id` | Filter by ticket ID |
+| `--assigned-to <USER>` | `-a` | Filter by assigned user |
+| `--unassigned` | | Show only unassigned tickets |
+| `--date-from <DATE>` | `-f` | Show tickets created after date (YYYY-MM-DD) |
+| `--date-to <DATE>` | `-t` | Show tickets created before date (YYYY-MM-DD) |
+
+### `show` — Show detailed ticket information
+
+```bash
+slint_kanban show -id TICKET_ID
+```
+
+| Option | Short | Description |
+|---|---|---|
+| `--id <ID>` | `-id` | Ticket short ID (required) |
+
+### `configure` — Manage configuration
+
+```bash
+slint_kanban configure [ACTION] [OPTIONS]
+```
+
+Actions: `add-user`, `remove-user`, `set-active`, `set-queue-limit`, `hide-queue`, `show-queues`
+
+### `stats` — Show board statistics
+
+```bash
+slint_kanban stats [OPTIONS]
+```
+
+| Option | Short | Description |
+|---|---|---|
+| `--csv` | | Export to CSV format |
+
+### `sprint` — Manage sprints
+
+```bash
+slint_kanban sprint <ACTION> [OPTIONS]
+```
+
+Actions: `list`, `current`, `add`, `update`, `remove`
+
+### `comment` — Add a comment to a ticket
+
+```bash
+slint_kanban comment -id TICKET_ID -c CONTENT
+```
+
+| Option | Short | Description |
+|---|---|---|
+| `--id <ID>` | `-id` | Ticket short ID (required) |
+| `--content <TEXT>` | `-c` | Comment content (required) |
+
+### `attach` — Manage attachments
+
+```bash
+slint_kanban attach [ACTION] [OPTIONS]
+```
+
+Actions: `add`, `list`, `show`, `open`
+
+| Option | Short | Description |
+|---|---|---|
+| `--file <PATH>` | `-f` | File to attach (for `add` action) |
+
+### `open` — Open GUI at specific path
+
+```bash
+slint_kanban open [PATH]
+```
 ## Future Enhancements
 
 The following features are planned for future releases:

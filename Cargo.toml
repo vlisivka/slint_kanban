@@ -34,6 +34,8 @@ slint-build = "1.9"
 [dev-dependencies]
 i-slint-backend-testing = "1.15.1"
 tempfile = "3.10"
+assert_cmd = "2.0"
+predicates = "3.0"
 
 [profile.dev]
 opt-level = 1
