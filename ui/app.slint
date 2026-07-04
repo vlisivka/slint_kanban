@@ -72,6 +72,7 @@ export component App inherits Window {
     callback test-trigger-delete-ticket(string); // for testing
     callback test-trigger-select-history(string); // for testing
     callback test-trigger-remove-history(string); // for testing
+    callback test-trigger-move-ticket(string, string, string); // for testing
     callback test-get-first-ticket-id() -> string; // for testing
     // Tooltip state
     out property <string> tooltip_text: "";
@@ -443,6 +444,10 @@ export component App inherits Window {
 
     test-trigger-remove-history(q) => {
         remove-search-item(q);
+    }
+
+    test-trigger-move-ticket(tid, src, tgt) => {
+        move-ticket(tid, src, tgt);
     }
 
     // Drag ghost: floating card that follows the cursor during drag

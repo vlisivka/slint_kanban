@@ -1,7 +1,7 @@
 ---
 title: "Feature: Додати команду queue до CLI"
 created_at: 2026-07-03 16:01:14
-updated_at: 2026-07-03 16:01:14
+updated_at: 2026-07-04 07:33:11
 assigned_to: "user"
 author: "user"
 points: 3

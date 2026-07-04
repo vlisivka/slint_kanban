@@ -176,6 +176,10 @@ fn test_gui_suite() {
     // VII. Test Stats View
     println!("Checking Stats View...");
     test_gui_stats_view_opens();
+
+    // Test moving of tickets
+    println!("Checking Stats View...");
+    test_gui_move_ticket_updates_board();
 }
 
 fn test_ticket_id_visibility() {
@@ -271,5 +275,71 @@ fn test_gui_stats_view_opens() {
         stats.queues.row_count(),
         7,
         "Should have 7 queues in default config"
+    );
+}
+
+/// Regression test for ticket zae6jb: GUI not updating after drag-and-drop move.
+/// After moving a ticket via the move-ticket callback, the board_queues model
+/// must reflect the new queue assignment immediately — without requiring a manual reload().
+fn test_gui_move_ticket_updates_board() {
+    let (ui, controller, root_path, _temp_dir) = setup_test_app();
+
+    // Disable manage_only_mine so we can move tickets assigned to other users
+    // (setup_test_app creates tickets assigned to "user1", but default active_user is "user")
+    let mut config = crate::model::Config::load(&root_path)
+        .expect("Load of config to disable manage_only_mine FAILED");
+    config.user.manage_only_mine = false;
+    config
+        .write(&root_path)
+        .expect("Write of config to disable manage_only_mine FAILED");
+
+    // Reload to get fresh state with our 2 tickets and updated config
+    controller
+        .reload()
+        .expect(" Reload to get fresh state with our 2 tickets and updated config FAILED");
+
+    // Locate tickets in the UI models
+    let queues_before = ui.get_board_queues();
+    let todo_queue = queues_before.iter().find(|q| q.id == "2.ToDo").unwrap();
+    let _doing_queue = queues_before.iter().find(|q| q.id == "3.Doing").unwrap();
+
+    // setup_test_app creates: ticket 1 in 2.ToDo, ticket 2 in 6.Done
+    assert_eq!(
+        todo_queue.tickets.row_count(),
+        1,
+        "Should have 1 ticket in ToDo"
+    );
+    let ticket_id = todo_queue.tickets.row_data(0).unwrap().id.clone();
+
+    // Act: move the ticket from 2.ToDo to 3.Doing via the GUI callback
+    ui.invoke_test_trigger_move_ticket(ticket_id.clone(), "2.ToDo".into(), "3.Doing".into());
+
+    // Assert: after the move, the ticket should be in Doing queue's model
+    // (no manual reload — handle_move_ticket must call reload() internally)
+    let queues_after = ui.get_board_queues();
+    let doing_after = queues_after.iter().find(|q| q.id == "3.Doing").unwrap();
+    let todo_after = queues_after.iter().find(|q| q.id == "2.ToDo").unwrap();
+
+    assert_eq!(
+        todo_after.tickets.row_count(),
+        0,
+        "Source queue should be empty after move"
+    );
+    assert_eq!(
+        doing_after.tickets.row_count(),
+        1,
+        "Target queue should have the moved ticket"
+    );
+
+    // Verify it is the correct ticket
+    let moved_ticket = doing_after.tickets.row_data(0).unwrap();
+    assert_eq!(moved_ticket.id, ticket_id, "Moved ticket ID should match");
+
+    // Also verify the board on disk is consistent
+    let board = Board::load(root_path.clone())
+        .expect("Load of board to verify the board on disk is consistent FAILED");
+    assert!(
+        board.find_ticket_by_id(&ticket_id).is_some(),
+        "Ticket should still exist in board"
     );
 }

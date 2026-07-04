@@ -1,7 +1,7 @@
 ---
 title: "Upgrade from Slint 1.15 to 1.17"
 created_at: 2026-07-03 09:24:20
-updated_at: 2026-07-03 09:31:09
+updated_at: 2026-07-03 23:04:04
 assigned_to: "admin"
 author: "user"
 points: 8
@@ -28,6 +28,8 @@ attachment_count: 0
 | Description rendering | Plain Text (без markdown) | ui/dialogs/ticket_view.slint#153-158 |
 
 ## План покращень (пріоритезовано)
+
+Є приклад маленької дошки kanban з drang and drop: https://raw.githubusercontent.com/slint-ui/slint/refs/heads/master/examples/dnd-kanban/main.rs https://raw.githubusercontent.com/slint-ui/slint/refs/heads/master/examples/dnd-kanban/kanban.slint
 
 ### P0 - Критичні
 

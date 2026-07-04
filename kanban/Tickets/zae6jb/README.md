@@ -1,10 +1,10 @@
 ---
 title: "Bug: GUI не оновлюється після Drag & Drop переносу тікету між чергами (stale state)"
 created_at: 2026-07-03 10:00:00
-updated_at: 2026-07-03 22:16:17
+updated_at: 2026-07-03 22:56:40
 assigned_to: "admin"
 author: "user"
-points: 5
+points: 1
 attachment_count: 0
 ---
 # GUI не оновлюється після Drag & Drop переносу тікету між чергами (stale state)
@@ -105,10 +105,10 @@ if let Err(e) = board.move_ticket(&ticket_id, &source_id, &resolved_target_id) {
 
 ## Acceptance Criteria
 
-- [ ] Існує тест, що репродукує баг (RED phase)
-- [ ] Тест проходить після виправлення (GREEN phase)
-- [ ] Після drag-and-drop GUI показує актуальний стан (тікет в новій черзі, не у старій)
-- [ ] Подвійне переміщення тікету не дає помилки «not found in queue»
+- [x] Існує тест, що репродукує баг (RED phase)
+- [x] Тест проходить після виправлення (GREEN phase)
+- [x] Після drag-and-drop GUI показує актуальний стан (тікет в новій черзі, не у старій)
+- [x] Подвійне переміщення тікету не дає помилки «not found in queue»
 
 ## Sources
 
@@ -116,3 +116,27 @@ if let Err(e) = board.move_ticket(&ticket_id, &source_id, &resolved_target_id) {
 - `src/main.rs:66-73` — watcher event filtering
 - `src/model/board.rs:636-696` — move_ticket (std::fs::rename на symlink)
 - `src/controller.rs:381-400` — handle_delete_ticket (також не викликає reload, але може спрацьовувати watcher)
+## Resolution comments
+
+### Підсумок
+
+Виправлено баг, при якому GUI не оновлювався після drag-and-drop переносу тікету між чергами. Було виявлено та виправлено дві проблеми:
+
+1. `handle_move_ticket` не викликав `self.reload()` після успішного переміщення (відповідно до гіпотези з опису багу)
+2. `sync_board_data` не видаляв старі рядки з VecModel при зменшенні кількості тікетів у черзі
+
+### Зміни в коді
+| Файл | Зміна |
+|---|---|
+| `src/controller.rs:345-349` | Додано `let _ = self.reload();` у `handle_move_ticket` після успішного move |
+| `src/controller.rs:172-177` | Додано логіку `else if new_len < current_len` для видалення зайвих рядків з tickets_model у `sync_board_data` |
+| `ui/app.slint:75,448-451` | Додано `test-trigger-move-ticket` callback для тестування drag-and-drop |
+
+### Побічний фікс
+- Виявлено, що `can_manage_ticket` блокував переміщення тікетів у тестах через конфлікт `active_user` ("user") з `assigned_to` ("user1"). Тест налаштований на `manage_only_mine = false`.
+
+### Додані тести
+- `test_gui_move_ticket_updates_board()` — перевірка що GUI оновлюється після move-ticket без ручного reload()
+
+### Оновлена документація
+Не оновлено — зміни стосуються лише виправлення багів у існуючих функціях.

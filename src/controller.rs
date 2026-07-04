@@ -169,6 +169,11 @@ impl AppController {
                 {
                     tickets_model.push(new.clone());
                 }
+            } else if new_len < current_len {
+                // Shrink the model to remove stale rows
+                for _ in 0..(current_len - new_len) {
+                    tickets_model.remove(current_len - 1);
+                }
             }
 
             let ticket_count = new_len as i32;
@@ -313,9 +318,6 @@ impl AppController {
     fn can_manage_ticket(&self, ticket: &crate::model::ticket::Ticket, board: &Board) -> bool {
         board.can_manage_ticket(ticket, false)
     }
-
-    // --- Action Handlers ---
-
     pub fn handle_move_ticket(&self, ticket_id: String, source_id: String, target_id: String) {
         let board = match self.load_board("move") {
             Some(b) => b,
@@ -344,6 +346,8 @@ impl AppController {
 
         if let Err(e) = board.move_ticket(&ticket_id, &source_id, &resolved_target_id) {
             self.show_error(&e.to_string());
+        } else {
+            let _ = self.reload();
         }
     }
 
