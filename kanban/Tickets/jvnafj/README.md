@@ -1,7 +1,7 @@
 ---
 title: "Upgrade from Slint 1.15 to 1.17"
 created_at: 2026-07-03 09:24:20
-updated_at: 2026-07-03 23:04:04
+updated_at: 2026-07-04 15:00:00
 assigned_to: "admin"
 author: "user"
 points: 8
@@ -38,26 +38,38 @@ attachment_count: 0
    - Прибирає ~400 рядків callback-коду, замінюється на ~200
    - Прибирає is_dragging, mouse_x, mouse_y, ghost-Rectangle
    - Потрібен Rust-side глобальний Api з make-transfer/read-transfer callback-ами
+   - Підзадача: #646xe0
 
 2. KeyBinding - заміна ручного key-pressed(event)
    - Декларативні @keys(Control+F), @keys(Control+N), @keys(Control+M), @keys(Escape)
    - Прибирає ручну обробку української розкладки
+   - Підзадача: #dof4c9
 
 ### P1 - Важливі
 
 3. Native Tooltips - заміна custom Rectangle tooltip
    - Вбудований Tooltip { text: @markdown("...") } елемент
    - Прибирає tooltip_text, tooltip_visible, tooltip_x, tooltip_y
+   - Підзадача: #10i9d6
 
 4. Two-way model bindings on rows - text <=> item.name
    - Прибирає 6 editing_* properties, замінюється на in property <TicketStr> ticket + двонаправлене зв'язування
    - Потрібна перевірка сумісності (in property vs model)
+   - Підзадача: #gykrr4
 
 ### P2 - Бажані
 
 5. StyledText + @markdown для рендерингу описів тікетів
+   - Рендеринг markdown-тексту в описі тікета
+   - Підзадача: #gwb1dm, пов'язаний: #sw9gai
+
 6. SystemTrayIcon - minimize-to-tray функціональність
+   - Іконка в системному треї з контекстним меню
+   - Підзадача: #embarr
+
 7. Cross-axis alignment - покращення layout
+   - Використання align-items / justify-content замість ручного позиціонування
+   - Підзадача: #k8d6p4
 
 ## Ризики
 
