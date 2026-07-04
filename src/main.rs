@@ -5,9 +5,10 @@
 //!           and NO_COLOR support (https://no-color.org/).
 //! Constraints: Business logic should be in the model module, not here.
 
+use chrono::DateTime;
 use notify::{RecursiveMode, Watcher};
 use slint::ComponentHandle;
-use slint_kanban::cli::{CliArgs, Commands, SprintAction};
+use slint_kanban::cli::{CliArgs, Commands, QueueAction, SprintAction};
 use slint_kanban::controller::AppController;
 use slint_kanban::model::Board;
 use slint_kanban::*;
@@ -790,6 +791,178 @@ fn handle_command(
                 }
             }
         }
+        Commands::Queue { action } => {
+            let mut board = Board::load(root_path)?;
+
+            match action {
+                QueueAction::List => {
+                    if board.queues.is_empty() {
+                        writeln!(out, "{}", tr!("No queues found."))?;
+                    } else {
+                        for q in &board.queues {
+                            let limit_str = q
+                                .limit
+                                .map(|l| format!(" (limit: {l})"))
+                                .unwrap_or_default();
+                            writeln!(
+                                out,
+                                "[{}] {} — {} tickets{}{}",
+                                q.id,
+                                q.name,
+                                q.tickets.len(),
+                                limit_str,
+                                if !q.visible { " (hidden)" } else { "" }
+                            )?;
+                        }
+                    }
+                }
+                QueueAction::Add { name } => {
+                    if !admin {
+                        anyhow::bail!(tr!("Admin mode required. Use --admin flag."));
+                    }
+                    board.add_queue(&name)?;
+                    writeln!(out, "{}", tr!("Queue added: {}", name))?;
+                }
+                QueueAction::Rename { id, name } => {
+                    if !admin {
+                        anyhow::bail!(tr!("Admin mode required. Use --admin flag."));
+                    }
+                    board.rename_queue(&id, &name)?;
+                    writeln!(out, "{}", tr!("Queue renamed: {} -> {}", id, name))?;
+                }
+                QueueAction::Delete { id } => {
+                    if !admin {
+                        anyhow::bail!(tr!("Admin mode required. Use --admin flag."));
+                    }
+                    board.delete_queue(&id)?;
+                    writeln!(out, "{}", tr!("Queue deleted: {}", id))?;
+                }
+                QueueAction::Settings { id, limit } => match limit {
+                    Some(lim) => {
+                        if !admin {
+                            anyhow::bail!(tr!("Admin mode required. Use --admin flag."));
+                        }
+                        let queue_path = board.queue_path(&id);
+                        if !queue_path.exists() {
+                            anyhow::bail!(tr!("Queue not found: {}", id));
+                        }
+                        board.config.set_limit(id.clone(), lim);
+                        let root = board.tickets_path.parent().unwrap();
+                        board.config.write(root)?;
+                        writeln!(out, "{}", tr!("Queue {} limit set to: {}", id, lim))?;
+                    }
+                    None => {
+                        let q = board
+                            .queues
+                            .iter()
+                            .find(|q| q.id == id || q.name == id)
+                            .ok_or_else(|| anyhow::anyhow!(tr!("Queue not found: {}", id)))?;
+                        let limit_str = q
+                            .limit
+                            .map(|l| l.to_string())
+                            .unwrap_or_else(|| tr!("none").to_string());
+                        writeln!(out, "Queue: {} ({})", q.name, q.id)?;
+                        writeln!(out, "  Limit: {}", limit_str)?;
+                        writeln!(out, "  Visible: {}", q.visible)?;
+                        writeln!(out, "  Tickets: {}", q.tickets.len())?;
+                    }
+                },
+                QueueAction::Tickets {
+                    id,
+                    verbose,
+                    after,
+                    last_hour,
+                    last_day,
+                    assigned_to,
+                    assigned_to_me,
+                } => {
+                    let q = board
+                        .queues
+                        .iter()
+                        .find(|q| q.id == id || q.name == id)
+                        .ok_or_else(|| anyhow::anyhow!(tr!("Queue not found: {}", id)))?;
+
+                    writeln!(out, "=== {} ({}) ===", q.name, q.id)?;
+
+                    for t in &q.tickets {
+                        // Apply user filter
+                        let matches_user = if let Some(ref user) = assigned_to {
+                            t.assigned_to == *user
+                        } else if assigned_to_me {
+                            let active_user = board.config.active_user();
+                            t.assigned_to == active_user
+                        } else {
+                            true
+                        };
+
+                        // Apply date filter
+                        let matches_date = match (&after, last_hour, last_day) {
+                            (Some(ref d), _, _) => {
+                                let parsed = parse_date_filter(d)?;
+                                if t.updated_at.is_empty() {
+                                    true
+                                } else {
+                                    compare_datetime(&t.updated_at, &parsed) >= 0
+                                }
+                            }
+                            (_, true, _) => {
+                                let cutoff = chrono::Utc::now() - chrono::Duration::hours(1);
+                                if t.updated_at.is_empty() {
+                                    false
+                                } else {
+                                    match chrono::DateTime::parse_from_str(
+                                        &t.updated_at,
+                                        "%Y-%m-%d %H:%M:%S",
+                                    ) {
+                                        Ok(dt) => dt >= cutoff,
+                                        Err(_) => false,
+                                    }
+                                }
+                            }
+                            (_, _, true) => {
+                                let cutoff = chrono::Utc::now() - chrono::Duration::days(1);
+                                if t.updated_at.is_empty() {
+                                    false
+                                } else {
+                                    match chrono::DateTime::parse_from_str(
+                                        &t.updated_at,
+                                        "%Y-%m-%d %H:%M:%S",
+                                    ) {
+                                        Ok(dt) => dt >= cutoff,
+                                        Err(_) => false,
+                                    }
+                                }
+                            }
+                            _ => true,
+                        };
+
+                        if matches_user && matches_date {
+                            if verbose {
+                                let author = if t.author.is_empty() {
+                                    tr!("<unknown>").to_string()
+                                } else {
+                                    t.author.clone()
+                                };
+                                let assignee = if t.assigned_to.is_empty() {
+                                    tr!("<unassigned>").to_string()
+                                } else {
+                                    t.assigned_to.clone()
+                                };
+                                writeln!(out, "[{}] {} (Created: {}, Updated: {}, Points: {}, By: {}, Assigned to: {})",
+                                    t.id, t.title, t.created_at, t.updated_at, t.points, author, assignee)?;
+                            } else {
+                                let points_display = if t.points > 0 {
+                                    format!(" [{} pts]", t.points)
+                                } else {
+                                    String::new()
+                                };
+                                writeln!(out, "[{}] {}{}", t.id, t.title, points_display)?;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     Ok(())
@@ -1045,6 +1218,44 @@ fn main() -> anyhow::Result<()> {
 
     let args = CliArgs::parse();
     run_cli(args, &mut std::io::stdout())
+}
+/// Parse a date filter string supporting YYYY-MM-DD or YYYY-MM-DD_HH:MM format.
+fn parse_date_filter(s: &str) -> anyhow::Result<String> {
+    // Accept YYYY-MM-DD or YYYY-MM-DDTHH:MM or YYYY-MM-DD_HH:MM
+    let normalized = s.replace('_', "T");
+    chrono::NaiveDateTime::parse_from_str(&normalized, "%Y-%m-%dT%H:%M:%S")
+        .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
+        .or_else(|_| {
+            chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d")
+                .map(|d| d.format("%Y-%m-%d 00:00:00").to_string())
+        })
+        .map_err(|e| {
+            anyhow::anyhow!(
+                "Invalid date format '{}': {}. Use YYYY-MM-DD or YYYY-MM-DD_HH:MM",
+                s,
+                e
+            )
+        })
+}
+
+/// Compare a datetime string (YYYY-MM-DD HH:MM:SS) with a parsed datetime.
+/// Returns >= 0 if dt1 >= dt2.
+fn compare_datetime(dt1_str: &str, dt2: &str) -> i64 {
+    let fmt = "%Y-%m-%d %H:%M:%S";
+    match (
+        DateTime::parse_from_str(dt1_str, fmt),
+        DateTime::parse_from_str(dt2, fmt),
+    ) {
+        (Ok(d1), Ok(d2)) => {
+            let cmp = d1.cmp(&d2);
+            match cmp {
+                std::cmp::Ordering::Greater => 1,
+                std::cmp::Ordering::Equal => 0,
+                std::cmp::Ordering::Less => -1,
+            }
+        }
+        _ => -1, // Can't parse, treat as not matching
+    }
 }
 
 #[cfg(test)]

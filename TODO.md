@@ -223,12 +223,8 @@ This file tracks the detailed steps to build the Slint Kanban application, follo
   - [x] Load translations dynamically
 
 ### Markdown Rendering
-- [ ] Implement Markdown rendering in ticket detail view using Servo
-  - [ ] Copy WebView component from Slint "servo" example: https://github.com/slint-ui/slint/tree/master/examples/servo
-  - [ ] Integrate markdown rendering library (pulldown-cmark or similar)
-  - [ ] Create styled text rendering component
-  - [ ] Support for headings, lists, code blocks
-  - [ ] Support for links and images
+- [ ] Implement Markdown rendering in ticket detail using slint 1.17 StyledText.from_markdown():
+https://docs.slint.dev/latest/docs/rust/slint/struct.StyledText#method.from_markdown
 
 ### Export Functionality
 - [ ] Implement export features

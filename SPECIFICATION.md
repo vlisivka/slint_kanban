@@ -114,6 +114,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
         - `configure`: Change settings (options: `--active-user`, `--show-only-mine`, `--add-user`).
         - `open PATH`: Open specified directory in the GUI.
         - `admin PATH`: Open the specified board in Administrator Mode.
+        - `queue`: Manage queues (subcommands: `list`, `add`, `rename`, `delete`, `settings`, `tickets`).
     - **Administrator Mode**:
         - A specialized mode for board management, triggered via CLI: `slint_kanban admin PATH_TO_BOARD`.
         - Functional capabilities in this mode:
@@ -242,6 +243,121 @@ slint_kanban move -id TICKET_ID -q QUEUE
 | `--id <ID>` | `-id` | Ticket short ID (required) |
 | `--queue <QUEUE>` | `-q` | Target queue ID (required) |
 
+
+### `queue` — Manage queues
+
+```bash
+slint_kanban queue <ACTION> [OPTIONS]
+```
+
+Actions: `list`, `add`, `rename`, `delete`, `settings`, `tickets`
+
+#### `queue list`
+
+List all queues with their settings.
+
+```bash
+slint_kanban queue list
+```
+
+Output example:
+```
+[1.Incoming] Incoming — 3 tickets (limit: 0)
+[2.ProductBacklog] Product Backlog — 5 tickets
+```
+
+#### `queue add`
+
+Add a new queue (requires `--admin`).
+
+```bash
+slint_kanban --admin queue add --name "4.InReview"
+```
+
+| Option | Description |
+|---|---|
+| `--name <NAME>` | New queue name (e.g., `4.InReview`) |
+
+#### `queue rename`
+
+Rename a queue (requires `--admin`).
+
+```bash
+slint_kanban --admin queue rename --id "1.Incoming" --name "0.Intake"
+```
+
+| Option | Short | Description |
+|---|---|---|
+| `--id <ID>` | `-i` | Current queue ID or name (required) |
+| `--name <NAME>` | | New queue name (required) |
+
+#### `queue delete`
+
+Delete an empty queue (requires `--admin`). Fails if queue has tickets.
+
+```bash
+slint_kanban --admin queue delete --id "9.Archive"
+```
+
+| Option | Short | Description |
+|---|---|---|
+| `--id <ID>` | `-i` | Queue ID to delete (required) |
+
+#### `queue settings`
+
+View or set queue settings.
+
+```bash
+# View settings
+slint_kanban queue settings -i "2.Incoming"
+
+# Set limit (requires --admin)
+slint_kanban --admin queue settings -i "3.SprintBacklog" -l 50
+```
+
+| Option | Short | Description |
+|---|---|---|
+| `--id <ID>` | `-i` | Queue ID or name (required) |
+| `--limit <N>` | `-l` | Set WIP limit for queue (admin only) |
+
+View output shows: queue name, ID, current limit, visibility, ticket count.
+
+#### `queue tickets`
+
+List tickets in a queue with optional filters.
+
+```bash
+# Basic listing
+slint_kanban queue tickets -i "2.Incoming"
+
+# Verbose mode
+slint_kanban queue tickets -v -i "2.Incoming"
+
+# Filter by date
+slint_kanban queue tickets -i "3.SprintBacklog" --after "2026-07-03"
+slint_kanban queue tickets -i "3.SprintBacklog" --after "2026-07-03_15:20"
+
+# Filter by time window
+slint_kanban queue tickets -i "4.InProgress" --last-hour
+slint_kanban queue tickets -i "4.InProgress" --last-day
+
+# Filter by assignee
+slint_kanban queue tickets -i "4.InProgress" --assigned-to user
+slint_kanban queue tickets -i "4.InProgress" --assigned-to-me
+```
+
+| Option | Short | Description |
+|---|---|---|
+| `--id <ID>` | `-i` | Queue ID or name (required) |
+| `--verbose` | `-v` | Show detailed ticket info (created/updated at, points, author, assignee) |
+| `--after <DATE>` | | Filter by date after (YYYY-MM-DD or YYYY-MM-DD_HH:MM) |
+| `--last-hour` | | Show only tickets updated in the last hour |
+| `--last-day` | | Show only tickets updated in the last day |
+| `--assigned-to <USER>` | | Filter by assigned user |
+| `--assigned-to-me` | | Show only tickets assigned to active user |
+
+Basic output: `[ID] Title [N pts]` per ticket.
+Verbose output: `[ID] Title (Created: ..., Updated: ..., Points: N, By: ..., Assigned to: ...)`
 ### `remove` — Delete a ticket
 
 ```bash

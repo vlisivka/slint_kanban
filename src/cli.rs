@@ -23,6 +23,58 @@ pub struct CliArgs {
 }
 
 #[derive(Subcommand, Debug)]
+pub enum QueueAction {
+    /// List all queues with settings
+    List,
+    /// Add a new queue (admin only)
+    Add {
+        #[arg(long)]
+        name: String,
+    },
+    /// Rename a queue (admin only)
+    Rename {
+        #[arg(short, long)]
+        id: String,
+        #[arg(long)]
+        name: String,
+    },
+    /// Delete an empty queue (admin only)
+    Delete {
+        #[arg(short, long)]
+        id: String,
+    },
+    /// View or set queue settings
+    Settings {
+        #[arg(short, long)]
+        id: String,
+        #[arg(short, long)]
+        limit: Option<usize>,
+    },
+    /// List tickets in a queue with optional filters
+    Tickets {
+        #[arg(short, long)]
+        id: String,
+        /// Show detailed ticket info (id, created/updated at, points, author, assignee)
+        #[arg(short, long)]
+        verbose: bool,
+        /// Filter by date after (YYYY-MM-DD or YYYY-MM-DD_HH:MM)
+        #[arg(long)]
+        after: Option<String>,
+        /// Filter by last hour
+        #[arg(long)]
+        last_hour: bool,
+        /// Filter by last day
+        #[arg(long)]
+        last_day: bool,
+        /// Filter by assigned user
+        #[arg(long)]
+        assigned_to: Option<String>,
+        /// Show only tickets assigned to active user
+        #[arg(long)]
+        assigned_to_me: bool,
+    },
+}
+#[derive(Subcommand, Debug)]
 pub enum Commands {
     /// Add a new ticket
     Add {
@@ -208,6 +260,12 @@ pub enum Commands {
         /// Open the attachments directory in the file manager
         #[arg(short, long)]
         open: bool,
+    },
+
+    /// Manage queues
+    Queue {
+        #[command(subcommand)]
+        action: QueueAction,
     },
 }
 
