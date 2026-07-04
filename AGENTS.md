@@ -9,3 +9,5 @@
 4. **Keep documentation in good shape.** If code changed, then it documentation must be updated too. Search for the documentation and update it.
 5. **Be accurate**, don't perform destructive actions without explicit permissions. It better to be safe than sorry.
 6. **User uses Ukrainian language**, so talk to him in Ukrainian and program must use Ukrainian language when called by user, but code and test cases must use built-in English localization.
+7. **Use kanban.sh** to work with tickets. See `./kanban.sh --help` for list of commands.
+8. **Use simulate_work** binary to simulate some activity on kanban board, then use slint_kanban binary to work with board. Example: `cargo run --bin simulate_work /tmp/kanban_sim; cargo run --bin slint_kanban -- --root /tmp/kanban_sim stats`

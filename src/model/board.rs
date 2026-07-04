@@ -827,7 +827,7 @@ impl Board {
         author: &str,
         points: u32,
     ) -> anyhow::Result<String> {
-        use rand::Rng;
+        use rand::RngExt;
 
         let queue_path = self.queue_path(queue_id);
         if !queue_path.exists() {
@@ -842,7 +842,7 @@ impl Board {
                 std::iter::repeat(())
                     .map(|()| {
                         let chars = b"abcdefghijklmnopqrstuvwxyz0123456789";
-                        let idx = rand::thread_rng().gen_range(0..chars.len());
+                        let idx = rand::rng().random_range(0..chars.len());
                         chars[idx] as char
                     })
                     .take(6)
@@ -972,12 +972,12 @@ impl Board {
         let next_n = max_n + 1;
 
         // Generate UID
-        use rand::Rng;
-        let mut rng = rand::rngs::OsRng;
+        use rand::RngExt;
+        let mut rng = rand::rng();
         let uid_chars: String = (0..5)
             .map(|_| {
                 let chars = b"abcdefghijklmnopqrstuvwxyz0123456789";
-                let idx = rng.gen_range(0..chars.len());
+                let idx = rng.random_range(0..chars.len());
                 chars[idx] as char
             })
             .collect();

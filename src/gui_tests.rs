@@ -133,20 +133,20 @@ fn test_gui_suite() {
 
     // III. Fuzzy Stability: 100 random steps
     println!("Starting fuzzy stability test (100 random steps)...");
-    let mut rng = rand::thread_rng();
-    use rand::Rng;
+    let mut rng = rand::rng();
+    use rand::RngExt;
     let qids = ["1.Incoming", "2.ToDoo", "3.Doing", "6.Done"];
     for i in 0..100 {
         let step_start = std::time::Instant::now();
-        match rng.gen_range(0..5) {
+        match rng.random_range(0..5) {
             0 => ui.set_search_query("Fuzz".into()),
             1 => ui
                 .global::<UserGlobal>()
-                .invoke_toggle_show_only_mine(rng.gen_bool(0.5)),
+                .invoke_toggle_show_only_mine(rng.random_bool(0.5)),
             2 => ui.invoke_search_edited("".into()),
             3 => {
-                let qid = qids[rng.gen_range(0..qids.len())];
-                ui.invoke_toggle_queue_visibility(qid.into(), rng.gen_bool(0.5));
+                let qid = qids[rng.random_range(0..qids.len())];
+                ui.invoke_toggle_queue_visibility(qid.into(), rng.random_bool(0.5));
             }
             _ => {
                 controller.reload().unwrap();

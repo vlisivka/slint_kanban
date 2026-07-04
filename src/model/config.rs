@@ -150,12 +150,12 @@ impl Config {
     }
 
     fn generate_machine_id() -> String {
-        use rand::Rng;
+        use rand::RngExt;
         let charset: &[u8] = b"abcdefghijklmnopqrstuvwxyz0123456789";
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         (0..8)
             .map(|_| {
-                let idx = rng.gen_range(0..charset.len());
+                let idx = rng.random_range(0..charset.len());
                 charset[idx] as char
             })
             .collect()

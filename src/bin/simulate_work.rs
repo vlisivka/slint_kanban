@@ -1,5 +1,5 @@
 use chrono::{Duration, Utc};
-use rand::Rng;
+use rand::RngExt;
 use slint_kanban::model::action::ActionPayload;
 use slint_kanban::model::config::Sprint;
 use slint_kanban::model::{Board, Ticket};
@@ -48,7 +48,7 @@ fn main() -> anyhow::Result<()> {
         "6.Done",
     ];
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let start_sim = now - Duration::days(60);
 
     let mut active_tickets = Vec::new();
@@ -61,12 +61,12 @@ fn main() -> anyhow::Result<()> {
         println!("Simulating Day {}: {}", day, date_str);
 
         // Randomly add new tickets
-        if rng.gen_bool(0.7) {
-            let num_new = rng.gen_range(1..3);
+        if rng.random_bool(0.7) {
+            let num_new = rng.random_range(1..3);
             for _ in 0..num_new {
                 let title = format!("Task from day {}", day);
-                let points = rng.gen_range(1..11);
-                let assigned_to = users[rng.gen_range(0..users.len())];
+                let points = rng.random_range(1..11);
+                let assigned_to = users[rng.random_range(0..users.len())];
 
                 // We bypass board.create_ticket to handle past timestamps manually
                 // Or we can just use it and then patch the files, but it's easier to write manually
@@ -119,7 +119,7 @@ fn main() -> anyhow::Result<()> {
             let days_since_move = (current_date - last_move).num_days();
             let move_threshold = (points as f64 * 0.3).max(0.0);
 
-            if days_since_move >= move_threshold as i64 && rng.gen_bool(0.6) {
+            if days_since_move >= move_threshold as i64 && rng.random_bool(0.6) {
                 let current_idx = queues.iter().position(|&q| q == current_q).unwrap();
                 if current_idx < queues.len() - 1 {
                     let next_q = queues[current_idx + 1].to_string();
@@ -160,11 +160,11 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn generate_id() -> String {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     (0..6)
         .map(|_| {
             let chars = b"abcdefghijklmnopqrstuvwxyz0123456789";
-            let idx = rng.gen_range(0..chars.len());
+            let idx = rng.random_range(0..chars.len());
             chars[idx] as char
         })
         .collect()
