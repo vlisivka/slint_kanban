@@ -402,8 +402,6 @@ fn test_queue_limit_creation() -> anyhow::Result<()> {
 
     Board::ensure_initialized(&root_path)?;
     let mut board = Board::load(root_path.clone())?;
-
-    // Set limit to 1 for "2.ToDo"
     board.config.set_limit("2.ToDo".to_string(), 1);
     board.config.write(&root_path)?;
 
@@ -436,8 +434,6 @@ fn test_queue_limit_moving() -> anyhow::Result<()> {
 
     Board::ensure_initialized(&root_path)?;
     let mut board = Board::load(root_path.clone())?;
-
-    // Set limit to 1 for "3.Doing"
     board.config.set_limit("3.Doing".to_string(), 1);
     board.config.write(&root_path)?;
 
@@ -728,6 +724,203 @@ fn test_activity_logging() -> anyhow::Result<()> {
     assert!(
         log_content.contains("Log Task"),
         "Should contain ticket title"
+    );
+
+    Ok(())
+}
+/// Tests for .keepme file creation during initialization and queue operations.
+///
+/// Criteria of success: ensure_initialized creates .keepme in root dirs (Queue, Tickets, logs)
+/// Criteria of failure: no .keepme files created after initialization
+#[test]
+fn test_ensure_initialized_creates_keepme() -> anyhow::Result<()> {
+    let root = tempdir()?;
+    let root_path = root.path().to_path_buf();
+
+    Board::ensure_initialized(&root_path)?;
+
+    // Check .keepme files in root directories
+    assert!(
+        root_path.join("Queue/.keepme").exists(),
+        "Queue should have .keepme file after initialization"
+    );
+    assert!(
+        root_path.join("Tickets/.keepme").exists(),
+        "Tickets should have .keepme file after initialization"
+    );
+    assert!(
+        root_path.join("logs/.keepme").exists(),
+        "logs should have .keepme file after initialization"
+    );
+
+    // Check .keepme files in each default queue directory
+    for q_id in &[
+        "1.Incoming",
+        "2.ToDo",
+        "3.Doing",
+        "4.Reviewing",
+        "5.Testing",
+        "6.Done",
+        "7.Archive",
+    ] {
+        assert!(
+            root_path.join(format!("Queue/{q_id}/.keepme")).exists(),
+            "Default queue {q_id} should have .keepme file after initialization"
+        );
+    }
+
+    Ok(())
+}
+/// Tests that add_queue creates a .keepme file in the new queue directory.
+/// Tests that add_queue creates a .keepme file in the new queue directory.
+///
+/// Criteria of success: new queue has .keepme inside it
+#[test]
+fn test_add_queue_creates_keepme() -> anyhow::Result<()> {
+    let root = tempdir()?;
+    let root_path = root.path().to_path_buf();
+
+    Board::ensure_initialized(&root_path)?;
+    let board = Board::load(root_path.clone())?;
+
+    board.add_queue("8.Custom")?;
+
+    assert!(
+        root_path.join("Queue/8.Custom/.keepme").exists(),
+        "New queue should have .keepme file"
+    );
+
+    Ok(())
+}
+
+/// Tests that delete_queue considers a directory with only dotfiles as empty.
+///
+/// Criteria of success: delete_queue succeeds when only dotfiles remain
+/// Criteria of failure: delete_queue fails on non-dotfile entries in the queue
+#[test]
+fn test_delete_queue_with_only_dotfiles() -> anyhow::Result<()> {
+    let root = tempdir()?;
+    let root_path = root.path().to_path_buf();
+
+    // Create minimal structure with a default queue so Board::load works
+    std::fs::create_dir_all(root_path.join("Queue"))?;
+    std::fs::create_dir_all(root_path.join("Tickets"))?;
+    std::fs::create_dir_all(root_path.join("logs"))?;
+    std::fs::create_dir_all(root_path.join("Queue").join("1.Incoming"))?;
+    std::fs::write(root_path.join("Queue/.keepme"), "")?;
+    std::fs::write(root_path.join("Tickets/.keepme"), "")?;
+    std::fs::write(root_path.join("logs/.keepme"), "")?;
+    let board = Board::load(root_path.clone())?;
+
+    // Create a queue dir with only dotfiles
+    let empty_queue_path = root_path.join("Queue").join("9.Empty");
+    std::fs::create_dir_all(&empty_queue_path)?;
+    std::fs::write(empty_queue_path.join(".keepme"), "")?;
+    std::fs::write(empty_queue_path.join(".gitignore"), "*")?;
+
+    board.delete_queue("9.Empty")?;
+
+    assert!(
+        !empty_queue_path.exists(),
+        "Queue directory should be deleted"
+    );
+
+    Ok(())
+}
+
+/// Tests that delete_queue fails when queue has non-dotfile entries.
+///
+/// Criteria of success: delete_queue returns error for non-empty queue
+#[test]
+fn test_delete_queue_with_non_dotfiles_fails() -> anyhow::Result<()> {
+    let root = tempdir()?;
+    let root_path = root.path().to_path_buf();
+
+    std::fs::create_dir_all(root_path.join("Queue"))?;
+    std::fs::create_dir_all(root_path.join("Tickets"))?;
+    std::fs::write(root_path.join("Queue/.keepme"), "")?;
+    std::fs::write(root_path.join("Tickets/.keepme"), "")?;
+    Config::default().write(&root_path)?;
+
+    let board = Board::load(root_path.clone())?;
+
+    // Create a queue with a regular file
+    let non_empty_queue_path = root_path.join("Queue").join("9.NonEmpty");
+    std::fs::create_dir_all(&non_empty_queue_path)?;
+    std::fs::write(non_empty_queue_path.join(".keepme"), "")?;
+    std::fs::write(non_empty_queue_path.join("some_file.txt"), "data")?;
+
+    let result = board.delete_queue("9.NonEmpty");
+    assert!(result.is_err(), "Should fail to delete non-empty queue");
+
+    Ok(())
+}
+
+/// Tests that scanning queues ignores dotfile directories.
+///
+/// Criteria of success: dotfile queue names are not loaded as queues
+/// Criteria of failure: .hidden_queue appears in loaded queue list
+#[test]
+fn test_scan_queues_ignores_dotfile_dirs() -> anyhow::Result<()> {
+    let root = tempdir()?;
+    let root_path = root.path().to_path_buf();
+
+    std::fs::create_dir_all(root_path.join("Queue"))?;
+    std::fs::create_dir_all(root_path.join("Tickets"))?;
+    Config::default().write(&root_path)?;
+
+    // Create a real queue and a dotfile "queue"
+    std::fs::create_dir_all(root_path.join("Queue/1.Incoming"))?;
+    std::fs::create_dir_all(root_path.join("Queue/.hidden_queue"))?;
+
+    let board = Board::load(root_path.clone())?;
+
+    let queue_ids: Vec<&str> = board.queues.iter().map(|q| q.id.as_str()).collect();
+    assert!(
+        queue_ids.contains(&"1.Incoming"),
+        "Real queue should be loaded"
+    );
+    assert!(
+        !queue_ids.contains(&".hidden_queue"),
+        "Dotfile queue should NOT be loaded"
+    );
+
+    Ok(())
+}
+
+/// Tests that scanning ticket directories ignores dotfile entries.
+///
+/// Criteria of success: .dotfile entries in queues are not loaded as tickets
+#[test]
+fn test_scan_tickets_ignores_dotfile_entries() -> anyhow::Result<()> {
+    let root = tempdir()?;
+    let root_path = root.path().to_path_buf();
+
+    Board::ensure_initialized(&root_path)?;
+    let board = Board::load(root_path.clone())?;
+    let tid = board.create_ticket("Test Ticket", "desc", "1.Incoming", "", "me", 0)?;
+
+    // Create a dotfile entry in the queue (simulating a hidden file)
+    let queue_path = root_path.join("Queue/1.Incoming");
+    std::fs::write(queue_path.join(".hidden_file"), "data")?;
+
+    // Reload the board to pick up changes
+    let board2 = Board::load(root_path)?;
+
+    let incoming_queue = board2.queues.iter().find(|q| q.id == "1.Incoming").unwrap();
+    let ticket_ids: Vec<&str> = incoming_queue
+        .tickets
+        .iter()
+        .map(|t| t.id.as_str())
+        .collect();
+
+    assert!(
+        ticket_ids.contains(&tid.as_str()),
+        "Real ticket should be loaded"
+    );
+    assert!(
+        !ticket_ids.contains(&".hidden_file"),
+        "Dotfile should NOT be loaded as ticket"
     );
 
     Ok(())

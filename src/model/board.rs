@@ -31,6 +31,19 @@ const DEFAULT_QUEUES: &[&str] = &[
     "6.Done",
     "7.Archive",
 ];
+/// Returns true if the directory contains any entries whose name does NOT start with '.'.
+/// Dotfiles (names starting with '.') are ignored — they don't count as "having content".
+fn has_non_dot_entries(path: &Path) -> bool {
+    std::fs::read_dir(path)
+        .ok()
+        .and_then(|entries| {
+            entries.flatten().find(|e| {
+                let name = e.file_name();
+                !name.to_string_lossy().starts_with('.')
+            })
+        })
+        .is_some()
+}
 
 const DEFAULT_README: &str = r#"---
 title: Project Overview
@@ -109,12 +122,14 @@ impl Board {
 
         std::fs::create_dir_all(&queues_path)?;
         std::fs::create_dir_all(&tickets_path)?;
+        std::fs::create_dir_all(root_path.join("logs"))?;
 
-        // Check if any queues already exist
+        // Check if any queues already exist (ignore dotfiles)
         let mut has_queues = false;
         if let Ok(entries) = std::fs::read_dir(&queues_path) {
             for entry in entries.flatten() {
-                if entry.path().is_dir() {
+                let name = entry.file_name();
+                if !name.to_string_lossy().starts_with('.') && entry.path().is_dir() {
                     has_queues = true;
                     break;
                 }
@@ -124,8 +139,9 @@ impl Board {
         if !has_queues {
             for q in DEFAULT_QUEUES {
                 std::fs::create_dir_all(queues_path.join(q))?;
+                // Create .keepme file for git tracking in each default queue
+                Self::ensure_keepme(&queues_path.join(q))?;
             }
-
             // Create default config file
             let config_path = root_path.join("config.toml");
             if !config_path.exists() {
@@ -142,6 +158,20 @@ impl Board {
             }
         }
 
+        // Create .keepme files in empty root directories (for git tracking)
+        Self::ensure_keepme(&queues_path)?;
+        Self::ensure_keepme(&tickets_path)?;
+        Self::ensure_keepme(&root_path.join("logs"))?;
+
+        Ok(())
+    }
+
+    /// Write a .keepme file in the directory if it doesn't already exist.
+    fn ensure_keepme(dir: &Path) -> anyhow::Result<()> {
+        let keepme_path = dir.join(".keepme");
+        if !keepme_path.exists() {
+            std::fs::write(&keepme_path, "")?;
+        }
         Ok(())
     }
 
@@ -178,6 +208,8 @@ impl Board {
             anyhow::bail!(tr!("Queue already exists: {}", name));
         }
         std::fs::create_dir_all(&queue_path)?;
+        // Create .keepme file for git tracking
+        std::fs::write(queue_path.join(".keepme"), "")?;
         self.append_log_entry(
             ActionPayload::ManageQueues {
                 op: "ADD".to_string(),
@@ -238,13 +270,12 @@ impl Board {
             anyhow::bail!(tr!("Queue not found: {}", id));
         }
 
-        // Check if empty (only files/symlinks)
-        if std::fs::read_dir(&queue_path)?.next().is_some() {
+        // Check if empty — only dotfiles count as empty
+        if has_non_dot_entries(&queue_path) {
             anyhow::bail!(tr!("Queue is not empty: {}", id));
         }
 
-        std::fs::remove_dir(&queue_path)?;
-
+        std::fs::remove_dir_all(&queue_path)?;
         // Update limits if any
         let mut config = self.config.clone();
         if config.kanban.queue_limits.remove(id).is_some() {
@@ -480,7 +511,10 @@ impl Board {
     fn load_all_queues(&mut self) -> anyhow::Result<()> {
         let mut sorted_queue_ids: Vec<String> = std::fs::read_dir(&self.queues_path)?
             .flatten()
-            .filter(|e| e.path().is_dir())
+            .filter(|e| {
+                let name = e.file_name();
+                !name.to_string_lossy().starts_with('.') && e.path().is_dir()
+            })
             .map(|e| e.file_name().to_string_lossy().to_string())
             .collect();
         sorted_queue_ids.sort();
@@ -492,6 +526,11 @@ impl Board {
             let q_path = self.queues_path.join(q_id);
             if let Ok(entries) = std::fs::read_dir(&q_path) {
                 for entry in entries.flatten() {
+                    // Skip dotfile entries (e.g., .keepme, .DS_Store)
+                    let name = entry.file_name();
+                    if name.to_string_lossy().starts_with('.') {
+                        continue;
+                    }
                     let link_path = entry.path();
 
                     match Self::resolve_symlink(&q_path, &link_path).and_then(|p| p.canonicalize())
@@ -524,6 +563,11 @@ impl Board {
         if let Some(first_q) = sorted_queue_ids.first() {
             if let Ok(entries) = std::fs::read_dir(&self.tickets_path) {
                 for entry in entries.flatten() {
+                    // Skip dotfile directories (e.g., .keepme, .DS_Store)
+                    let name = entry.file_name();
+                    if name.to_string_lossy().starts_with('.') {
+                        continue;
+                    }
                     let ticket_path = entry.path();
                     if ticket_path.is_dir() {
                         let ticket_id = entry.file_name().to_string_lossy().to_string();
@@ -575,6 +619,11 @@ impl Board {
         // (for the visibility toggle UI) but carry no ticket data.
         if visible {
             for entry in std::fs::read_dir(path)?.flatten() {
+                // Skip dotfile entries (e.g., .keepme, .DS_Store)
+                let name = entry.file_name();
+                if name.to_string_lossy().starts_with('.') {
+                    continue;
+                }
                 let ticket_link_path = entry.path();
 
                 // Resolve symlink to get the actual ticket directory
@@ -658,6 +707,11 @@ impl Board {
         // We compare canonical paths because the symlink target is a relative path.
         let mut link_to_move = None;
         for entry in std::fs::read_dir(&source_path)?.flatten() {
+            // Skip dotfile entries
+            let name = entry.file_name();
+            if name.to_string_lossy().starts_with('.') {
+                continue;
+            }
             let path = entry.path();
             let resolved = Self::resolve_symlink(&source_path, &path)?.canonicalize()?;
 
@@ -728,8 +782,18 @@ impl Board {
         // We identify them primarily by their file stem matching the ticket_id.
         for entry in std::fs::read_dir(&self.queues_path)?.flatten() {
             let queue_dir = entry.path();
+            // Skip dotfile directories
+            let name = entry.file_name();
+            if name.to_string_lossy().starts_with('.') {
+                continue;
+            }
             if queue_dir.is_dir() {
                 for ticket_entry in std::fs::read_dir(&queue_dir)?.flatten() {
+                    // Skip dotfile entries
+                    let tname = ticket_entry.file_name();
+                    if tname.to_string_lossy().starts_with('.') {
+                        continue;
+                    }
                     let symlink_path = ticket_entry.path();
                     if symlink_path.is_symlink() {
                         let matches_deleted = if let Some(stem) = symlink_path.file_stem() {
@@ -890,6 +954,11 @@ impl Board {
         let mut max_n: u32 = 0;
         if let Ok(entries) = std::fs::read_dir(&ticket_dir) {
             for entry in entries.flatten() {
+                // Skip dotfile entries
+                let name = entry.file_name();
+                if name.to_string_lossy().starts_with('.') {
+                    continue;
+                }
                 let name = entry.file_name().to_string_lossy().into_owned();
                 if name.starts_with("tc") && name.ends_with(".md") && name.len() >= 5 {
                     if let Ok(n) = name[2..5].parse::<u32>() {
@@ -1013,9 +1082,32 @@ impl Board {
         Ok(format!("[{}](attachment/{})", target_name, target_name))
     }
 
-    /// Resolves a queue identifier. If `target_id` is "index:<N>", it maps
-    /// the pixel-based column index from drag-and-drop to the Nth visible queue.
-    /// Otherwise returns the ID as-is (direct queue name from CLI).
+    pub fn check_queue_limit(&self, queue_id: &str) -> anyhow::Result<()> {
+        if let Some(limit) = self.config.get_limit(queue_id) {
+            let queue_path = self.queue_path(queue_id);
+            if !queue_path.exists() {
+                return Ok(());
+            }
+            let current_count = std::fs::read_dir(&queue_path)?
+                .flatten()
+                .filter(|e| {
+                    let name = e.file_name();
+                    !name.to_string_lossy().starts_with('.')
+                        && (e.path().is_symlink() || e.path().is_dir())
+                })
+                .count();
+
+            if current_count >= limit {
+                return Err(anyhow::anyhow!(
+                    "Queue '{}' has reached its limit of {} tickets",
+                    queue_id,
+                    limit
+                ));
+            }
+        }
+        Ok(())
+    }
+
     pub fn resolve_queue_id(&self, target_id: &str) -> String {
         if let Some(idx_str) = target_id.strip_prefix("index:") {
             if let Ok(idx_f) = idx_str.parse::<f64>() {
@@ -1031,35 +1123,13 @@ impl Board {
         target_id.to_string()
     }
 
-    pub fn load_full_ticket(&self, ticket_id: &str) -> anyhow::Result<Ticket> {
-        let path = self.ticket_path(ticket_id);
-        Ticket::load_full(&path)
-    }
-
     pub fn find_ticket_by_id(&self, id: &str) -> Option<&Ticket> {
         self.ticket_index.get(id)
     }
 
-    pub fn check_queue_limit(&self, queue_id: &str) -> anyhow::Result<()> {
-        if let Some(limit) = self.config.get_limit(queue_id) {
-            let queue_path = self.queue_path(queue_id);
-            if !queue_path.exists() {
-                return Ok(());
-            }
-            let current_count = std::fs::read_dir(&queue_path)?
-                .flatten()
-                .filter(|e| e.path().is_symlink() || e.path().is_dir())
-                .count();
-
-            if current_count >= limit {
-                return Err(anyhow::anyhow!(
-                    "Queue '{}' has reached its limit of {} tickets",
-                    queue_id,
-                    limit
-                ));
-            }
-        }
-        Ok(())
+    pub fn load_full_ticket(&self, ticket_id: &str) -> anyhow::Result<Ticket> {
+        let path = self.ticket_path(ticket_id);
+        Ticket::load_full(&path)
     }
 
     pub fn resolve_symlink(base_dir: &Path, link_path: &Path) -> std::io::Result<PathBuf> {
