@@ -175,6 +175,22 @@ fn init_callbacks(ui: &App, controller: Arc<AppController>) {
         .on_toggle_manage_only_mine(move |enabled| {
             c.handle_toggle_manage_only_mine(enabled);
         });
+    // Drag-and-drop callbacks
+    let c = controller.clone();
+    ui.global::<crate::Api>()
+        .on_make_transfer(move |ticket_id, source_queue_id| {
+            c.handle_make_transfer(ticket_id.into(), source_queue_id.into())
+        });
+
+    let c = controller.clone();
+    ui.global::<crate::Api>()
+        .on_can_drop(move |event| c.handle_can_drop(&event));
+
+    let c = controller.clone();
+    ui.global::<crate::Api>()
+        .on_dropped(move |event, target_queue_id| {
+            c.handle_dropped(&event, target_queue_id.into());
+        });
 
     let c = controller.clone();
     ui.on_show_board_info(move || {

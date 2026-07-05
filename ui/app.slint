@@ -19,9 +19,10 @@ import {
     BoardSummaryStr,
     SprintStr,
     Clipboard,
+    Api,
 } from "common.slint";
 
-export { UserGlobal, Clipboard }
+export { UserGlobal, Clipboard, Api }
 import { TicketView } from "dialogs/ticket_view.slint";
 import { TicketEdit } from "dialogs/ticket_edit.slint";
 import { WarningDialog } from "dialogs/warning_dialog.slint";
@@ -79,13 +80,6 @@ export component App inherits Window {
     out property <bool> tooltip_visible: false;
     property <length> tooltip_x: 0px;
     property <length> tooltip_y: 0px;
-
-    // Global dragging state
-    property <string> dragging_ticket_id: "";
-    property <string> dragging_from_queue_id: "";
-    in-out property <bool> is_dragging: false;
-    property <length> mouse_x: 0px;
-    property <length> mouse_y: 0px;
 
     // State
     in-out property <bool> show_ticket_view_dialog: false;
@@ -361,29 +355,6 @@ export component App inherits Window {
                         queue: queue;
                         width: self.visible ? config.column-width : 0px;
 
-                        start-dragging(tid, qid, mx, my) => {
-                            dragging_ticket_id = tid;
-                            dragging_from_queue_id = qid;
-                            mouse_x = mx;
-                            mouse_y = my;
-                            is_dragging = true;
-                        }
-                        move-dragging(mx, my) => {
-                            mouse_x = mx;
-                            mouse_y = my;
-                        }
-                        drop-ticket(mx) => {
-                            if (is_dragging) {
-                                is_dragging = false;
-                                let relative_x = mx - columns-row.absolute-position.x;
-                                if (relative_x > config.board-padding) {
-                                    let idx = (relative_x - config.board-padding) / (config.column-width + config.column-spacing);
-                                    move-ticket(dragging_ticket_id, dragging_from_queue_id, "index:" + idx);
-                                }
-                                dragging_ticket_id = "";
-                                dragging_from_queue_id = "";
-                            }
-                        }
                         delete-ticket(ticket_to_delete) => {
                             deleting_id = ticket_to_delete.id;
                             deleting_title = ticket_to_delete.title;
@@ -450,22 +421,6 @@ export component App inherits Window {
         move-ticket(tid, src, tgt);
     }
 
-    // Drag ghost: floating card that follows the cursor during drag
-    if (is_dragging): Rectangle {
-        x: mouse_x - 100px;
-        y: mouse_y - 30px;
-        width: 200px;
-        height: 60px;
-        border-radius: 4px;
-        border-width: 2px;
-
-        Text {
-            text: @tr("Moving #{}", dragging_ticket_id);
-            font-weight: 700;
-            horizontal-alignment: center;
-            vertical-alignment: center;
-        }
-    }
 
     // Ticket View Overlay
     if (show_ticket_view_dialog): TicketView {

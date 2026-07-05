@@ -2,21 +2,17 @@ import {
     ScrollView,
     Palette,
 } from "std-widgets.slint";
-import { QueueStr, TicketStr, Theme } from "../common.slint";
+import { QueueStr, TicketStr, Theme, Api } from "../common.slint";
 import { TicketCard } from "./ticket_card.slint";
 
 export component KanbanColumn inherits Rectangle {
     in property <QueueStr> queue;
 
     // Drag/Drop/Delete/Edit callbacks
-    callback start-dragging(string, string, length, length);
-    callback move-dragging(length, length);
-    callback drop-ticket(length);
     callback delete-ticket(TicketStr);
     callback edit-ticket(TicketStr);
     callback open-new-ticket-dialog(string); // queue_id
     callback open-limit-dialog(string, string, int); // id, name, current_limit
-
     width: 280px;
     horizontal-stretch: 0;
     border-radius: 12px;
@@ -125,26 +121,34 @@ export component KanbanColumn inherits Rectangle {
             }
         }
 
-        ScrollView {
-            VerticalLayout {
-                spacing: 10px;
-                for ticket in queue.tickets: TicketCard {
-                    ticket: ticket;
-                    from_queue_id: queue.id;
-                    start-dragging(ticket_id, start_queue_id, mouse_x, mouse_y) => {
-                        start-dragging(ticket_id, start_queue_id, mouse_x, mouse_y);
-                    }
-                    move-dragging(mouse_x, mouse_y) => {
-                        move-dragging(mouse_x, mouse_y);
-                    }
-                    drop-ticket(mouse_x) => {
-                        drop-ticket(mouse_x);
-                    }
-                    delete-ticket(ticket_to_delete) => {
-                        delete-ticket(ticket_to_delete);
-                    }
-                    edit-ticket(ticket_to_edit) => {
-                        edit-ticket(ticket_to_edit);
+        drop-area := DropArea {
+            vertical-stretch: 1;
+
+            can-drop(event) => {
+                return Api.can-drop(event);
+            }
+            dropped(event) => {
+                Api.dropped(event, root.queue.id);
+                return event.proposed-action;
+            }
+
+            Rectangle {
+                background: drop-area.has-drag ? #0d1117 : transparent;
+                animate background { duration: 150ms; }
+                ScrollView {
+                    VerticalLayout {
+                        spacing: 10px;
+                        alignment: start;
+                        for ticket in queue.tickets: TicketCard {
+                            ticket: ticket;
+                            from_queue_id: queue.id;
+                            delete-ticket(ticket_to_delete) => {
+                                delete-ticket(ticket_to_delete);
+                            }
+                            edit-ticket(ticket_to_edit) => {
+                                edit-ticket(ticket_to_edit);
+                            }
+                        }
                     }
                 }
             }

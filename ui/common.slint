@@ -140,6 +140,11 @@ export global UserGlobal {
     callback toggle-manage-only-mine(bool);
 }
 
+export global Api {
+    pure callback make-transfer(string, string) -> data-transfer;
+    pure callback can-drop(event: DropEvent) -> DragAction;
+    callback dropped(event: DropEvent, string);
+}
 export global Clipboard {
     callback copy-to-clipboard(string);
 }

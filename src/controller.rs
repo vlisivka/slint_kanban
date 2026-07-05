@@ -5,12 +5,17 @@
 
 use crate::model::{Board, Config};
 use crate::{App, QueueStr, SprintStr, TicketStr, UserGlobal};
-use slint::{ComponentHandle, Model, SharedString, VecModel, Weak};
+use slint::{language::DragAction, ComponentHandle, Model, SharedString, VecModel, Weak};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Mutex;
 use tr::tr;
+/// Payload attached to a drag-and-drop transfer.
+pub(crate) struct DragTransferPayload {
+    pub ticket_id: String,
+    pub source_queue_id: String,
+}
 
 /// Mediates between the Slint UI and the file-system Board model.
 /// Each action handler re-loads the board from disk to ensure consistency
@@ -825,6 +830,51 @@ impl AppController {
     fn show_error(&self, msg: &str) {
         if let Some(app) = self.app_weak.upgrade() {
             app.invoke_open_warning_dialog(SharedString::from(msg));
+        }
+    }
+    /// Handler for DragArea's make-transfer callback. Creates a DataTransfer containing the ticket ID and source queue ID as user_data.
+    pub fn handle_make_transfer(
+        &self,
+        ticket_id: String,
+        source_queue_id: String,
+    ) -> slint::DataTransfer {
+        let mut transfer = slint::DataTransfer::default();
+        transfer.set_user_data(Rc::new(DragTransferPayload {
+            ticket_id,
+            source_queue_id,
+        }));
+        transfer
+    }
+
+    /// Handler for DropArea's can-drop callback. Validates the drag payload and returns DragAction.
+    pub fn handle_can_drop(
+        &self,
+        event: &slint::language::DropEvent,
+    ) -> slint::language::DragAction {
+        if let Some(_payload) = event
+            .data
+            .user_data()
+            .and_then(|rc| rc.downcast::<DragTransferPayload>().ok())
+        {
+            // Our own card drag: accept whatever action the source allows.
+            return event.proposed_action;
+        }
+        DragAction::None
+    }
+
+    /// Handler for DropArea's dropped callback. Reads transfer data and performs the ticket move.
+    pub fn handle_dropped(&self, event: &slint::language::DropEvent, target_queue_id: String) {
+        if let Some(payload) = event
+            .data
+            .user_data()
+            .and_then(|rc| rc.downcast::<DragTransferPayload>().ok())
+        {
+            // Move the ticket from source queue to target queue.
+            self.handle_move_ticket(
+                payload.ticket_id.clone(),
+                payload.source_queue_id.clone(),
+                target_queue_id,
+            );
         }
     }
 }

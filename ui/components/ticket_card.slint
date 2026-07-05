@@ -5,6 +5,7 @@ import {
     CloseButton,
     Theme,
     UserGlobal,
+    Api,
 } from "../common.slint";
 
 export component TicketCard inherits Rectangle {
@@ -12,9 +13,6 @@ export component TicketCard inherits Rectangle {
     in property <string> from_queue_id;
 
     // Callbacks
-    callback start-dragging(string, string, length, length);
-    callback move-dragging(length, length);
-    callback drop-ticket(length);
     callback delete-ticket(TicketStr);
     callback edit-ticket(TicketStr);
 
@@ -32,24 +30,17 @@ export component TicketCard inherits Rectangle {
 
     property <bool> can-manage: !UserGlobal.manage-only-mine || UserGlobal.active-user == ticket.assigned_to || UserGlobal.active-user == ticket.author || UserGlobal.active-user == "admin" || UserGlobal.active-user == "<unassigned>";
 
-    touch-area := TouchArea {
-        pointer-event(event) => {
-            if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
-                if (root.can-manage) {
-                    start-dragging(ticket.id, from_queue_id, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
-                }
+    drag-area := DragArea {
+        data: Api.make-transfer(ticket.id, from_queue_id);
+        allow-copy: root.can-manage;
+        allow-move: root.can-manage;
+        opacity: self.dragging ? 0.4 : 1.0;
+        animate opacity { duration: 150ms; }
+
+        touch-area := TouchArea {
+            clicked => {
+                edit-ticket(ticket);
             }
-            if (event.kind == PointerEventKind.up) {
-                drop-ticket(self.absolute-position.x + self.mouse-x);
-            }
-        }
-        moved => {
-            if (self.pressed && root.can-manage) {
-                move-dragging(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
-            }
-        }
-        clicked => {
-            edit-ticket(ticket);
         }
     }
 
