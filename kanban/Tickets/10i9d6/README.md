@@ -25,8 +25,29 @@ Slint 1.17 додає вбудований елемент `Tooltip { text: @mark
 
 ## Acceptance Criteria
 
-- [ ] Tooltips на картках тікетів працюють через вбудований `Tooltip` елемент
-- [ ] Tooltips на посиланнях на тікети теж використовують `Tooltip`
-- [ ] Текст tooltip рендериться з markdown через `@markdown`
-- [ ] Відсутній ручний tooltip Rectangle код
-- [ ] Всі існуючі тести проходять
+- [x] Tooltips на картках тікетів працюють через вбудований `Tooltip` елемент
+- [x] Tooltips на посиланнях на тікети теж використовують `Tooltip`
+- [x] Текст tooltip рендериться з markdown через `@markdown`
+- [x] Відсутній ручний tooltip Rectangle код
+- [x] Всі існуючі тести проходять
+
+## Resolution
+
+### Підсумок
+
+Замінено custom tooltip Rectangle на вбудований `Tooltip` елемент Slint 1.17. Прибрано ручну логіку позиціонування та видимості (4 property: `tooltip_text`, `tooltip_visible`, `tooltip_x`, `tooltip_y`). Тепер кожна посилання на тікет має власний Tooltip із автоматичним відображенням, позиціонуванням та markdown-рендерингом.
+
+### Зміни в коді
+| Файл | Зміна |
+|---|---|
+| `ui/dialogs/ticket_view.slint` | Замінено `TouchArea { changed has-hover => show-tooltip(...) }` на `Tooltip { text: @markdown("\{ref.title}") }` у 2 місцях (References та Comments); прибрано callback-и `show-tooltip`, `hide-tooltip` |
+| `ui/app.slint` | Прибрано tooltip state variables (`tooltip_text`, `tooltip_visible`, `tooltip_x`, `tooltip_y`); callback-и `show-tooltip(text, x, y)`, `hide-tooltip()`; floating Tooltip Rectangle (~20 рядків коду) |
+
+### Побічний фікс
+- `Tooltip { text: @markdown("\{ref.title}") }` — використано escaped-interpolation `"\{...}"` для конвертації string → styled-text (помилявся з `@markdown(ref.title)`).
+
+### Додані тести
+- Всі існуючі тести пройшли (`cargo test` — 72+ тестів, 0 fail). Тестів на tooltip не було, тому нових не додавав.
+
+### Оновлена документація
+- Немає (документація проекту не стосується UI-реалізації tooltip).

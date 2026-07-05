@@ -75,11 +75,6 @@ export component App inherits Window {
     callback test-trigger-remove-history(string); // for testing
     callback test-trigger-move-ticket(string, string, string); // for testing
     callback test-get-first-ticket-id() -> string; // for testing
-    // Tooltip state
-    out property <string> tooltip_text: "";
-    out property <bool> tooltip_visible: false;
-    property <length> tooltip_x: 0px;
-    property <length> tooltip_y: 0px;
 
     // State
     in-out property <bool> show_ticket_view_dialog: false;
@@ -441,15 +436,6 @@ export component App inherits Window {
         navigate-to(target) => {
             navigate-to(target);
         }
-        show-tooltip(text, x, y) => {
-            tooltip_text = text;
-            tooltip_x = x;
-            tooltip_y = y;
-            tooltip_visible = true;
-        }
-        hide-tooltip() => {
-            tooltip_visible = false;
-        }
         add-comment(content) => {
             root.add-comment(active_ticket.id, content);
         }
@@ -568,28 +554,6 @@ export component App inherits Window {
             show_search_history = false;
         }
     }
-
-    // Floating Tooltip
-    if (tooltip_visible): Rectangle {
-        x: tooltip_x;
-        y: tooltip_y;
-        width: tooltip_label.preferred-width + 16px;
-        height: tooltip_label.preferred-height + 8px;
-        background: #333333;
-        border-radius: 4px;
-        drop-shadow-blur: 4px;
-        drop-shadow-color: #00000040;
-        z: 100;
-
-        tooltip_label := Text {
-            text: tooltip_text;
-            color: white;
-            font-size: 12px;
-            horizontal-alignment: center;
-            vertical-alignment: center;
-        }
-    }
-
     test-get-first-ticket-id() => {
         if (board_queues.length > 0 && board_queues[0].tickets.length > 0) {
             return board_queues[0].tickets[0].id;

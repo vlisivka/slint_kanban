@@ -20,8 +20,6 @@ export component TicketView inherits Rectangle {
     callback close();
     callback edit();
     callback navigate-to(string);
-    callback show-tooltip(string, length, length);
-    callback hide-tooltip();
     callback add-comment(string);
     callback attach-file(string) -> string;
     callback open-attachment-folder(string);
@@ -185,14 +183,9 @@ export component TicketView inherits Rectangle {
                                         clicked => {
                                             navigate-to(ref.id);
                                         }
-                                        changed has-hover => {
-                                            if (self.has-hover) {
-                                                show-tooltip(ref.title, self.absolute-position.x, self.absolute-position.y - 30px);
-                                            } else {
-                                                hide-tooltip();
-                                            }
-                                        }
                                     }
+
+                                    Tooltip { text: @markdown("\{ref.title}"); }
                                 }
                             }
                         }
@@ -246,14 +239,9 @@ export component TicketView inherits Rectangle {
                                                 clicked => {
                                                     navigate-to(ref.id);
                                                 }
-                                                changed has-hover => {
-                                                    if (self.has-hover) {
-                                                        show-tooltip(ref.title, self.absolute-position.x, self.absolute-position.y - 30px);
-                                                    } else {
-                                                        hide-tooltip();
-                                                    }
-                                                }
                                             }
+
+                                            Tooltip { text: @markdown("\{ref.title}"); }
                                         }
                                     }
                                 }
