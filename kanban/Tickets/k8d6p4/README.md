@@ -1,7 +1,6 @@
 ---
 title: "P2: Cross-axis alignment — покращення layout"
 created_at: 2026-07-04 14:55:53
-updated_at: 2026-07-04 14:55:53
 assigned_to: "admin"
 author: "user"
 points: 1

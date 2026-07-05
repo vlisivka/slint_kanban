@@ -365,7 +365,7 @@ impl AppController {
                     description: content.into(),
                     snippet: "".into(),
                     created_at: metadata.created_at.into(),
-                    updated_at: metadata.updated_at.into(),
+                    updated_at: "".into(),
                     assigned_to: metadata.assigned_to.into(),
                     author: metadata.author.into(),
                     references: Rc::new(VecModel::default()).into(),

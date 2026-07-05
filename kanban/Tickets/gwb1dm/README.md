@@ -1,7 +1,7 @@
 ---
 title: "P2: StyledText + @markdown для рендерингу описів тікетів"
 created_at: 2026-07-04 14:55:31
-updated_at: 2026-07-04 14:55:31
+updated_at: 2026-07-05 10:52:43
 assigned_to: "user"
 author: "user"
 points: 3

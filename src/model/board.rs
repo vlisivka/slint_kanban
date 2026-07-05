@@ -454,10 +454,6 @@ impl Board {
         if metadata.title.is_empty() {
             metadata.title = "Board Overview".to_string();
         }
-        // Backfill updated_at
-        if metadata.updated_at.is_empty() && !metadata.created_at.is_empty() {
-            metadata.updated_at = metadata.created_at.clone();
-        }
         (metadata, body)
     }
 

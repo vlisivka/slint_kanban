@@ -1,7 +1,6 @@
 ---
 author: user
 created_at: 2026-07-03 19:35:00
-updated_at: 2026-07-03 19:35:00
 ---
 Всі Acceptance Criteria виконано та позначено як виконані.
 

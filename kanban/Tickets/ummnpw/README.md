@@ -1,7 +1,6 @@
 ---
 title: "Story: Як користувач CLI, я хочу оперувати чергами через CLI"
 created_at: 2026-07-03 16:01:14
-updated_at: 2026-07-04 09:56:48
 assigned_to: "user"
 author: "user"
 points: 3

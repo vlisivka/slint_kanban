@@ -1,7 +1,6 @@
 ---
 title: "Enabler: підтримка .keepme файлів для git"
 created_at: 2026-07-03 23:02:30
-updated_at: 2026-07-04 13:39:58
 assigned_to: "user"
 author: "user"
 points: 2

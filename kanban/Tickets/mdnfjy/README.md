@@ -1,7 +1,6 @@
 ---
 title: "Bug: сміття в статистиці"
 created_at: 2026-07-03 16:04:27
-updated_at: 2026-07-03 22:08:29
 assigned_to: "user"
 author: "user"
 points: 1

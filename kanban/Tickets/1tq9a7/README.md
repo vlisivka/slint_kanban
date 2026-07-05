@@ -1,7 +1,6 @@
 ---
 title: Помилка в розборі тексту тікету
 created_at: 2026-06-21 14:33:40
-updated_at: 2026-06-21 14:33:40
 assigned_to: "user"
 author: "user"
 points: 0

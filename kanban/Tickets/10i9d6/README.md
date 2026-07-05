@@ -1,7 +1,6 @@
 ---
 title: "P1: Замінити custom Tooltips на вбудований Tooltip елемент"
 created_at: 2026-07-04 14:55:08
-updated_at: 2026-07-04 14:55:08
 assigned_to: "admin"
 author: "user"
 points: 2

@@ -1,7 +1,6 @@
 ---
 title: "Story: Відмовитися від поля updated_at на користь mtime файла"
 created_at: 2026-07-04 13:22:07
-updated_at: 2026-07-04 14:28:10
 assigned_to: "user"
 author: "user"
 points: 3
@@ -80,15 +79,38 @@ assigned_to: "user"
 
 ## Acceptance Criteria
 
-- [ ] `Ticket::save()` НЕ записує `updated_at` у YAML frontmatter `README.md`
-- [ ] `Ticket::load()` і `Ticket::load_full()` визначають `updated_at` з `mtime` файлу `README.md`
-- [ ] Існуючі тікети з `updated_at` у frontmatter коректно читаються (backward compatibility)
-- [ ] `TicketMetadata` більше НЕ містить поля `updated_at`
-- [ ] `Ticket.updated_at` обчислюється з `mtime`, а не з YAML
-- [ ] При редагуванні тікета через програму `mtime` файлу оновлюється автоматично (звичайна поведінка ОС)
-- [ ] `cargo test` проходить (всі тести)
-- [ ] `scripts/pre-commit.sh` проходить (fmt + clippy + tests)
-- [ ] Документація оновлена (`SPECIFICATION.md`чи інші файли)
+- [x] `Ticket::save()` НЕ записує `updated_at` у YAML frontmatter `README.md`
+- [x] `Ticket::load()` і `Ticket::load_full()` визначають `updated_at` з `mtime` файлу `README.md`
+- [x] Існуючі тікети з `updated_at` у frontmatter коректно читаються (backward compatibility)
+- [x] `TicketMetadata` більше НЕ містить поля `updated_at`
+- [x] `Ticket.updated_at` обчислюється з `mtime`, а не з YAML
+- [x] При редагуванні тікета через програму `mtime` файлу оновлюється автоматично (звичайна поведінка ОС)
+- [x] `cargo test` проходить (всі тести)
+- [x] `scripts/pre-commit.sh` проходить (fmt + clippy + tests)
+- [x] Документація оновлена (`SPECIFICATION.md`)
+
+## Resolution
+
+### Підсумок
+
+Замінено ручне збереження `updated_at` на автоматичне обчислення з mtime файлу. Видалено поле `updated_at` зі структури `TicketMetadata`.
+
+### Зміни в коді
+| Файл | Зміна |
+|---|---|
+| `src/model/ticket.rs` | Видалено `updated_at` з `TicketMetadata`; додано `system_time_to_string()` для конвертації mtime; `save()` більше не записує `updated_at`; `load()` і `load_full()` обчислюють `updated_at` з `mtime` |
+| `src/model/board.rs` | Видалено backfill логіку `metadata.updated_at` з `parse_readme_content()` |
+| `src/controller.rs` | Оновлено створення `TicketStr` для board info (прибрано посилання на `metadata.updated_at`) |
+| `src/model/tests/stats_tests.rs` | Оновлено виклики `Ticket::from_metadata()` з новим параметром `updated_at` |
+
+### Додані тести
+- `test_ticket_save_no_updated_at()` — перевіряє, що `save()` не записує `updated_at` у YAML
+- `test_ticket_load_updated_at_from_mtime()` — перевіряє, що `load()` обчислює `updated_at` з mtime файлу
+- `test_ticket_load_backward_compat_with_updated_at()` — перевіряє backward compatibility старого формату з `updated_at` у YAML
+- Оновлено `test_ticket_metadata_deserialization()` та `test_ticket_metadata_missing_updated_at()` — видалено посилання на поле `metadata.updated_at`
+
+### Оновлена документація
+- `SPECIFICATION.md:132` — оновлено опис Ticket metainfo, прибрано `updated_at` з переліку полів YAML frontmatter
 
 ## Sources
 

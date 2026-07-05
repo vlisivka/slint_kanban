@@ -1,7 +1,6 @@
 ---
 author: user
 created_at: 2026-07-03 11:00:00
-updated_at: 2026-07-03 11:00:00
 ---
 Тікет завершено. Реалізовано:
 1. `-d`/`--description` — інлайн текст (backward compatible)

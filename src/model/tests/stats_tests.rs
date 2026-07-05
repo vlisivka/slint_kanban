@@ -36,16 +36,16 @@ fn test_get_board_summary() {
         visible: true,
     };
 
-    let mut t1 = Ticket::from_metadata("t1".into(), Default::default(), "".into());
+    let mut t1 = Ticket::from_metadata("t1".into(), Default::default(), "".into(), "".to_string());
     t1.assigned_to = "alice".into();
 
-    let mut t2 = Ticket::from_metadata("t2".into(), Default::default(), "".into());
+    let mut t2 = Ticket::from_metadata("t2".into(), Default::default(), "".into(), "".to_string());
     t2.assigned_to = "alice".into();
 
-    let mut t3 = Ticket::from_metadata("t3".into(), Default::default(), "".into());
+    let mut t3 = Ticket::from_metadata("t3".into(), Default::default(), "".into(), "".to_string());
     t3.assigned_to = "".into(); // unassigned
 
-    let mut t4 = Ticket::from_metadata("t4".into(), Default::default(), "".into());
+    let mut t4 = Ticket::from_metadata("t4".into(), Default::default(), "".into(), "".to_string());
     t4.assigned_to = "bob".into();
 
     q1.tickets.push(t1);
@@ -120,6 +120,7 @@ fn test_get_board_summary() {
             "t5".into(),
             Default::default(),
             "".into(),
+            "".to_string(),
         )],
         limit: None,
         visible: true,

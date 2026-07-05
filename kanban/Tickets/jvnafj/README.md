@@ -1,7 +1,6 @@
 ---
 title: "Upgrade from Slint 1.15 to 1.17"
 created_at: 2026-07-03 09:24:20
-updated_at: 2026-07-04 15:00:00
 assigned_to: "admin"
 author: "user"
 points: 8

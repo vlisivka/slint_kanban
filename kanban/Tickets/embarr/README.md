@@ -1,7 +1,6 @@
 ---
 title: "P2: SystemTrayIcon — мінімізація в трей"
 created_at: 2026-07-04 14:55:42
-updated_at: 2026-07-04 14:55:42
 assigned_to: "admin"
 author: "user"
 points: 2

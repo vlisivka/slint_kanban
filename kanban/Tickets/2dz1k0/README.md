@@ -1,7 +1,6 @@
 ---
 title: "Task: Об'єднати дубльовані допоміжні функції у спільний файл"
 created_at: 2026-07-04 09:20:56
-updated_at: 2026-07-04 14:45:00
 assigned_to: "user"
 author: "user"
 points: 2

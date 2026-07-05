@@ -1,7 +1,6 @@
 ---
 title: "Додавання опису тікету з файлу або stdin в CLI"
 created_at: 2026-07-03 09:24:20
-updated_at: 2026-07-03 15:45:27
 assigned_to: "user"
 author: "user"
 points: 1

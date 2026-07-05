@@ -1,7 +1,6 @@
 ---
 title: "P0: Замінити ручні гарячі клавіші на KeyBinding (Slint 1.17)"
 created_at: 2026-07-04 14:54:55
-updated_at: 2026-07-04 14:54:55
 assigned_to: "admin"
 author: "user"
 points: 2

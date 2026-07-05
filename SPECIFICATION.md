@@ -129,7 +129,7 @@ A Trello-like Kanban queue application built with Rust and Slint. It manages tas
 
 ## Data Models
 -   **Ticket ID Generation**: Short hash/ID (up to 6 chars, lowercase latin letters + numbers) derived from Title + Creation Date. Id is the name of ticket directory in `~/Kanban/Tickets` directory.
--   **Ticket metainfo**: is stored in `README.md` file in YAML format. Contains `title`, `created_at`, `updated_at`, `assigned_to`, `author`, and `points`.
+-   **Ticket metainfo**: is stored in `README.md` file in YAML format. Contains `title`, `created_at`, `assigned_to`, `author`, and `points`. The `updated_at` field is NOT stored in frontmatter — it is computed from the file's mtime at load time.
 -   **Ticket references**: Found in both the ticket description (`README.md`) and comments (`tc*.md`). They are extracted and displayed as clickable links in a row directly below the respective content (the description or the individual comment).
 -   **Ticket Comments**: Stored in separate files inside the ticket directory.
     -   **Filename**: `tc<NNN><UID>.md`. `NNN` is a 3-digit sequence (001, 002, etc.), and `UID` is a unique ID to avoid collisions.

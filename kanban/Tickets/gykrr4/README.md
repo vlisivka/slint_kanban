@@ -1,7 +1,6 @@
 ---
 title: "P1: Two-way model bindings замість editing_* properties"
 created_at: 2026-07-04 14:55:19
-updated_at: 2026-07-04 14:55:19
 assigned_to: "admin"
 author: "user"
 points: 2

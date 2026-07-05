@@ -1,7 +1,6 @@
 ---
 title: "P0: Замінити ручний Drag & Drop на нативний (DragArea/DropArea)"
 created_at: 2026-07-04 14:54:03
-updated_at: 2026-07-04 14:54:03
 assigned_to: "admin"
 author: "user"
 points: 3

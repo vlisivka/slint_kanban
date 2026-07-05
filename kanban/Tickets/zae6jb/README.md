@@ -1,7 +1,6 @@
 ---
 title: "Bug: GUI не оновлюється після Drag & Drop переносу тікету між чергами (stale state)"
 created_at: 2026-07-03 10:00:00
-updated_at: 2026-07-03 22:56:40
 assigned_to: "admin"
 author: "user"
 points: 1

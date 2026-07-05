@@ -14,8 +14,6 @@ pub struct TicketMetadata {
     #[serde(default)]
     pub created_at: String, // "YYYY-MM-DD HH:MM:SS" format
     #[serde(default)]
-    pub updated_at: String,
-    #[serde(default)]
     pub assigned_to: String,
     #[serde(default)]
     pub author: String,
@@ -38,14 +36,25 @@ pub struct Ticket {
     pub attachment_count: u32,
     pub comments: Vec<crate::model::Comment>,
 }
+/// Converts a file's `SystemTime` to the ticket date format used throughout the app.
+fn system_time_to_string(time: std::time::SystemTime) -> String {
+    chrono::DateTime::<chrono::Local>::from(time)
+        .format("%Y-%m-%d %H:%M:%S")
+        .to_string()
+}
 
 impl Ticket {
-    pub fn from_metadata(id: String, metadata: TicketMetadata, description: String) -> Self {
+    pub fn from_metadata(
+        id: String,
+        metadata: TicketMetadata,
+        description: String,
+        updated_at: String,
+    ) -> Self {
         Self {
             id,
             title: metadata.title,
             created_at: metadata.created_at,
-            updated_at: metadata.updated_at,
+            updated_at,
             description,
             assigned_to: metadata.assigned_to,
             author: metadata.author,
@@ -131,7 +140,6 @@ impl Ticket {
     /// ---
     /// title: ...
     /// created_at: YYYY-MM-DD HH:MM:SS
-    /// updated_at: YYYY-MM-DD HH:MM:SS
     /// assigned_to: "..."
     /// ---
     /// <markdown body>
@@ -166,7 +174,7 @@ impl Ticket {
         let frontmatter = parts[1];
         let body = parts[2].trim().to_string();
 
-        let mut metadata: TicketMetadata = serde_yaml::from_str(frontmatter).map_err(|e| {
+        let metadata: TicketMetadata = serde_yaml::from_str(frontmatter).map_err(|e| {
             anyhow::anyhow!(tr!(
                 "Failed to parse YAML in {}: {}",
                 readme_path.display(),
@@ -174,12 +182,11 @@ impl Ticket {
             ))
         })?;
 
-        // Backfill updated_at for tickets created before this field was added
-        if metadata.updated_at.is_empty() && !metadata.created_at.is_empty() {
-            metadata.updated_at = metadata.created_at.clone();
-        }
+        // Compute updated_at from file mtime (not from YAML)
+        let readme_meta = std::fs::metadata(&readme_path)?;
+        let updated_at = system_time_to_string(readme_meta.modified()?);
 
-        let ticket = Ticket::from_metadata(ticket_id, metadata, body);
+        let ticket = Ticket::from_metadata(ticket_id, metadata, body, updated_at.clone());
         Ok(ticket)
     }
 
@@ -232,7 +239,7 @@ impl Ticket {
         let frontmatter = parts[1];
         let body = parts[2].trim().to_string();
 
-        let mut metadata: TicketMetadata = serde_yaml::from_str(frontmatter).map_err(|e| {
+        let metadata: TicketMetadata = serde_yaml::from_str(frontmatter).map_err(|e| {
             anyhow::anyhow!(tr!(
                 "Failed to parse YAML in {}: {}",
                 readme_path.display(),
@@ -240,12 +247,11 @@ impl Ticket {
             ))
         })?;
 
-        // Backfill updated_at for tickets created before this field was added
-        if metadata.updated_at.is_empty() && !metadata.created_at.is_empty() {
-            metadata.updated_at = metadata.created_at.clone();
-        }
+        // Compute updated_at from file mtime (not from YAML)
+        let readme_meta = std::fs::metadata(&readme_path)?;
+        let updated_at = system_time_to_string(readme_meta.modified()?);
 
-        let mut ticket = Ticket::from_metadata(ticket_id, metadata, body);
+        let mut ticket = Ticket::from_metadata(ticket_id, metadata, body, updated_at);
         ticket.load_comments(path)?;
         Ok(ticket)
     }
@@ -259,8 +265,8 @@ impl Ticket {
         use std::io::Write;
         write!(
             f,
-            "---\ntitle: \"{}\"\ncreated_at: {}\nupdated_at: {}\nassigned_to: \"{}\"\nauthor: \"{}\"\npoints: {}\nattachment_count: {}\n---\n{}",
-            self.title, self.created_at, self.updated_at, self.assigned_to, self.author, self.points, self.attachment_count, self.description
+            "---\ntitle: \"{}\"\ncreated_at: {}\nassigned_to: \"{}\"\nauthor: \"{}\"\npoints: {}\nattachment_count: {}\n---\n{}",
+            self.title, self.created_at, self.assigned_to, self.author, self.points, self.attachment_count, self.description
         )?;
         Ok(())
     }

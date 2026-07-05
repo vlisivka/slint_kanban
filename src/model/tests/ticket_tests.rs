@@ -20,10 +20,6 @@ updated_at: 2023-10-27
         metadata.created_at, "2023-10-27",
         "Created date should match YAML input"
     );
-    assert_eq!(
-        metadata.updated_at, "2023-10-27",
-        "Updated date should match YAML input"
-    );
 }
 
 #[test]
@@ -182,10 +178,6 @@ created_at: 2023-10-27
     assert_eq!(
         metadata.created_at, "2023-10-27",
         "Created date should match YAML input"
-    );
-    assert_eq!(
-        metadata.updated_at, "",
-        "Updated date should be empty if missing in YAML"
     );
 }
 
@@ -394,4 +386,116 @@ fn test_extract_references_no_panic_on_unicode_byte_boundary() {
         refs.is_empty(),
         "Should extract no references when the 6 chars after '#' contain non-ASCII."
     );
+}
+/// When saving a ticket, the `updated_at` field should NOT be written to the YAML frontmatter.
+/// Criteria of success: after saving and reading raw file content, no line starting with "updated_at:" exists.
+/// Criteria of failure: updated_at is present in the frontmatter.
+#[test]
+fn test_ticket_save_no_updated_at() -> anyhow::Result<()> {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let ticket_path = temp_dir.path().join("TNoUpdate");
+    std::fs::create_dir(&ticket_path).unwrap();
+
+    let ticket = Ticket {
+        id: "TNoUpdate".to_string(),
+        title: "Test ticket".to_string(),
+        created_at: "2024-01-01 12:00:00".to_string(),
+        updated_at: "2024-01-01 13:00:00".to_string(),
+        description: "Test description".to_string(),
+        assigned_to: "".to_string(),
+        author: "test".to_string(),
+        points: 0,
+        attachment_count: 0,
+        comments: vec![],
+    };
+
+    ticket.save(&ticket_path)?;
+
+    let content = std::fs::read_to_string(ticket_path.join("README.md"))?;
+    assert!(
+        !content.contains("updated_at:"),
+        "YAML frontmatter should not contain updated_at field"
+    );
+
+    Ok(())
+}
+/// Loading a ticket should compute `updated_at` from the README.md file's mtime.
+/// Criteria of success: ticket.updated_at is populated from file mtime, not from YAML.
+/// Criteria of failure: updated_at is empty or comes from YAML frontmatter.
+#[test]
+fn test_ticket_load_updated_at_from_mtime() -> anyhow::Result<()> {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let ticket_path = temp_dir.path().join("TMtime");
+    std::fs::create_dir(&ticket_path).unwrap();
+
+    // Create README.md without updated_at in frontmatter
+    let readme_path = ticket_path.join("README.md");
+    let mut file = std::fs::File::create(&readme_path)?;
+    use std::io::Write;
+    writeln!(file, "---")?;
+    writeln!(file, "title: \"Mtime Test\"")?;
+    writeln!(file, "created_at: 2024-06-15 10:30:00")?;
+    writeln!(file, "---")?;
+    writeln!(file)?;
+    writeln!(file, "Test body")?;
+    drop(file);
+
+    // Get the file's mtime
+    let metadata = std::fs::metadata(&readme_path)?;
+    let _mtime = metadata.modified()?;
+
+    // Load the ticket
+    let ticket = Ticket::load(&ticket_path)?;
+
+    // updated_at should NOT be empty — it's computed from mtime
+    assert!(
+        !ticket.updated_at.is_empty(),
+        "updated_at should be populated from file mtime"
+    );
+
+    // Load and verify the ticket loads correctly
+    assert_eq!(ticket.title, "Mtime Test");
+
+    Ok(())
+}
+/// Loading a ticket that has `updated_at` in frontmatter (old format) works correctly.
+/// The field is ignored — updated_at is computed from mtime instead.
+/// Criteria of success: ticket loads without error, updated_at comes from mtime.
+/// Criteria of failure: parse error or updated_at comes from YAML.
+#[test]
+fn test_ticket_load_backward_compat_with_updated_at() -> anyhow::Result<()> {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let ticket_path = temp_dir.path().join("TOld");
+    std::fs::create_dir(&ticket_path).unwrap();
+
+    // Create README.md with old-style updated_at in frontmatter
+    let readme_path = ticket_path.join("README.md");
+    let mut file = std::fs::File::create(&readme_path)?;
+    use std::io::Write;
+    writeln!(file, "---")?;
+    writeln!(file, "title: \"Old Ticket\"")?;
+    writeln!(file, "created_at: 2024-01-01 08:00:00")?;
+    writeln!(file, "updated_at: 2024-06-01 15:00:00")?; // old field — must be ignored
+    writeln!(file, "---")?;
+    writeln!(file)?;
+    writeln!(file, "Body of old ticket")?;
+    drop(file);
+
+    // Load should succeed (backward compatible)
+    let ticket = Ticket::load(&ticket_path)?;
+
+    assert_eq!(ticket.title, "Old Ticket");
+    assert_eq!(ticket.created_at, "2024-01-01 08:00:00");
+
+    // updated_at should come from mtime, NOT from YAML's "2024-06-01 15:00:00"
+    assert!(
+        ticket.updated_at != "2024-06-01 15:00:00",
+        "updated_at should be computed from mtime, not read from YAML"
+    );
+    assert!(
+        !ticket.updated_at.is_empty(),
+        "updated_at must be populated"
+    );
+
+    Ok(())
 }
