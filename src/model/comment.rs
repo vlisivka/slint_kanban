@@ -22,27 +22,7 @@ pub struct Comment {
 
 impl Comment {
     pub fn extract_references(&self) -> Vec<String> {
-        let mut refs = Vec::new();
-        let mut start = 0;
-        while let Some((char_idx, _ch)) = self.content[start..]
-            .char_indices()
-            .find(|(_, c)| *c == '#')
-        {
-            let actual_pos = start + char_idx;
-            // Collect the next 6 characters after '#'
-            let after_hash: String = self.content[actual_pos + 1..].chars().take(6).collect();
-            if after_hash.len() == 6
-                && after_hash
-                    .chars()
-                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
-            {
-                refs.push(format!("#{}", after_hash));
-            }
-            start = actual_pos + 1;
-        }
-        refs.sort();
-        refs.dedup();
-        refs
+        crate::model::utils::extract_ticket_references(&self.content)
     }
 
     pub fn load(path: &std::path::Path) -> anyhow::Result<Self> {

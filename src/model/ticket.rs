@@ -67,27 +67,7 @@ impl Ticket {
     /// Finds ticket cross-references in the description text.
     /// References use the format `#xxxxxx` where x is a 6-char alphanumeric ticket ID.
     pub fn extract_references(&self) -> Vec<String> {
-        let mut refs = Vec::new();
-        let mut start = 0;
-        while let Some((char_idx, _ch)) = self.description[start..]
-            .char_indices()
-            .find(|(_, c)| *c == '#')
-        {
-            let actual_pos = start + char_idx;
-            // Collect the next 6 characters after '#'
-            let after_hash: String = self.description[actual_pos + 1..].chars().take(6).collect();
-            if after_hash.len() == 6
-                && after_hash
-                    .chars()
-                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
-            {
-                refs.push(format!("#{}", after_hash));
-            }
-            start = actual_pos + 1;
-        }
-        refs.sort();
-        refs.dedup();
-        refs
+        crate::model::utils::extract_ticket_references(&self.description)
     }
 
     pub fn matches(&self, query: &str) -> bool {
@@ -162,19 +142,9 @@ impl Ticket {
         let content = std::fs::read_to_string(&readme_path).map_err(|e| {
             anyhow::anyhow!(tr!("Failed to read README.md in {}: {}", path.display(), e))
         })?;
+        let (frontmatter, body) = crate::model::utils::parse_frontmatter(&content)?;
 
-        let parts: Vec<&str> = content.splitn(3, "---").collect();
-        if parts.len() < 3 {
-            return Err(anyhow::anyhow!(tr!(
-                "Invalid ticket format (missing frontmatter) in {}",
-                readme_path.display()
-            )));
-        }
-
-        let frontmatter = parts[1];
-        let body = parts[2].trim().to_string();
-
-        let metadata: TicketMetadata = serde_yaml::from_str(frontmatter).map_err(|e| {
+        let metadata: TicketMetadata = serde_yaml::from_str(&frontmatter).map_err(|e| {
             anyhow::anyhow!(tr!(
                 "Failed to parse YAML in {}: {}",
                 readme_path.display(),
@@ -227,19 +197,9 @@ impl Ticket {
         let content = std::fs::read_to_string(&readme_path).map_err(|e| {
             anyhow::anyhow!(tr!("Failed to read README.md in {}: {}", path.display(), e))
         })?;
+        let (frontmatter, body) = crate::model::utils::parse_frontmatter(&content)?;
 
-        let parts: Vec<&str> = content.splitn(3, "---").collect();
-        if parts.len() < 3 {
-            return Err(anyhow::anyhow!(tr!(
-                "Invalid ticket format (missing frontmatter) in {}",
-                readme_path.display()
-            )));
-        }
-
-        let frontmatter = parts[1];
-        let body = parts[2].trim().to_string();
-
-        let metadata: TicketMetadata = serde_yaml::from_str(frontmatter).map_err(|e| {
+        let metadata: TicketMetadata = serde_yaml::from_str(&frontmatter).map_err(|e| {
             anyhow::anyhow!(tr!(
                 "Failed to parse YAML in {}: {}",
                 readme_path.display(),

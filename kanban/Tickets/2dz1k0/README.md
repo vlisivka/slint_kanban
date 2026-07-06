@@ -61,14 +61,42 @@ pub fn parse_frontmatter(content: &str) -> Result<(String, String), anyhow::Erro
 
 ## Acceptance Criteria
 
-- [ ] Створено `src/model/utils.rs` з функцією `extract_ticket_references(text: &str) -> Vec<String>`
-- [ ] `Ticket::extract_references()` викликає `utils::extract_ticket_references(&self.description)`
-- [ ] `Comment::extract_references()` викликає `utils::extract_ticket_references(&self.content)`
-- [ ] Створено функцію `parse_frontmatter(content: &str) -> Result<(String, String), anyhow::Error>`
-- [ ] `Ticket::load()` та `Ticket::load_full()` використовують `parse_frontmatter`
-- [ ] Кожна функція в `utils.rs` має doc-comment з описом призначення
-- [ ] `cargo test` проходить (всі тести)
-- [ ] `scripts/pre-commit.sh` проходить (fmt + clippy + tests)
+ - [x] Створено `src/model/utils.rs` з функцією `extract_ticket_references(text: &str) -> Vec<String>`
+ - [x] `Ticket::extract_references()` викликає `utils::extract_ticket_references(&self.description)`
+ - [x] `Comment::extract_references()` викликає `utils::extract_ticket_references(&self.content)`
+ - [x] Створено функцію `parse_frontmatter(content: &str) -> Result<(String, String), anyhow::Error>`
+ - [x] `Ticket::load()` та `Ticket::load_full()` використовують `parse_frontmatter`
+ - [x] Кожна функція в `utils.rs` має doc-comment з описом призначення
+ - [x] `cargo test` проходить (всі тести)
+ - [x] `scripts/pre-commit.sh` проходить (fmt + clippy + tests)
+
+## Resolution
+
+### Підсумок
+
+Створено новий модуль `src/model/utils.rs` з двома універсальними функціями, які замінили дубльований код у Ticket та Comment:
+- `extract_ticket_references()` — об'єднано 2 ідентичні методи з `Ticket::extract_references()` і `Comment::extract_references()`
+- `parse_frontmatter()` — об'єднано спільний блок парсингу YAML frontmatter з `Ticket::load()` і `Ticket::load_full()`
+
+### Зміни в коді
+| Файл | Зміна |
+|---|---|
+| `src/model/utils.rs` | НОВИЙ файл: `extract_ticket_references()`, `parse_frontmatter()`, 5 тестів |
+| `src/model/mod.rs` | Додано `pub mod utils;` |
+| `src/model/ticket.rs:69-71` | `Ticket::extract_references()` → `crate::model::utils::extract_ticket_references(&self.description)` |
+| `src/model/ticket.rs:145` | `Ticket::load()` → `crate::model::utils::parse_frontmatter(&content)?` |
+| `src/model/ticket.rs:200` | `Ticket::load_full()` → `crate::model::utils::parse_frontmatter(&content)?` |
+| `src/model/comment.rs:25` | `Comment::extract_references()` → `crate::model::utils::extract_ticket_references(&self.content)` |
+
+### Додані тести
+- `test_extract_ticket_references_basic()` — базові посилання (#abc123, #def456, дедуплікація)
+- `test_extract_ticket_references_non_ascii()` — кириличний текст із посиланнями
+- `test_extract_ticket_references_no_panic_on_unicode()` — Unicode на межі байт (Cyrillic 'е')
+- `test_parse_frontmatter_valid()` — валідний frontmatter
+- `test_parse_frontmatter_missing()` — відсутній закриваючий `---`
+
+### Оновлена документація
+- `src/model/utils.rs` — doc-comment для кожної функції (extract_ticket_references, parse_frontmatter)
 
 ## Sources
 

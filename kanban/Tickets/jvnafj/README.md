@@ -58,7 +58,7 @@ attachment_count: 0
 
 5. StyledText + @markdown для рендерингу описів тікетів
    - Рендеринг markdown-тексту в описі тікета
-   - Підзадача: #gwb1dm, пов'язаний: #sw9gai
+   - Підзадача: #gwb1dm
 
 6. SystemTrayIcon - minimize-to-tray функціональність
    - Іконка в системному треї з контекстним меню

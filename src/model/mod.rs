@@ -11,6 +11,7 @@ pub mod config;
 pub mod queue;
 pub mod stats;
 pub mod ticket;
+pub mod utils;
 
 pub use board::Board;
 pub use comment::Comment;
