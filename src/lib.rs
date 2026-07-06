@@ -108,11 +108,11 @@ pub fn into_slint_summary(summary: &model::stats::BoardSummary) -> BoardSummaryS
 
     let lead_time_str = summary
         .avg_lead_time_days
-        .map(|d| tr!("{:.1} days", d))
+        .map(|d| format!("{:.1} days", d))
         .unwrap_or_else(|| "-".to_string());
     let cycle_time_str = summary
         .avg_cycle_time_days
-        .map(|d| tr!("{:.1} days", d))
+        .map(|d| format!("{:.1} days", d))
         .unwrap_or_else(|| "-".to_string());
     let completion_rate_str = summary
         .completion_rate

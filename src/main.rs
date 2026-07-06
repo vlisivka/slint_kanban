@@ -997,29 +997,23 @@ fn print_stats_human_readable(
     )?;
     writeln!(
         out,
-        "{}",
-        tr!(
-            "Avg Lead Time: {}",
-            summary
-                .avg_lead_time_days
-                .map(|d| tr!("{:.1} days", d))
-                .unwrap_or_else(|| "-".to_string())
-        )
+        "Avg Lead Time: {}",
+        summary
+            .avg_lead_time_days
+            .map(|d| format!("{:.1} {}", d, tr!("days")))
+            .unwrap_or_else(|| "-".to_string())
     )?;
     writeln!(
         out,
-        "{}",
-        tr!(
-            "Avg Cycle Time: {}",
-            summary
-                .avg_cycle_time_days
-                .map(|d| tr!("{:.1} days", d))
-                .unwrap_or_else(|| "-".to_string())
-        )
+        "Avg Cycle Time: {}",
+        summary
+            .avg_cycle_time_days
+            .map(|d| format!("{:.1} {}", d, tr!("days")))
+            .unwrap_or_else(|| "-".to_string())
     )?;
 
     if let Some(rate) = summary.completion_rate {
-        writeln!(out, "{}", tr!("Completion Rate: {:.1}%", rate))?;
+        writeln!(out, "{} {:.1}%", tr!("Completion Rate:"), rate)?;
     }
 
     writeln!(out, "{}", tr!("Total Points:    {}", summary.total_points))?;
@@ -1030,11 +1024,17 @@ fn print_stats_human_readable(
     )?;
     if summary.total_points > 0 {
         let p_rate = (summary.total_done_points as f64 / summary.total_points as f64) * 100.0;
-        writeln!(out, "{}", tr!("Points Completion Rate: {:.1}%", p_rate))?;
+        writeln!(out, "{} {:.1}%", tr!("Points Completion Rate:"), p_rate)?;
     }
 
     if let Some(rate) = summary.sprint_completion_rate {
-        writeln!(out, "{}", tr!("Sprint Completion: {:.1}% (Tickets)", rate))?;
+        writeln!(
+            out,
+            "{} {:.1}% {}",
+            tr!("Sprint Completion: "),
+            rate,
+            tr!("(Tickets)")
+        )?;
     }
     writeln!(out)?;
 

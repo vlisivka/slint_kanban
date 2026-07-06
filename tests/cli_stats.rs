@@ -69,3 +69,32 @@ fn test_cli_stats_no_format_garbage() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+/// Regression test for ticket a1wxcn: tr!() strips format specifiers, leaving {:.1} in output.
+#[test]
+fn test_cli_stats_no_format_specifier_garbage() -> anyhow::Result<()> {
+    let env = setup_temp_board();
+    let root_str = env.path().to_str().unwrap();
+
+    // Run stats command
+    let mut cmd = Command::cargo_bin("slint_kanban")?;
+    cmd.arg("--root").arg(root_str).arg("stats");
+
+    let output = cmd.output()?;
+    assert!(
+        output.status.success(),
+        "Stats command should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    // Check that {:.1} format specifier patterns are NOT present in output
+    assert!(
+        !stdout.contains("{:.1}"),
+        "Output should not contain {{:.1}} format string garbage:\n{}",
+        stdout
+    );
+
+    Ok(())
+}
