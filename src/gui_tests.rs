@@ -71,13 +71,11 @@ fn run_gui_interaction_cycle(ui: &App, controller: &Arc<AppController>, _root_pa
     // 5. Editing
     let t_edit = todo_queue.tickets.row_data(0).unwrap();
     ui.set_show_ticket_edit_dialog(true);
-    ui.set_editing_ticket_id(t_edit.id.clone());
-    ui.set_editing_ticket_title("Updated Perf Title".into());
-    ui.invoke_update_ticket(
+    ui.invoke_test_trigger_edit_ticket(
         t_edit.id.clone(),
         "Updated Perf Title".into(),
-        t_edit.description.clone(),
-        t_edit.assigned_to.clone(),
+        "Updated Details".into(),
+        "user1".into(),
         2,
     );
     ui.set_show_ticket_edit_dialog(false); // Reset editing state
@@ -222,7 +220,7 @@ fn test_gui_user_desync() {
     );
 
     ui.invoke_test_trigger_add_ticket("1.Incoming".into());
-    let assigned = ui.get_editing_ticket_assignee();
+    let assigned = ui.get_editing_ticket().assigned_to;
     println!("Final editing assigned to: '{}'", assigned);
 
     assert_eq!(assigned, "user", "Assigned user should be 'user'");

@@ -7,16 +7,10 @@ import {
     HorizontalBox,
     Palette,
 } from "std-widgets.slint";
-import { IdCopy, CloseButton, ModalBackdrop, Theme } from "../common.slint";
-
+import { IdCopy, CloseButton, ModalBackdrop, Theme, TicketStr } from "../common.slint";
 export component TicketEdit inherits Rectangle {
-    in-out property <string> title_text;
-    in-out property <string> description_text;
-    in-out property <string> assigned_to;
+    in-out property <TicketStr> ticket;
     in property <[string]> users;
-    in property <string> ticket_id;
-    in property <string> author;
-    in-out property <int> points;
 
     callback save(string, string, string, string, int); // id, title, desc, assigned_to, points
     callback cancel();
@@ -55,14 +49,14 @@ export component TicketEdit inherits Rectangle {
                         alignment: center;
                         spacing: 8px;
                         Text {
-                            text: ticket_id == "" ? @tr("Create New Ticket") : @tr("Edit Ticket ");
+                            text: ticket.id == "" ? @tr("Create New Ticket") : @tr("Edit Ticket ");
                             font-size: 32px;
                             font-weight: 800;
                             overflow: elide;
                         }
 
-                        if ticket_id != "": IdCopy {
-                            id: ticket_id;
+                        if ticket.id != "": IdCopy {
+                            id: ticket.id;
                             font-size: 32px;
                             height: 48px; // Match line height of the text roughly
                     }
@@ -74,7 +68,7 @@ export component TicketEdit inherits Rectangle {
                         width: 120px;
                         height: 40px;
                         clicked => {
-                            save(ticket_id, title_text, description_text, assigned_to, points);
+                            save(ticket.id, ticket.title, ticket.description, ticket.assigned_to, ticket.points);
                         }
                     }
                 }
@@ -82,7 +76,7 @@ export component TicketEdit inherits Rectangle {
                 HorizontalLayout {
                     spacing: 24px;
                     alignment: start;
-                    if author != "": VerticalLayout {
+                    if ticket.author != "": VerticalLayout {
                         spacing: 8px;
                         Text {
                             text: @tr("Author");
@@ -93,7 +87,7 @@ export component TicketEdit inherits Rectangle {
                         }
 
                         Text {
-                            text: author;
+                            text: ticket.author;
                             font-size: 14px;
                             height: 40px;
                             vertical-alignment: center;
@@ -116,18 +110,18 @@ export component TicketEdit inherits Rectangle {
                             spacing: 8px;
                             assign-combo := ComboBox {
                                 model: users;
-                                current-value: assigned_to == "" ? @tr("<unassigned>") : assigned_to;
+                                current-value: ticket.assigned_to == "" ? @tr("<unassigned>") : ticket.assigned_to;
                                 height: 40px;
                                 width: 200px;
                                 selected(val) => {
-                                    assigned_to = (val == "<unassigned>") ? "" : val;
+                                    ticket.assigned_to = (val == "<unassigned>") ? "" : val;
                                 }
                             }
 
-                            if assigned_to != "": CloseButton {
+                            if ticket.assigned_to != "": CloseButton {
                                 size: 32px;
                                 clicked => {
-                                    assigned_to = "";
+                                    ticket.assigned_to = "";
                                 }
                             }
                         }
@@ -145,32 +139,32 @@ export component TicketEdit inherits Rectangle {
 
                         ComboBox {
                             model: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
-                            current-value: points + "";
+                            current-value: ticket.points + "";
                             height: 40px;
                             width: 80px;
                             selected(val) => {
                                 if (val == "0") {
-                                    points = 0;
+                                    ticket.points = 0;
                                 } else if (val == "1") {
-                                    points = 1;
+                                    ticket.points = 1;
                                 } else if (val == "2") {
-                                    points = 2;
+                                    ticket.points = 2;
                                 } else if (val == "3") {
-                                    points = 3;
+                                    ticket.points = 3;
                                 } else if (val == "4") {
-                                    points = 4;
+                                    ticket.points = 4;
                                 } else if (val == "5") {
-                                    points = 5;
+                                    ticket.points = 5;
                                 } else if (val == "6") {
-                                    points = 6;
+                                    ticket.points = 6;
                                 } else if (val == "7") {
-                                    points = 7;
+                                    ticket.points = 7;
                                 } else if (val == "8") {
-                                    points = 8;
+                                    ticket.points = 8;
                                 } else if (val == "9") {
-                                    points = 9;
+                                    ticket.points = 9;
                                 } else if (val == "10") {
-                                    points = 10;
+                                    ticket.points = 10;
                                 }
                             }
                         }
@@ -188,7 +182,7 @@ export component TicketEdit inherits Rectangle {
                     }
 
                     title-input := LineEdit {
-                        text <=> title_text;
+                        text <=> ticket.title;
                         placeholder-text: @tr("What needs to be done?");
                         height: 40px;
                     }
@@ -205,24 +199,24 @@ export component TicketEdit inherits Rectangle {
                     }
 
                     desc-input := TextEdit {
-                        text <=> description_text;
+                        text <=> ticket.description;
                         placeholder-text: @tr("What needs to be done?");
                         preferred-height: 400px;
                         vertical-stretch: 1;
                     }
 
-                    if ticket_id != "": HorizontalLayout {
+                    if ticket.id != "": HorizontalLayout {
                         alignment: end;
                         attach-btn := Button {
                             text: @tr("Attach File");
                             height: 40px;
                             clicked => {
-                                let link = root.attach-file(ticket_id);
+                                let link = root.attach-file(ticket.id);
                                 if link != "" {
-                                    if description_text != "" {
-                                        description_text += "\n\n" + link;
+                                    if ticket.description != "" {
+                                        ticket.description += "\n\n" + link;
                                     } else {
-                                        description_text = link;
+                                        ticket.description = link;
                                     }
                                 }
                             }

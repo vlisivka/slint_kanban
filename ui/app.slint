@@ -75,21 +75,15 @@ export component App inherits Window {
     callback test-trigger-remove-history(string); // for testing
     callback test-trigger-move-ticket(string, string, string); // for testing
     callback test-get-first-ticket-id() -> string; // for testing
-
+    callback test-trigger-edit-ticket(string, string, string, string, int); // for testing: id, title, desc, assigned, points
     // State
     in-out property <bool> show_ticket_view_dialog: false;
     in-out property <TicketStr> active_ticket;
 
     // Editing state
     in-out property <bool> show_ticket_edit_dialog: false;
-    in-out property <string> editing_ticket_id: "";
-    in-out property <string> editing_ticket_title: "";
-    in-out property <string> editing_ticket_description: "";
-    in-out property <string> editing_ticket_assignee: "";
-    in-out property <string> editing_ticket_author: "";
-    in-out property <int> editing_ticket_points: 0;
+    in-out property <TicketStr> editing_ticket;
     in-out property <string> new_ticket_queue_id: "";
-
     // Warning dialog state
     in-out property <bool> show_warning_dialog: false;
     out property <string> warning_message: "";
@@ -366,12 +360,18 @@ export component App inherits Window {
     }
 
     test-trigger-add-ticket(qid) => {
-        editing_ticket_id = "";
-        editing_ticket_title = @tr("New Ticket");
-        editing_ticket_description = "";
-        editing_ticket_assignee = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
-        editing_ticket_author = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
-        editing_ticket_points = 0;
+        editing_ticket.id = "";
+        editing_ticket.title = @tr("New Ticket");
+        editing_ticket.description = "";
+        editing_ticket.snippet = "";
+        editing_ticket.created_at = "";
+        editing_ticket.updated_at = "";
+        editing_ticket.assigned_to = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
+        editing_ticket.author = (UserGlobal.active-user == "<unassigned>") ? "" : UserGlobal.active-user;
+        editing_ticket.references = [];
+        editing_ticket.comments = [];
+        editing_ticket.attachment_count = 0;
+        editing_ticket.points = 0;
         new_ticket_queue_id = qid;
         show_ticket_edit_dialog = true;
     }
@@ -401,7 +401,21 @@ export component App inherits Window {
         move-ticket(tid, src, tgt);
     }
 
-
+    test-trigger-edit-ticket(id, title, desc, assigned, points) => {
+        editing_ticket.id = id;
+        editing_ticket.title = title;
+        editing_ticket.description = desc;
+        editing_ticket.snippet = "";
+        editing_ticket.created_at = "";
+        editing_ticket.updated_at = "";
+        editing_ticket.assigned_to = assigned;
+        editing_ticket.author = "";
+        editing_ticket.references = [];
+        editing_ticket.comments = [];
+        editing_ticket.attachment_count = 0;
+        editing_ticket.points = points;
+        show_ticket_edit_dialog = true;
+    }
     // Ticket View Overlay
     if (show_ticket_view_dialog): TicketView {
         ticket: active_ticket;
@@ -410,12 +424,7 @@ export component App inherits Window {
         }
         edit => {
             show_ticket_view_dialog = false;
-            editing_ticket_id = active_ticket.id;
-            editing_ticket_title = active_ticket.title;
-            editing_ticket_description = active_ticket.description;
-            editing_ticket_assignee = active_ticket.assigned_to;
-            editing_ticket_author = active_ticket.author;
-            editing_ticket_points = active_ticket.points;
+            editing_ticket = active_ticket;
             show_ticket_edit_dialog = true;
         }
         navigate-to(target) => {
@@ -437,12 +446,7 @@ export component App inherits Window {
 
     // Edit Overlay
     if (show_ticket_edit_dialog): TicketEdit {
-        ticket_id: editing_ticket_id;
-        title_text: editing_ticket_title;
-        description_text: editing_ticket_description;
-        assigned_to: editing_ticket_assignee;
-        author: editing_ticket_author;
-        points: editing_ticket_points;
+        ticket: editing_ticket;
         users: UserGlobal.users;
 
         cancel => {
