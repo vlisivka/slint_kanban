@@ -177,8 +177,11 @@ fn test_gui_suite() {
     println!("Checking Stats View...");
     test_gui_stats_view_opens();
 
-    // Test moving of tickets
-    println!("Checking Stats View...");
+    // VIII. Test Ctrl-M toggle show_only_mine (ticket okmk6w)
+    println!("Checking Ctrl-M toggle show_only_mine...");
+    test_gui_toggle_show_only_mine_no_crash();
+
+    // IX. Test moving of tickets
     test_gui_move_ticket_updates_board();
 }
 
@@ -341,5 +344,63 @@ fn test_gui_move_ticket_updates_board() {
     assert!(
         board.find_ticket_by_id(&ticket_id).is_some(),
         "Ticket should still exist in board"
+    );
+}
+
+/// Regression test for ticket okmk6w: Ctrl-M toggle "show only mine" crashes VecModel::remove.
+/// The bug was in sync_board_data: removing rows from VecModel with a fixed index causes
+/// panic when the model shrinks during iteration.
+fn test_gui_toggle_show_only_mine_no_crash() {
+    let (ui, controller, root_path, _temp_dir) = setup_test_app();
+
+    // Disable manage_only_mine so we can toggle show_only_mine freely
+    let mut config = crate::model::Config::load(&root_path)
+        .expect("Load of config for test_gui_toggle_show_only_mine_no_crash FAILED");
+    config.user.manage_only_mine = false;
+    config
+        .write(&root_path)
+        .expect("Write of config for test_gui_toggle_show_only_mine_no_crash FAILED");
+
+    // Create a 3rd ticket in the same queue (2.ToDo) to trigger the bug
+    // The original bug: current_len=2, new_len=0 → remove(1) twice → panic
+    let board = Board::load(root_path.clone()).unwrap();
+    board
+        .create_ticket("Ticket 3", "Desc 3", "2.ToDo", "user3", "author", 1)
+        .unwrap();
+
+    // Load fresh state with updated config
+    controller
+        .reload()
+        .expect("Reload after config change for test_gui_toggle_show_only_mine_no_crash FAILED");
+
+    // Verify we have tickets in the board (2 tickets from setup_test_app)
+    let queues_before = ui.get_board_queues();
+    let total_before: i32 = queues_before.iter().map(|q| q.ticket_count).sum();
+    assert!(
+        total_before >= 2,
+        "Board must have at least 2 tickets for the test (had {})",
+        total_before
+    );
+
+    // Act: toggle show_only_mine multiple times — this is where the crash occurs
+    ui.global::<UserGlobal>().invoke_toggle_show_only_mine(true);
+    controller.reload().unwrap();
+
+    ui.global::<UserGlobal>()
+        .invoke_toggle_show_only_mine(false);
+    controller.reload().unwrap();
+
+    // Act again: toggle back to true
+    ui.global::<UserGlobal>().invoke_toggle_show_only_mine(true);
+    controller.reload().unwrap();
+
+    // Assert: no crash occurred, and the filter is applied correctly
+    let queues_after = ui.get_board_queues();
+    let total_after: i32 = queues_after.iter().map(|q| q.ticket_count).sum();
+    assert!(
+        total_after <= total_before,
+        "Filtered ticket count must be less than or equal to original (before={}, after={})",
+        total_before,
+        total_after
     );
 }

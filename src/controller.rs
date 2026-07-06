@@ -176,8 +176,8 @@ impl AppController {
                 }
             } else if new_len < current_len {
                 // Shrink the model to remove stale rows
-                for _ in 0..(current_len - new_len) {
-                    tickets_model.remove(current_len - 1);
+                for i in 0..(current_len - new_len) {
+                    tickets_model.remove(current_len - 1 - i);
                 }
             }
 
