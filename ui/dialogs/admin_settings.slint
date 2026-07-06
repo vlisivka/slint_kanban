@@ -62,6 +62,7 @@ export component AdminSettings inherits Rectangle {
                         text: @tr("Administrator Settings");
                         font-size: 28px;
                         font-weight: 800;
+                        overflow: elide;
                     }
 
                     Button {
@@ -117,6 +118,7 @@ export component AdminSettings inherits Rectangle {
                         text: @tr("Edit Board Overview (README.md)");
                         font-weight: 700;
                         opacity: 0.7;
+                        overflow: elide;
                     }
 
                     readme_editor := TextEdit {
@@ -143,6 +145,7 @@ export component AdminSettings inherits Rectangle {
                         text: @tr("Manage Shared Users");
                         font-weight: 700;
                         opacity: 0.7;
+                        overflow: elide;
                     }
 
                     HorizontalLayout {
@@ -184,6 +187,7 @@ export component AdminSettings inherits Rectangle {
                                         text: user;
                                         vertical-alignment: center;
                                         font-weight: 600;
+                                        overflow: elide;
                                     }
 
                                     if user != "<unassigned>" && user != "admin": CloseButton {
@@ -202,6 +206,7 @@ export component AdminSettings inherits Rectangle {
                     spacing: 16px;
                     Text {
                         text: @tr("Manage Board Queues");
+                        overflow: elide;
                         font-weight: 700;
                         opacity: 0.7;
                     }
@@ -252,6 +257,7 @@ export component AdminSettings inherits Rectangle {
 
                                     Text {
                                         text: @tr("({} tickets)", q.ticket_count);
+                                        overflow: elide;
                                         vertical-alignment: center;
                                         opacity: 0.6;
                                         font-size: 12px;
@@ -273,6 +279,7 @@ export component AdminSettings inherits Rectangle {
                     spacing: 16px;
                     Text {
                         text: @tr("Manage Sprints");
+                        overflow: elide;
                         font-weight: 700;
                         opacity: 0.7;
                     }

@@ -24,6 +24,7 @@ export component SprintsView inherits Rectangle {
                 text: @tr("Sprints Management");
                 font-size: 24px;
                 font-weight: 700;
+                overflow: elide;
             }
 
             Rectangle {
@@ -56,18 +57,21 @@ export component SprintsView inherits Rectangle {
                         horizontal-stretch: 1;
                         text: @tr("Sprint Name");
                         font-weight: 700;
+                        overflow: elide;
                     }
 
                     Text {
                         width: 100px;
                         text: @tr("Start Date");
                         font-weight: 700;
+                        overflow: elide;
                     }
 
                     Text {
                         width: 100px;
                         text: @tr("End Date");
                         font-weight: 700;
+                        overflow: elide;
                     }
                 }
 
@@ -85,33 +89,38 @@ export component SprintsView inherits Rectangle {
                         vertical-alignment: center;
                         color: Palette.foreground;
                         opacity: 0.5;
+                        overflow: elide;
                     }
                 }
 
                 for s in sprints: HorizontalLayout {
                     spacing: 16px;
                     padding: 8px;
-                    
+
                     // Highlight if it's "current" logic-wise, but here we just list all
-                    
+
                     Text {
                         width: 60px;
                         text: s.number;
+                        overflow: elide;
                     }
 
                     Text {
                         horizontal-stretch: 1;
                         text: s.name;
+                        overflow: elide;
                     }
 
                     Text {
                         width: 100px;
                         text: s.start_date;
+                        overflow: elide;
                     }
 
                     Text {
                         width: 100px;
                         text: s.end_date;
+                        overflow: elide;
                     }
                 }
             }

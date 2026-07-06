@@ -31,6 +31,7 @@ export component KanbanColumn inherits Rectangle {
                     text: queue.name;
                     font-weight: 800;
                     font-size: 16px;
+                    overflow: elide;
                 }
 
                 if queue.total_points > 0: Text {
@@ -38,6 +39,7 @@ export component KanbanColumn inherits Rectangle {
                     font-size: 11px;
                     opacity: 0.7;
                     color: Theme.success;
+                    overflow: elide;
                 }
             }
 

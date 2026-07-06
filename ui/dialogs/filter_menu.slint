@@ -88,6 +88,7 @@ export component FilterMenu inherits Rectangle {
                 CheckBox {
                     text: q.name;
                     checked: q.visible;
+                    horizontal-stretch: 1;
                     toggled => {
                         toggle-visibility(q.id, self.checked);
                     }

@@ -22,6 +22,7 @@ export component StatsView inherits Rectangle {
         HorizontalLayout {
             Text {
                 text: @tr("Board Statistics");
+                overflow: elide;
                 font-size: 24px;
                 font-weight: 700;
             }
@@ -48,28 +49,34 @@ export component StatsView inherits Rectangle {
                     Text {
                         text: @tr("== Board Summary ==");
                         font-weight: 700;
+                        overflow: elide;
                     }
 
                     Text {
                         text: @tr("Total tickets: {}", stats.total_tickets);
+                        overflow: elide;
                     }
 
                     Text {
                         text: @tr("Unassigned: {}", stats.unassigned_tickets);
+                        overflow: elide;
                     }
 
                     Text {
                         text: @tr("Average Lead Time: {}", stats.avg_lead_time);
+                        overflow: elide;
                     }
 
                     Text {
                         text: @tr("Average Cycle Time: {}", stats.avg_cycle_time);
+                        overflow: elide;
                     }
 
                     if stats.completion_rate != "": VerticalLayout {
                         spacing: 4px;
                         Text {
                             text: @tr("Ticket Completion Rate: {}", stats.completion_rate);
+                            overflow: elide;
                         }
 
                         Rectangle {
@@ -90,6 +97,7 @@ export component StatsView inherits Rectangle {
                         spacing: 4px;
                         Text {
                             text: @tr("Points: {} / {}", stats.total_done_points, stats.total_points);
+                            overflow: elide;
                         }
 
                         if stats.total_points > 0: Rectangle {
@@ -109,14 +117,14 @@ export component StatsView inherits Rectangle {
                     if stats.points_completion_rate != "": Text {
                         text: @tr("Points Completion Rate: {}", stats.points_completion_rate);
                         color: #2196F3;
-                        font-weight: 700;
+                        overflow: elide;
                     }
-
                     if stats.sprint_completion_rate != "" && stats.sprint_completion_rate != "-": VerticalLayout {
                         spacing: 4px;
                         Text {
                             text: @tr("Sprint Completion Rate (Tickets): {}", stats.sprint_completion_rate);
                             color: #FF9800;
+                            overflow: elide;
                         }
 
                         Rectangle {
@@ -140,6 +148,7 @@ export component StatsView inherits Rectangle {
                     Text {
                         text: @tr("== Trends (Total vs Done Points) ==");
                         font-weight: 700;
+                        overflow: elide;
                     }
 
                     Rectangle {
@@ -192,6 +201,7 @@ export component StatsView inherits Rectangle {
                                     font-size: 9px;
                                     horizontal-alignment: center;
                                     color: Palette.foreground;
+                                    overflow: elide;
                                 }
                             }
                         }
@@ -214,6 +224,7 @@ export component StatsView inherits Rectangle {
                                 text: @tr("Total Points (Scope)");
                                 font-size: 11px;
                                 vertical-alignment: center;
+                                overflow: elide;
                             }
                         }
 
@@ -230,6 +241,7 @@ export component StatsView inherits Rectangle {
                                 text: @tr("Done Points (Completed)");
                                 font-size: 11px;
                                 vertical-alignment: center;
+                                overflow: elide;
                             }
                         }
                     }
@@ -239,6 +251,7 @@ export component StatsView inherits Rectangle {
                         font-size: 10px;
                         opacity: 0.6;
                         horizontal-alignment: center;
+                        overflow: elide;
                     }
                 }
 
@@ -248,6 +261,7 @@ export component StatsView inherits Rectangle {
                     Text {
                         text: @tr("== Sprint Burndown Chart ==");
                         font-weight: 700;
+                        overflow: elide;
                     }
 
                     stats-burndown-rect := Rectangle {
@@ -308,6 +322,7 @@ export component StatsView inherits Rectangle {
                                     font-size: 9px;
                                     horizontal-alignment: center;
                                     color: Palette.foreground;
+                                    overflow: elide;
                                 }
                             }
                         }
@@ -330,6 +345,7 @@ export component StatsView inherits Rectangle {
                                 text: @tr("Remaining Points");
                                 font-size: 11px;
                                 vertical-alignment: center;
+                                overflow: elide;
                             }
                         }
 
@@ -346,6 +362,7 @@ export component StatsView inherits Rectangle {
                                 text: @tr("Ideal Burndown");
                                 font-size: 11px;
                                 vertical-alignment: center;
+                                overflow: elide;
                             }
                         }
                     }
@@ -357,6 +374,7 @@ export component StatsView inherits Rectangle {
                     Text {
                         text: @tr("== Tickets per Queue ==");
                         font-weight: 700;
+                        overflow: elide;
                     }
 
                     HorizontalLayout {
@@ -365,6 +383,7 @@ export component StatsView inherits Rectangle {
                             width: 200px;
                             text: @tr("Queue");
                             font-weight: 700;
+                            overflow: elide;
                         }
 
                         Text {
@@ -372,6 +391,7 @@ export component StatsView inherits Rectangle {
                             text: @tr("Count");
                             font-weight: 700;
                             horizontal-alignment: right;
+                            overflow: elide;
                         }
 
                         Text {
@@ -379,6 +399,7 @@ export component StatsView inherits Rectangle {
                             text: @tr("Limit");
                             font-weight: 700;
                             horizontal-alignment: right;
+                            overflow: elide;
                         }
 
                         Text {
@@ -386,6 +407,7 @@ export component StatsView inherits Rectangle {
                             text: @tr("Usage");
                             font-weight: 700;
                             horizontal-alignment: right;
+                            overflow: elide;
                         }
                     }
 
@@ -394,34 +416,38 @@ export component StatsView inherits Rectangle {
                         Text {
                             width: 200px;
                             text: q.name;
+                            overflow: elide;
                         }
 
                         Text {
                             width: 60px;
                             text: q.count;
                             horizontal-alignment: right;
+                            overflow: elide;
                         }
 
                         Text {
                             width: 60px;
                             text: q.limit;
                             horizontal-alignment: right;
+                            overflow: elide;
                         }
 
                         Text {
                             width: 60px;
                             text: q.usage;
                             horizontal-alignment: right;
+                            overflow: elide;
                         }
                     }
                 }
 
                 // Users
                 VerticalLayout {
-                    spacing: 8px;
                     Text {
                         text: @tr("== Tickets per User ==");
                         font-weight: 700;
+                        overflow: elide;
                     }
 
                     HorizontalLayout {
@@ -430,6 +456,7 @@ export component StatsView inherits Rectangle {
                             width: 200px;
                             text: @tr("User");
                             font-weight: 700;
+                            overflow: elide;
                         }
 
                         Text {
@@ -437,6 +464,7 @@ export component StatsView inherits Rectangle {
                             text: @tr("Count");
                             font-weight: 700;
                             horizontal-alignment: right;
+                            overflow: elide;
                         }
                     }
 
@@ -445,12 +473,14 @@ export component StatsView inherits Rectangle {
                         Text {
                             width: 200px;
                             text: u.name;
+                            overflow: elide;
                         }
 
                         Text {
                             width: 60px;
                             text: u.count;
                             horizontal-alignment: right;
+                            overflow: elide;
                         }
                     }
                 }

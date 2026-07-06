@@ -146,58 +146,42 @@ export component App inherits Window {
     config := AppConfig { }
 
     focus_scope := FocusScope {
-        key-pressed(event) => {
-            if (event.modifiers.control) {
-                if (event.text == "f" || event.text == "F" || event.text == "а" || event.text == "А") {
-                    search-input.focus();
-                    focus-search();
-                    return accept;
-                }
-                if (event.text == "n" || event.text == "N" || event.text == "т" || event.text == "Т") {
-                    shortcut-open-new-ticket-dialog();
-                    return accept;
-                }
-                if (event.text == "m" || event.text == "M" || event.text == "ь" || event.text == "Ь") {
-                    UserGlobal.toggle-show-only-mine(!UserGlobal.show-only-mine);
-                    return accept;
-                }
+        // Hotkey bindings
+        KeyBinding {
+            keys: @keys(Control + F);
+            activated => {
+                search-input.focus();
+                focus-search();
             }
-            if (event.text == Key.Escape) {
-                if (show_warning_dialog) {
-                    show_warning_dialog = false;
-                    return accept;
-                }
-                if (show_queue_limit_dialog) {
-                    show_queue_limit_dialog = false;
-                    return accept;
-                }
-                if (show_ticket_edit_dialog) {
-                    show_ticket_edit_dialog = false;
-                    return accept;
-                }
-                if (show_ticket_view_dialog) {
-                    show_ticket_view_dialog = false;
-                    return accept;
-                }
-                if (show_search_history) {
-                    show_search_history = false;
-                    return accept;
-                }
-                if (show_filter_menu) {
-                    show_filter_menu = false;
-                    return accept;
-                }
-                if (show_delete_confirm_dialog) {
-                    show_delete_confirm_dialog = false;
-                    return accept;
-                }
-                if (search_query != "") {
-                    search_query = "";
-                    search-edited("");
-                    return accept;
-                }
+        }
+
+        KeyBinding {
+            keys: @keys(Control + N);
+            activated => {
+                shortcut-open-new-ticket-dialog();
             }
-            reject
+        }
+
+        KeyBinding {
+            keys: @keys(Control + M);
+            activated => {
+                UserGlobal.toggle-show-only-mine(!UserGlobal.show-only-mine);
+            }
+        }
+
+        KeyBinding {
+            keys: @keys(Escape);
+            activated => {
+                show_warning_dialog = false;
+                show_queue_limit_dialog = false;
+                show_ticket_edit_dialog = false;
+                show_ticket_view_dialog = false;
+                show_search_history = false;
+                show_filter_menu = false;
+                show_delete_confirm_dialog = false;
+                search_query = "";
+                search-edited("");
+            }
         }
 
         VerticalBox {
@@ -225,6 +209,7 @@ export component App inherits Window {
                             text: @tr("Search:");
                             vertical-alignment: center;
                             font-weight: 700;
+                            overflow: elide;
                         }
 
                         Rectangle {
@@ -303,7 +288,7 @@ export component App inherits Window {
                                     text: @tr("🏃 Sprint {}: {}", active_sprint.number, active_sprint.name);
                                     vertical-alignment: center;
                                     font-weight: 600;
-                                    color: Palette.foreground;
+                                    overflow: elide;
                                 }
                             }
 
